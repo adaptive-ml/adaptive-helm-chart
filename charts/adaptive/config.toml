@@ -1,0 +1,35 @@
+# Control plane configuration file
+# Commented values are there for reference
+
+# Values can be overriden from the environment with the prefix "ADAPTIVE_" and "__" (2 underscores) between sections
+# for instance:
+#  [server]
+#  bind = "127.0.0.1:9000"
+#  root_url = "http://localhost:9000"
+#
+# can be overriden with:
+# ADAPTIVE_SERVER__BIND="0.0.0.0:9000"
+# ADAPTIVE_SERVER__ROOT_URL="https://engine.mysite.com"
+
+[auth]
+# Default values for team and role when a user is created via sso
+default_team = "default"
+default_role = "admin"
+# List of email adress of admins: when the user is first created, its role will be admin, not the default_role
+admins = []
+
+[auth.session]
+# Set the secure flag for the session cookie: they are only valid on https and localhost
+# Should be true in prod - (use false if the app is accessed through insecure http)
+secure = true
+expiration_seconds = 518400 # 6 days
+
+[[auth.oidc.providers]]
+key = "google"
+name = "Google"
+issuer_url = "https://accounts.google.com"
+client_id = "REPLACE_CLIENT_ID"
+client_secret = "REPLACE_CLIENT_SECRET"
+scopes = ["email", "profile"]
+pkce = true
+allow_sign_up = true

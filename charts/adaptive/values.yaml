@@ -1,0 +1,74 @@
+# serviceAccountName: adaptive-service-account
+
+secrets:
+  # Any object storage that is interoperable with s3 apis
+  # modelRegistryUrl: "s3://bucket-name/folder"
+  modelRegistryUrl:
+
+  # If your model registry is not on S3 and/or you do not authenticate by assuming an IAM role, you need extra env vars
+  objectStorageConfig:
+    # AWS_ACCESS_KEY_ID: "ACCESS_KEY"
+    # AWS_SECRET_ACCESS_KEY: "SECRET"
+    # AWS_ENDPOINT_URL_S3: "STORAGE_URL"
+
+  # Database connection info
+  # dbUrl: "postgres://username:password@db_adress:5432/db_name"
+  dbUrl:
+  # Secret used to sign cookies. Must be the same on all servers of a cluster
+  # Must be >= 64 chars
+  cookiesSecret: "change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315"
+
+harmony:
+  image:
+    registry: # Add the Adaptive Registry you have been granted access to
+    repository: # Add the Adaptive Repository you have been granted access to
+    tag: # Add the harmony image tag
+    pullPolicy: Always
+
+  replicaCount: 1
+
+  gpusPerNode: 8
+  # This should match the machine type you are deploying in
+  # If you are not deploying on GPU, comment out the line
+
+  nodeSelector: # Uncomment to deploy harmony on specify EKS node group or GKE node pool
+    {}
+    # eks.amazonaws.com/nodegroup: gpu-node-group-name
+    # cloud.google.com/gke-accelerator: a2-ultragpu-4g 
+
+  resources:
+    limits:
+      cpu: 7
+      memory: 64Gi
+    requests:
+      cpu: 7
+      memory: 60Gi
+
+  podAnnotations: {}
+  podLabels: {}
+
+
+controlPlane:
+  image:
+    registry: # Add the Adaptive Registry you have been granted access to
+    repository: # Add the Adaptive Repository you have been granted access to
+    tag: # Add the control plane image tag
+    pullPolicy: Always
+
+  # Uncomment to allow control plane to be scheduled on GPU nodes
+  # tolerations:
+  #   - key: "nvidia.com/gpu"
+  #     operator: "Exists"
+  #     effect: "NoSchedule"
+
+  servicePort: 80 # Port where app will be exposed
+  
+  # Full url of the application as visible from a web browser. Important if you use SSO
+  rootUrl: "http://localhost:1234"
+  # rootUrl: "https://REPLACE_YOUR_URL"
+
+  # Update the DB schema; defaults to True unless explictly False
+  runDbMigrations: true
+
+  podAnnotations: {}
+  podLabels: {}

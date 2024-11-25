@@ -1,0 +1,129 @@
+{{- $harmonySettings := include "adaptive.harmony.settings" . | fromJson }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "adaptive.harmony.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "adaptive.harmony.headlessService.fullname" . }}
+  replicas: {{ .Values.harmony.replicaCount | default 1 | int }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.harmony.selectorLabels" . | nindent 6}}
+  template:
+    metadata:
+      {{- with .Values.harmony.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.harmony.selectorLabels" . | nindent 8 }}
+        {{- with .Values.harmony.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      {{- end }}
+      nodeSelector:
+         {{- with .Values.harmony.nodeSelector}}
+         {{ toYaml . }}
+         {{- end}}
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      initContainers:
+      - name: init-permissions
+        image: busybox
+        command: ['sh', '-c', 'chown -R  1002:1000 {{ $harmonySettings.model_registry_root }} {{ $harmonySettings.shared_master_worker_folder }} /dev/shm']
+        securityContext:
+          runAsUser: 0
+        volumeMounts:
+          - name: registry-volume
+            mountPath: {{ $harmonySettings.model_registry_root }}
+          - name: workdir-volume
+            mountPath: {{ $harmonySettings.working_dir }}
+          - name: dshm
+            mountPath: /dev/shm
+      containers:
+        - name: harmony
+          image: "{{ include "adaptive.harmony.imageUri" . }}"
+          imagePullPolicy: {{ .Values.harmony.image.PullPolicy }}
+          resources:
+            limits:
+              {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
+              {{- if .Values.harmony.gpusPerNode}}
+              nvidia.com/gpu: {{ .Values.harmony.gpusPerNode }}
+              {{- end}}
+            requests:
+              {{- toYaml .Values.harmony.resources.requests | nindent 14 }}
+              {{- if .Values.harmony.gpusPerNode}}
+              nvidia.com/gpu: {{ .Values.harmony.gpusPerNode }}
+              {{- end}}
+          ports:
+            {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+            - containerPort: {{ $ports.http.containerPort }}
+              name: {{ $ports.http.name }}
+            - containerPort: {{ $ports.queue.containerPort }}
+              name: {{ $ports.queue.name }}
+            - containerPort: {{ $ports.torch.containerPort }}
+              name: {{ $ports.torch.name }} 
+          env:
+            - name: ORDINAL
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
+            - name: GPU_COUNT
+              value: "{{ .Values.harmony.gpusPerNode | default 1 }}"
+            - name: WORLD_SIZE
+              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerNode) | default .Values.harmony.replicaCount }}"
+            - name: MASTER_ADDR
+              value: "{{ include "adaptive.harmony.fullname" . }}-0.{{ include "adaptive.harmony.headlessService.fullname" . }}"
+            - name: MASTER_PORT
+              value: "{{ $ports.torch.containerPort }}"
+            - name: QUEUE_PORT
+              value: "{{ $ports.queue.containerPort }}"
+            - name: ADAPTIVE_MODEL_REGISTRY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.configSecret.fullname" . }}
+                  key: modelRegistryUrl
+            - name: ADAPTIVE_LOGGING_LEVEL
+              value: info
+          {{- if .Values.secrets.objectStorageConfig }}
+          {{- range $key, $value := .Values.secrets.objectStorageConfig }}
+            - name: {{ $key | upper }}
+              value: {{ $value }}  
+          {{- end }}
+          {{- end }}
+          volumeMounts:
+            - name: registry-volume
+              mountPath: {{ $harmonySettings.model_registry_root }}
+            - name: workdir-volume
+              mountPath: {{ $harmonySettings.working_dir }}
+            - name: harmony-settings-volume
+              mountPath: /opt/adaptive/harmony_settings/docker.json
+              subPath: docker.json
+            - name: dshm
+              mountPath: /dev/shm
+      volumes:
+        - name: registry-volume
+          hostPath:
+            path: /data/registry
+            type: DirectoryOrCreate
+        - name: workdir-volume
+          hostPath:
+            path: /data/workdir
+            type: DirectoryOrCreate
+        - name: harmony-settings-volume
+          configMap:
+            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" . }}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 8Gi
