@@ -16,13 +16,6 @@ We truncate at 30 chars so we have characters left to append individual componen
 {{- end }}
 
 {{/*
-Config secrets fullname
-*/}}
-{{- define "adaptive.configSecret.fullname"}}
-{{- printf "%s-config-secret" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
-
-{{/*
 Control plane and harmony components full names 
 */}}
 {{- define "adaptive.controlPlane.fullname" -}}
@@ -31,7 +24,6 @@ Control plane and harmony components full names
 {{- define "adaptive.controlPlane.service.fullname"}}
 {{- printf "%s-svc" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
-
 
 {{- define "adaptive.harmony.fullname" -}}
 {{- printf "%s-harmony" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
@@ -44,6 +36,26 @@ Control plane and harmony components full names
 {{- end}}
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+
+
+{{/*
+Secret related fullnames
+*/}}
+{{- define "adaptive.externalSecretStore.fullname"}}
+{{- printf "%s-ext-secret-store" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.controlPlane.configSecret.fullname"}}
+{{- printf "%s-config-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.harmony.configSecret.fullname"}}
+{{- printf "%s-config-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.controlPlane.externalSecret.fullname"}}
+{{- printf "%s-ext-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.harmony.externalSecret.fullname"}}
+{{- printf "%s-ext-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
 
@@ -124,8 +136,8 @@ Harmony settings
 Build the image URIs from registry, repository, name, and tag
 */}}
 {{- define "adaptive.harmony.imageUri" -}}
-{{- printf "%s/%s:%s" .Values.harmony.image.registry .Values.harmony.image.repository .Values.harmony.image.tag | trimSuffix "/" }}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.harmony.image.repository .Values.harmony.image.tag | trimSuffix "/" }}
 {{- end }}
 {{- define "adaptive.controlPlane.imageUri" -}}
-{{- printf "%s/%s:%s" .Values.controlPlane.image.registry .Values.controlPlane.image.repository .Values.controlPlane.image.tag | trimSuffix "/" }}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.controlPlane.image.repository .Values.controlPlane.image.tag | trimSuffix "/" }}
 {{- end }}

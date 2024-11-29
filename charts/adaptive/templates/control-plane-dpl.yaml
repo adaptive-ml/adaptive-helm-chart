@@ -38,9 +38,9 @@ spec:
       volumes:
         - name: conf
           secret:
-            secretName: {{ include "adaptive.configSecret.fullname" . }}
+            secretName: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
             items:
-              - key: config.toml
+              - key: controlPlaneAuthConfig
                 path: config.toml
       {{- $ports := include "adaptive.controlPlane.ports" . | fromJson }}
       containers:
@@ -57,7 +57,7 @@ spec:
             - name: ADAPTIVE_APP__SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "adaptive.configSecret.fullname" . }}
+                  name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: cookiesSecret
             - name: ADAPTIVE_CONFIG_FILE
               value: /etc/kubernetes/conf/config.toml
@@ -66,9 +66,9 @@ spec:
             - name: ADAPTIVE_DB__URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "adaptive.configSecret.fullname" . }}
+                  name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: dbUrl
-            - name: ADAPTIVE_HARMONY__URL
+            - name: ADAPTIVE_MANGROVE__URL
               value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
             - name: ADAPTIVE_SERVER__BIND
               value: "127.0.0.1:{{ $ports.http.containerPort }}"
