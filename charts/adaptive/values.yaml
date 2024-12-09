@@ -46,6 +46,7 @@ harmony:
 
   podAnnotations: {}
   podLabels: {}
+  extraEnvVars: {}
 
 controlPlane:
   image:
@@ -68,7 +69,9 @@ controlPlane:
   nodeSelector: {}
 
   # Uncomment to allow control plane to be scheduled on GPU nodes
-  tolerations:
+  tolerations: {}
   #   - key: "nvidia.com/gpu"
   #     operator: "Exists"
   #     effect: "NoSchedule"
+
+  extraEnvVars: {}

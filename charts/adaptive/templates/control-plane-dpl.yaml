@@ -79,3 +79,9 @@ spec:
               value: "127.0.0.1:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
               value: {{ .Values.controlPlane.rootUrl }}
+            {{- if .Values.controlPlane.extraEnvVars }}
+            {{- range $key, $value := .Values.controlPlane.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
