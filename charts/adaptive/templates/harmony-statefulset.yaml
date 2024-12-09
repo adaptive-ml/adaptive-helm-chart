@@ -93,6 +93,8 @@ spec:
               value: "{{ $ports.queue.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
+            - name: ADAPTIVE_MODE
+              value: PROD
           volumeMounts:
             - name: registry-volume
               mountPath: {{ $harmonySettings.model_registry_root }}

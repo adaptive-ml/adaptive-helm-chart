@@ -53,6 +53,9 @@ spec:
             - mountPath: "/etc/kubernetes/conf"
               name: conf
               readOnly: true
+          envFrom:
+            - secretRef:
+                name: {{ include "adaptive.harmony.configSecret.fullname" . }}
           env:
             - name: ADAPTIVE_APP__SECRET
               valueFrom:
@@ -61,6 +64,8 @@ spec:
                   key: cookiesSecret
             - name: ADAPTIVE_CONFIG_FILE
               value: /etc/kubernetes/conf/config.toml
+            - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
+              value: "s3"
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
             - name: ADAPTIVE_DB__URL
@@ -68,7 +73,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: dbUrl
-            - name: ADAPTIVE_MANGROVE__URL
+            - name: ADAPTIVE_HARMONY__URL
               value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
             - name: ADAPTIVE_SERVER__BIND
               value: "127.0.0.1:{{ $ports.http.containerPort }}"

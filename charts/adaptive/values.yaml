@@ -3,6 +3,8 @@
 secrets:
   # Any object storage service interoperable with s3 apis (ex. "s3://bucket-name/folder")
   modelRegistryUrl:
+  # Use same bucket as above and can use a different prefix "s3://bucket-name/shared"
+  sharedDirectoryUrl:
 
   # If your model registry is not on S3 and/or you do not authenticate by assuming an IAM role, you need extra env vars
   objectStorageConfig:
@@ -15,9 +17,7 @@ secrets:
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: "change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315" # Must be >= 64 chars
 
-
 containerRegistry: # Add the Adaptive Registry you have been granted access to
-
 
 harmony:
   image:
@@ -34,7 +34,7 @@ harmony:
   nodeSelector: # Uncomment to deploy harmony on specify EKS node group or GKE node pool
     {}
     # eks.amazonaws.com/nodegroup: gpu-node-group-name
-    # cloud.google.com/gke-accelerator: a2-ultragpu-4g 
+    # cloud.google.com/gke-accelerator: a2-ultragpu-4g
 
   resources:
     limits:
@@ -47,7 +47,6 @@ harmony:
   podAnnotations: {}
   podLabels: {}
 
-
 controlPlane:
   image:
     repository: # Add the Adaptive Repository you have been granted access to
@@ -55,7 +54,7 @@ controlPlane:
     pullPolicy: Always
 
   servicePort: 80 # Port where app will be exposed
-  
+
   # Full url of the application as visible from a web browser. Important if you use SSO
   rootUrl: "http://localhost:1234"
   # rootUrl: "https://REPLACE_YOUR_URL"
@@ -66,9 +65,8 @@ controlPlane:
   podAnnotations: {}
   podLabels: {}
 
-  nodeSelector:
-    {}
-    
+  nodeSelector: {}
+
   # Uncomment to allow control plane to be scheduled on GPU nodes
   tolerations:
   #   - key: "nvidia.com/gpu"
