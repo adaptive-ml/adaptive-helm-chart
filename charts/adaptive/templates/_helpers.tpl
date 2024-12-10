@@ -109,6 +109,25 @@ Harmony ports
 }
 {{- end }}
 
+{{- define "adaptive.oidc_providers" -}}
+[
+  {{- range .Values.auth.oidc.providers -}}
+  {
+    key={{ .key }},
+    name={{ .name }},
+    issuer_url={{ .issuer | quote }}",
+    client_id={{ .client_id | quote }},
+    {{- if .client_secret -}}
+    client_secret={{ .client_secret | quote }},
+    {{- end -}}
+    scopes={{ .scopes }},
+    pkce={{ .pkce }},
+    allow_sign_up={{ .allow_sign_up }}
+  },
+  {{- end -}}
+]
+{{- end -}}
+
 {{/*
 Control plane ports
 */}}

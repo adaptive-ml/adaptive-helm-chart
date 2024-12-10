@@ -34,14 +34,7 @@ spec:
       {{- if .Values.controlPlane.tolerations}}
       tolerations:
         {{- toYaml .Values.controlPlane.tolerations | nindent 8 }}
-      {{- end}}
-      volumes:
-        - name: conf
-          secret:
-            secretName: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
-            items:
-              - key: controlPlaneAuthConfig
-                path: config.toml
+      {{- end}} 
       {{- $ports := include "adaptive.controlPlane.ports" . | fromJson }}
       containers:
         - name: control-plane
@@ -49,10 +42,6 @@ spec:
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
           ports:
             - containerPort: {{ $ports.http.containerPort }}
-          volumeMounts:
-            - mountPath: "/etc/kubernetes/conf"
-              name: conf
-              readOnly: true
           envFrom:
             - secretRef:
                 name: {{ include "adaptive.harmony.configSecret.fullname" . }}
@@ -62,8 +51,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: cookiesSecret
-            - name: ADAPTIVE_CONFIG_FILE
-              value: /etc/kubernetes/conf/config.toml
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
               value: "s3"
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
@@ -79,6 +66,23 @@ spec:
               value: "127.0.0.1:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
               value: {{ .Values.controlPlane.rootUrl }}
+            - name: ADAPTIVE_AUTH__DEFAULT_ROLE
+              value: {{ .Values.auth.default_role | default "admin" }}
+            - name: ADAPTIVE_AUTH__OIDC__PROVIDERS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
+                  key: oidc_providers
+            - name: ADAPTIVE_AUTH__SESSION__SECURE
+              value: {{ .Values.auth.session.secure | default "true" | quote }}
+            - name: ADAPTIVE_AUTH__SESSION__EXPIRATION_SECONDS
+              value: {{ .Values.auth.session.expiration_seconds | default "518400" | quote }}
+            - name: ADAPTIVE_AUTH__DEFAULT_TEAM
+              value: {{ .Values.auth.default_team | default "default" | quote }}
+            - name: ADAPTIVE_AUTH__DEFAULT_ROLE
+              value: {{ .Values.auth.default_role | default "admin" | quote }}
+            - name: ADAPTIVE_AUTH__ADMINS
+              value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}
             - name: {{ $key }}
