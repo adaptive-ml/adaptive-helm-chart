@@ -115,12 +115,12 @@ Harmony ports
   {
     key={{ .key }},
     name={{ .name }},
-    issuer_url={{ .issuer | quote }}",
+    issuer_url={{ .issuer_url | quote }},
     client_id={{ .client_id | quote }},
     {{- if .client_secret -}}
     client_secret={{ .client_secret | quote }},
     {{- end -}}
-    scopes={{ .scopes }},
+    scopes={{ .scopes | toJson }},
     pkce={{ .pkce }},
     allow_sign_up={{ .allow_sign_up }}
   },

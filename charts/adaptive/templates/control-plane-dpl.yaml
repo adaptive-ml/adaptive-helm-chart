@@ -66,8 +66,6 @@ spec:
               value: "127.0.0.1:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
               value: {{ .Values.controlPlane.rootUrl }}
-            - name: ADAPTIVE_AUTH__DEFAULT_ROLE
-              value: {{ .Values.auth.default_role | default "admin" }}
             - name: ADAPTIVE_AUTH__OIDC__PROVIDERS
               valueFrom:
                 secretKeyRef:
