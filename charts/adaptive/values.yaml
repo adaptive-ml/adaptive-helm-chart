@@ -1,16 +1,10 @@
 # serviceAccountName: adaptive-service-account
 
 secrets:
-  # Any object storage service interoperable with s3 apis
+  # S3 bucket for model registry
   modelRegistryUrl: s3://bucket-name/model_registry
   # Use same bucket as above and can use a different prefix
   sharedDirectoryUrl: s3://bucket-name/shared
-
-  # If your model registry is not on S3 and/or you do not authenticate by assuming an IAM role, you need extra env vars
-  objectStorageConfig:
-    # AWS_ACCESS_KEY_ID: "ACCESS_KEY"
-    # AWS_SECRET_ACCESS_KEY: "SECRET"
-    # AWS_ENDPOINT_URL_S3: "STORAGE_URL"
 
   # Postgres database connection string
   dbUrl: postgres://username:password@db_adress:5432/db_name
