@@ -111,7 +111,7 @@ Harmony ports
 
 {{- define "adaptive.oidc_providers" -}}
 [
-  {{- range .Values.auth.oidc.providers -}}
+  {{- range .Values.secrets.auth.oidc.providers -}}
   {
     key={{ .key }},
     name={{ .name }},

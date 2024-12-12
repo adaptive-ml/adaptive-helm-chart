@@ -10,7 +10,7 @@ spec:
   replicas: {{ .Values.controlPlane.replicaCount | default 1 | int }}
   selector:
     matchLabels:
-      {{- include "adaptive.controlPlane.selectorLabels" . | nindent 6}}      
+      {{- include "adaptive.controlPlane.selectorLabels" . | nindent 6}}
   template:
     metadata:
       {{- with .Values.controlPlane.podAnnotations }}
