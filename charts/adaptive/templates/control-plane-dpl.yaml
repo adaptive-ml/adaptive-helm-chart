@@ -63,7 +63,7 @@ spec:
             - name: ADAPTIVE_HARMONY__URL
               value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
             - name: ADAPTIVE_SERVER__BIND
-              value: "127.0.0.1:{{ $ports.http.containerPort }}"
+              value: "0.0.0.0:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
               value: {{ .Values.controlPlane.rootUrl }}
             - name: ADAPTIVE_AUTH__OIDC__PROVIDERS
