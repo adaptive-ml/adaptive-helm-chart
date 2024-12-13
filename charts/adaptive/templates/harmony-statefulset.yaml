@@ -40,16 +40,14 @@ spec:
       initContainers:
       - name: init-permissions
         image: busybox
-        command: ['sh', '-c', 'chown -R  1002:1000 {{ $harmonySettings.model_registry_root }} {{ $harmonySettings.shared_master_worker_folder }} /dev/shm']
+        command: ['sh', '-c', 'chown -R  1002:1000 {{ $harmonySettings.working_dir }} {{ $harmonySettings.shared_master_worker_folder }} {{ $harmonySettings.any_path_config.cloud_cache }}']
         securityContext:
           runAsUser: 0
         volumeMounts:
-          - name: registry-volume
-            mountPath: {{ $harmonySettings.model_registry_root }}
           - name: workdir-volume
             mountPath: {{ $harmonySettings.working_dir }}
-          - name: dshm
-            mountPath: /dev/shm
+          - name: cloud-cache-volume
+            mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
       containers:
         - name: harmony
           image: "{{ include "adaptive.harmony.imageUri" . }}"
@@ -57,13 +55,13 @@ spec:
           resources:
             limits:
               {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
-              {{- if .Values.harmony.gpusPerNode}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerNode }}
+              {{- if .Values.harmony.gpusPerReplica}}
+              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
               {{- end}}
             requests:
               {{- toYaml .Values.harmony.resources.requests | nindent 14 }}
-              {{- if .Values.harmony.gpusPerNode}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerNode }}
+              {{- if .Values.harmony.gpusPerReplica}}
+              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
               {{- end}}
           ports:
             {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
@@ -82,9 +80,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
             - name: GPU_COUNT
-              value: "{{ .Values.harmony.gpusPerNode | default 1 }}"
+              value: "{{ .Values.harmony.gpusPerReplica | default 1 }}"
             - name: WORLD_SIZE
-              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerNode) | default .Values.harmony.replicaCount }}"
+              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerReplica) | default .Values.harmony.replicaCount }}"
             - name: MASTER_ADDR
               value: "{{ include "adaptive.harmony.fullname" . }}-0.{{ include "adaptive.harmony.headlessService.fullname" . }}"
             - name: MASTER_PORT
@@ -93,25 +91,29 @@ spec:
               value: "{{ $ports.queue.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
+            - name: ADAPTIVE_MODE
+              value: PROD
+            {{- if .Values.harmony.extraEnvVars }}
+            {{- range $key, $value := .Values.harmony.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
           volumeMounts:
-            - name: registry-volume
-              mountPath: {{ $harmonySettings.model_registry_root }}
             - name: workdir-volume
               mountPath: {{ $harmonySettings.working_dir }}
+            - name: cloud-cache-volume
+              mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
             - name: harmony-settings-volume
               mountPath: /opt/adaptive/harmony_settings/docker.json
               subPath: docker.json
             - name: dshm
               mountPath: /dev/shm
       volumes:
-        - name: registry-volume
-          hostPath:
-            path: /data/registry
-            type: DirectoryOrCreate
+        - name: cloud-cache-volume
+          emptyDir: {}
         - name: workdir-volume
-          hostPath:
-            path: /data/workdir
-            type: DirectoryOrCreate
+          emptyDir: {}
         - name: harmony-settings-volume
           configMap:
             name: {{ include "adaptive.harmony.settingsConfigMap.fullname" . }}

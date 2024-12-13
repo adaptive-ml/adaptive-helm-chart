@@ -109,6 +109,25 @@ Harmony ports
 }
 {{- end }}
 
+{{- define "adaptive.oidc_providers" -}}
+[
+  {{- range .Values.secrets.auth.oidc.providers -}}
+  {
+    key={{ .key }},
+    name={{ .name }},
+    issuer_url={{ .issuer_url | quote }},
+    client_id={{ .client_id | quote }},
+    {{- if .client_secret -}}
+    client_secret={{ .client_secret | quote }},
+    {{- end -}}
+    scopes={{ .scopes | toJson }},
+    pkce={{ .pkce }},
+    allow_sign_up={{ .allow_sign_up }}
+  },
+  {{- end -}}
+]
+{{- end -}}
+
 {{/*
 Control plane ports
 */}}
@@ -123,11 +142,10 @@ Harmony settings
 */}}
 {{- define "adaptive.harmony.settings" -}}
 {
-  "working_dir": "/opt/adaptive/shared_folder",
-  "shared_master_worker_folder": "/opt/adaptive/shared_folder",
-  "model_registry_root": "/opt/adaptive/model_registry",
+  "working_dir": "/opt/adaptive/working_dir",
+  "shared_master_worker_folder": "/opt/adaptive/working_dir",
   "any_path_config": {
-    "cloud_cache": "/opt/adaptive/model_registry"
+    "cloud_cache": "/opt/adaptive/cloud_cache"
   }
 }
 {{- end }}
