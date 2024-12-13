@@ -68,7 +68,8 @@ controlPlane:
 ###### GPU Resources
 ```yaml
 harmony:
-    gpusPerNode: 8
+    # Should be equal to, or a divisor of the # of GPUs on each node
+    gpusPerReplica: 8
 ```
 
 See the full `charts/adaptive/values.yaml` file for further customization. 

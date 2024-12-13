@@ -55,13 +55,13 @@ spec:
           resources:
             limits:
               {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
-              {{- if .Values.harmony.gpusPerNode}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerNode }}
+              {{- if .Values.harmony.gpusPerReplica}}
+              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
               {{- end}}
             requests:
               {{- toYaml .Values.harmony.resources.requests | nindent 14 }}
-              {{- if .Values.harmony.gpusPerNode}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerNode }}
+              {{- if .Values.harmony.gpusPerReplica}}
+              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
               {{- end}}
           ports:
             {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
@@ -80,9 +80,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
             - name: GPU_COUNT
-              value: "{{ .Values.harmony.gpusPerNode | default 1 }}"
+              value: "{{ .Values.harmony.gpusPerReplica | default 1 }}"
             - name: WORLD_SIZE
-              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerNode) | default .Values.harmony.replicaCount }}"
+              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerReplica) | default .Values.harmony.replicaCount }}"
             - name: MASTER_ADDR
               value: "{{ include "adaptive.harmony.fullname" . }}-0.{{ include "adaptive.harmony.headlessService.fullname" . }}"
             - name: MASTER_PORT

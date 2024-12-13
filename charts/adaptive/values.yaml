@@ -46,9 +46,9 @@ harmony:
 
   replicaCount: 1
 
-  # This should match the machine type you are deploying in
+  # Should be equal to, or a divisor of the # of GPUs on each node
   # If you are not deploying on GPU, comment out the line
-  gpusPerNode: 8
+  gpusPerReplica: 8
 
   nodeSelector: # Uncomment to deploy harmony on specify EKS node group or GKE node pool
     {}
