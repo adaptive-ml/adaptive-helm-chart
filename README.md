@@ -19,7 +19,7 @@ helm repo update adaptive
 helm show values adaptive/adaptive > values.yaml
 ```
 
-##### 3. Edit the value.yaml file to customize the Helm chart for your environment. Here are the key sections:
+##### 3. Edit the values.yaml file to customize the Helm chart for your environment. Here are the key sections:
 
 ###### Secrets for model registry, database and auth
 ```yaml
