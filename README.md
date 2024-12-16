@@ -53,7 +53,7 @@ secrets:
 ###### Container images
 ```yaml
 # Adaptive Registry you have been granted access to
-containerRegistry: 111111111111.dkr.ecr.us-west-2.amazonaws.com 
+containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com
 harmony:
   image:
     repository: adaptive-repository # Adaptive Repository you have been granted access to

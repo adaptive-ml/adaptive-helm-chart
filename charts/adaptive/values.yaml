@@ -28,15 +28,17 @@ secrets:
           allow_sign_up: true
 
 auth:
+  # One of [admin, read-only, inference, annotator]
   default_role: admin
   session:
     # Set the secure flag for the session cookie: they are only valid on https and localhost
     # Should be true in prod - (use false if the app is accessed through insecure http)
     secure: true
     expiration_seconds: 518400 # 6 days
+  # List of email addresses for admins; overrides default_role when these users are created
   admins: []
 
-containerRegistry: 111111111111.dkr.ecr.us-west-2.amazonaws.com # Add the Adaptive Registry you have been granted access to
+containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com # Add the Adaptive Registry you have been granted access to
 
 harmony:
   image:
