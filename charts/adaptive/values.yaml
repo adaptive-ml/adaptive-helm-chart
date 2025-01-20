@@ -1,4 +1,6 @@
-# serviceAccountName: adaptive-service-account
+serviceAccount: 
+  create: True
+  name: adaptive–service-account
 
 secrets:
   # S3 bucket for model registry
@@ -58,13 +60,14 @@ harmony:
     # cloud.google.com/gke-accelerator: a2-ultragpu-4g
   
   # Adjust to your deployment server specs and model size requirements
+  # It is recommended to use as much RAM and CPU as your machine provides
   resources:
     limits:
-      cpu: 7
-      memory: 64Gi
+      cpu: 30
+      memory: 500Gi
     requests:
-      cpu: 7
-      memory: 60Gi
+      cpu: 30
+      memory: 500Gi
 
   podAnnotations: {}
   podLabels: {}
