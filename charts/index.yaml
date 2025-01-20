@@ -3,6 +3,16 @@ entries:
   adaptive:
   - apiVersion: v2
     appVersion: "1.0"
+    created: "2025-01-14T13:22:58.838594+01:00"
+    description: Helm Chart for Adaptive Engine
+    digest: 11b2cc9cb665849c53754adb13ac8566ebafb7465732f9caa4317872d7f4100b
+    name: adaptive
+    type: application
+    urls:
+    - https://raw.githubusercontent.com/adaptive-ml/adaptive-helm-chart/main/charts/adaptive-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
+    appVersion: "1.0"
     created: "2024-12-13T15:38:03.853058+01:00"
     description: Helm Chart for Adaptive Engine
     digest: 7c524045e3a001cbd5f513f814528c4df39cf4f48bc9d46e5a6b48ad4d2d1d70
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://raw.githubusercontent.com/adaptive-ml/adaptive-helm-chart/main/charts/adaptive-0.0.1.tgz
     version: 0.0.1
-generated: "2024-12-13T15:38:03.852062+01:00"
+generated: "2025-01-14T13:22:58.837216+01:00"

@@ -1,4 +1,6 @@
-# serviceAccountName: adaptive-service-account
+serviceAccount: 
+  create: True
+  name: adaptive–service-account
 
 secrets:
   # S3 bucket for model registry
