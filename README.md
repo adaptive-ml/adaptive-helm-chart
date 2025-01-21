@@ -1,17 +1,21 @@
 # Helm Chart for Adaptive Engine
 
-A Helm Chart to deploy Adaptive Engine
+A Helm Chart to deploy Adaptive Engine.
 
 ## Installing the Chart
+
+[Helm](https://helm.sh) must be installed to use the charts.
 
 ---
 
 ##### 1. Add the chart from this repository:
 
 ```
-helm repo add adaptive https://raw.githubusercontent.com/adaptive-ml/adaptive-helm-chart/main/charts
+helm repo add adaptive https://adaptive-ml.github.io/adaptive-helm-chart/
 helm repo update adaptive
 ```
+
+You can then run `helm search repo adaptive` to see the charts.
 
 ##### 2. Get the default values.yaml configuration file: 
 
