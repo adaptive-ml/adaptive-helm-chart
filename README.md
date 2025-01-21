@@ -11,6 +11,7 @@ A Helm Chart to deploy Adaptive Engine.
 ##### 1. Add the chart from this repository:
 
 ```
+helm repo remove adaptive
 helm repo add adaptive https://adaptive-ml.github.io/adaptive-helm-chart/
 helm repo update adaptive
 ```
