@@ -9,7 +9,7 @@ entries:
     name: adaptive
     type: application
     urls:
-    - https://raw.githubusercontent.com/adaptive-ml/adaptive-helm-chart/main/charts/adaptive-0.0.2.tgz
+    - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/adaptive-0.0.2/adaptive-0.0.2.tgz
     version: 0.0.2
   - apiVersion: v2
     appVersion: "1.0"
@@ -19,6 +19,6 @@ entries:
     name: adaptive
     type: application
     urls:
-    - https://raw.githubusercontent.com/adaptive-ml/adaptive-helm-chart/main/charts/adaptive-0.0.1.tgz
+    - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/adaptive-0.0.1/adaptive-0.0.1.tgz
     version: 0.0.1
 generated: "2025-01-14T13:22:58.837216+01:00"
