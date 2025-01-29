@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: promtail-config
 data:
+  # service discovery ref for k8s https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config
   promtail.yaml: |
     server:
       http_listen_port: 9080
@@ -29,6 +30,10 @@ data:
         - source_labels: [__meta_kubernetes_pod_annotation_enable_logs_ingest]
           action: keep
           regex: true
+        # add label on image tag for filtering by version
+        - source_labels: [__meta_kubernetes_pod_container_image]
+          regex: .+:(.+)
+          target_label: image_tag
         # Send the node name as a label to Loki
         - source_labels:
             - __meta_kubernetes_pod_node_name

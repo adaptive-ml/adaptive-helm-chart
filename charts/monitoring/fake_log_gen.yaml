@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: flog
-          image: mingrammer/flog
+          image: mingrammer/flog:0.4.3
           args: ["-s", "10s", "-d", "1s", "-l"] # Generate logs every 20s in JSON format
           resources:
             limits:
