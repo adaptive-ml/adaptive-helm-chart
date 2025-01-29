@@ -6,7 +6,7 @@ loki:
   replicas: 1
   serviceAccountName: loki
   container: 
-    image: grafana/loki:2.1.0
+    image: grafana/loki:2.9.11
     port: http-metrics
   terminationGracePeriod: 60
   service:

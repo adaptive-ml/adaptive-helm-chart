@@ -65,8 +65,7 @@ affinity: {}
 
 
 grafana: 
-  image: grafana/grafana:8.4.4
-  #:7.5.6
+  image: grafana/grafana:11.5.0
   name: grafana
   labels: 
     app: grafana

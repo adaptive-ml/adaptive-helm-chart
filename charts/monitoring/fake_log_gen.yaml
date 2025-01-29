@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flog
+  template:
+    metadata:
+      labels:
+        app: flog
+    spec:
+      containers:
+        - name: flog
+          image: mingrammer/flog
+          args: ["-s", "10s", "-d", "1s", "-l"] # Generate logs every 20s in JSON format
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
