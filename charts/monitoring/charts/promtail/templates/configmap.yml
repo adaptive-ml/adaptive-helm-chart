@@ -22,9 +22,17 @@ data:
       pipeline_stages:
         - docker: {}
       relabel_configs:
+        # Required for Promtail to filter logs from the correct node
         - source_labels:
             - __meta_kubernetes_pod_node_name
           target_label: __host__
+        - source_labels: [__meta_kubernetes_pod_annotation_enable_logs_ingest]
+          action: keep
+          regex: true
+        # Send the node name as a label to Loki
+        - source_labels:
+            - __meta_kubernetes_pod_node_name
+          target_label: k8s_node
         - action: labelmap
           regex: __meta_kubernetes_pod_label_(.+)
         - action: replace

@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: flog
+      annotations:
+        enable-logs-ingest: "true"
     spec:
       containers:
         - name: flog
