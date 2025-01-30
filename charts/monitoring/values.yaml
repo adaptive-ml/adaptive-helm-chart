@@ -72,6 +72,8 @@ grafana:
     role: monitoring
     app.kubernetes.io/component: web
   replicas: 1
+  hostDomain: "localhost:4000"  # The ingress domain host for grafana ui (un der /monitoring route)
+  httpScheme: "http"
   selectorLabels:
     app: grafana
   configmap:
