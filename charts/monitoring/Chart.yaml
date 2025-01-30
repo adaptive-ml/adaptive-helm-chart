@@ -3,7 +3,9 @@ name: monitoring
 description: A Helm chart for installing monitoring stack for adaptive engine
 dependencies:
   - name: "loki"
+    version: "0.1.0"
   - name: "promtail"
+    version: "0.1.0"
 
 type: application
 
