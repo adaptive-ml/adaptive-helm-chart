@@ -22,7 +22,9 @@ You can then run `helm search repo adaptive` to see the charts.
 
 ```
 helm show values adaptive/adaptive > values.yaml
+helm show values adaptive/monitoring > values.monitoring.yaml
 ```
+
 
 ##### 3. Edit the values.yaml file to customize the Helm chart for your environment. Here are the key sections:
 
@@ -77,13 +79,17 @@ harmony:
     gpusPerReplica: 8
 ```
 
-See the full `charts/adaptive/values.yaml` file for further customization. 
+See the full `charts/adaptive/values.yaml` file for further customization.
 
 ##### 4. Deploy the chart with:
 
 ```
 helm install adaptive adaptive/adaptive -f ./values.yaml
+helm install adaptive-monitoring adaptive/monitoring -f ./values.monitoring.yaml
 ```
+
+The adaptive-monitoring deployment is a set of addons to adaptive stack providing Logs observability (through Grafana) on your ingress domain route `/monitoring`.
+You'll need to override value of `grafana.proxy.domain` on that helm to the value of your igress domain for adaptive engine front.
 
 ## Using external secrets
 
