@@ -4,29 +4,22 @@
 
 replicaCount: 1
 
-
-networking:
-  ingress: false
-  nodePort: true   
-
-
 global:
   env:
-    local: true 
+    local: true
     azure: false
-    aws:   false 
+    aws: false
   namespace: default
   image:
     pullPolicy: IfNotPresent
   metrics:
-    present: true 
+    present: true
   pv:
     provisioner: aws-ebs
 
 
 image:
   pullPolicy: IfNotPresent
-
 
 imagePullSecrets: []
 nameOverride: ""
@@ -53,8 +46,6 @@ service:
   type: ClusterIP
   port: 80
 
-
-
 resources: {}
 
 nodeSelector: {}
@@ -63,11 +54,10 @@ tolerations: []
 
 affinity: {}
 
-
-grafana: 
+grafana:
   image: grafana/grafana:11.5.0
   name: grafana
-  labels: 
+  labels:
     app: grafana
     role: monitoring
     app.kubernetes.io/component: web
@@ -78,7 +68,7 @@ grafana:
     app: grafana
   configmap:
     name: grafana
-  volume: 
+  volume:
     name: grafana
   ports:
     name: grafana-port
@@ -90,5 +80,4 @@ grafana:
     name: grafana
     size: 2Gi
   sc:
-    name: grafana  
-
+    name: grafana
