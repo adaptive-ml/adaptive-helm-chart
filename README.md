@@ -88,7 +88,7 @@ helm install adaptive adaptive/adaptive -f ./values.yaml
 helm install adaptive-monitoring adaptive/monitoring -f ./values.monitoring.yaml
 ```
 
-The adaptive-monitoring deployment is a set of addons to adaptive stack providing Logs observability (through Grafana) on your ingress domain route `/monitoring`.
+The adaptive-monitoring deployment is a set of addons to adaptive stack providing Logs observability for adaptive stack (through Grafana) on your ingress domain route `/monitoring`.
 You'll need to override value of `grafana.proxy.domain` on that helm to the value of your igress domain for adaptive engine front.
 
 ## Using external secrets
