@@ -27,7 +27,7 @@ data:
         - source_labels:
             - __meta_kubernetes_pod_node_name
           target_label: __host__
-        - source_labels: [__meta_kubernetes_pod_annotation_enable_logs_ingest]
+        - source_labels: [__meta_kubernetes_pod_annotation_ingest_adaptive_logs]
           action: keep
           regex: true
         # add label on image tag for filtering by version

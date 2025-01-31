@@ -84,7 +84,7 @@ harmony:
       memory: 500Gi
 
   podAnnotations:
-    enable-logs-ingest: "true"
+    ingest-adaptive-logs: "true"
   podLabels: {}
   extraEnvVars: {}
 
@@ -105,7 +105,7 @@ controlPlane:
   runDbMigrations: true
 
   podAnnotations:
-    enable-logs-ingest: "true"
+    ingest-adaptive-logs: "true"
 
   podLabels: {}
 
