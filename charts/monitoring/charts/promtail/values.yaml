@@ -1,0 +1,25 @@
+promtail: 
+  kind: DaemonSet
+  name: promtail
+  labels:
+    app: promtail
+  container:
+    image: grafana/promtail:latest
+    port: http-metrics  
+  ServiceAccountName: promtail 
+  ClusterRole: promtail-role
+  resources:
+    limits:
+      cpu: 100m
+      memory: 200Mi
+    requests:
+      cpu: 50m
+      memory: 100Mi
+  terminationGracePeriod: 60
+
+
+
+
+
+
+

@@ -62,3 +62,4 @@ jobs:
           helm repo add stable https://charts.helm.sh/stable
           helm repo update
           helm install --dry-run --debug adaptive-stack ./charts/adaptive
+          helm install --dry-run --debug adaptive-monitoring ./charts/monitoring
