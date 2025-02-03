@@ -83,7 +83,8 @@ harmony:
       cpu: 30
       memory: 500Gi
 
-  podAnnotations: {}
+  podAnnotations:
+    ingest-adaptive-logs: "true"
   podLabels: {}
   extraEnvVars: {}
 
@@ -103,7 +104,8 @@ controlPlane:
   # Update the DB schema; defaults to True unless explictly False
   runDbMigrations: true
 
-  podAnnotations: {}
+  podAnnotations:
+    ingest-adaptive-logs: "true"
 
   podLabels: {}
 

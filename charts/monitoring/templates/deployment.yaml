@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.grafana.name}}
+  namespace: {{ .Values.global.namespace }}
+  {{- with .Values.grafana.labels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}   
+
+spec:
+  replicas: {{ .Values.grafana.replicas }}
+  selector:
+    {{- with .Values.grafana.labels }}
+    matchLabels:
+      {{- toYaml . | nindent 6 }}
+    {{- end}}
+  template:
+    metadata:
+      {{- with .Values.grafana.labels }}
+      labels:
+        {{- toYaml . | nindent 8 }}
+      {{- end}}
+    spec:
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+        supplementalGroups:
+          - 0
+      containers:
+        - name: {{ .Values.grafana.name }}
+          image: {{ .Values.grafana.image }}
+          env:
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Admin"
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "true"
+            {{- if .Values.grafana.proxy.enable }}
+            - name: GF_SERVER_DOMAIN
+              value: "{{ .Values.grafana.proxy.domain }}"
+            - name: GF_SERVER_ROOT_URL
+              value: "https://{{ .Values.grafana.proxy.domain }}/monitoring/"
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false            
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: {{ .Values.grafana.ports.name }}
+              containerPort: {{ .Values.grafana.ports.port }}
+              protocol: TCP
+          volumeMounts:
+          {{- if eq .Values.global.env.local false }}
+          - name: {{ .Values.grafana.sc.name}}
+            mountPath: /var/lib/grafana
+          {{- end }}
+          - name: datasource
+            mountPath: /etc/grafana/provisioning/datasources
+          - name: dashboard
+            mountPath: /etc/grafana/provisioning/dashboards
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /robots.txt
+              port: {{ .Values.grafana.ports.port }}
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 2
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: {{ .Values.grafana.ports.port }}
+            timeoutSeconds: 1         
+
+      volumes:
+        - name: datasource
+          configMap:
+            name: {{ .Values.grafana.configmap.name}}
+            items:
+              - key: datasource
+                path: datasource.yml
+        - name: dashboard
+          configMap:
+            name: {{ .Values.grafana.configmap.name}}
+            items:
+              - key: dashboard.json
+                path: dashboard.json
+              - key: dashboard
+                path: dashboard.yml
+        {{- if eq .Values.global.env.local false }}
+        - name: {{ .Values.grafana.sc.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.grafana.pvc.name }}
+        {{- end }}
+
+
+
+              
+            
+ #         livenessProbe:
+ #           httpGet:
+ #             path: /
+ #             port: http
+ #         readinessProbe:
+ #           httpGet:
+ #             path: /
+ #             port: http
+
+
+#       - ./monitor/grafana.ini:/etc/grafana/grafana.ini
+ #     - ./monitor/dashboard.json:/etc/dashboard.json
+#      - ./monitor/provision.yml:/etc/grafana/provisioning/datasources/datasource.yml
+#      - ./monitor/dashboards/:/etc/grafana/provisioning/dashboards/
