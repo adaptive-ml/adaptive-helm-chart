@@ -8,7 +8,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 ---
 
-##### 1. Add the chart from this repository:
+##### 1. Add the charts from this repository:
 
 ```
 helm repo remove adaptive 2>/dev/null
@@ -17,6 +17,9 @@ helm repo update adaptive
 ```
 
 You can then run `helm search repo adaptive` to see the charts.
+There are 2 charts in this repo: 
+- `adaptive`, the main chart to deploy Adaptive Engine
+- `monitoring`, an optional addon chart to monitor Adaptive Engine logs with Grafana
 
 ##### 2. Get the default values.yaml configuration file: 
 
@@ -24,7 +27,6 @@ You can then run `helm search repo adaptive` to see the charts.
 helm show values adaptive/adaptive > values.yaml
 helm show values adaptive/monitoring > values.monitoring.yaml
 ```
-
 
 ##### 3. Edit the values.yaml file to customize the Helm chart for your environment. Here are the key sections:
 
@@ -88,8 +90,9 @@ helm install adaptive adaptive/adaptive -f ./values.yaml
 helm install adaptive-monitoring adaptive/monitoring -f ./values.monitoring.yaml
 ```
 
-The adaptive-monitoring deployment is a set of addons to adaptive stack providing Logs observability for adaptive stack (through Grafana) on your ingress domain route `/monitoring`.
-You'll need to override value of `grafana.proxy.domain` on that helm to the value of your igress domain for adaptive engine front.
+If you deploy the addon adaptive-monitoring chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file retrieved in step #2; it must match the value of your igress domain (`controlPlane.rootUrl`) for Adaptive Engine
+(as a fully qualified domain name, no scheme). Once deployed, you will be able to access 
+the Grafana dashboard for logs monitoring at your ingress domain + `/monitoring`.
 
 ## Using external secrets
 
