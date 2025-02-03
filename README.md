@@ -91,8 +91,7 @@ helm install adaptive-monitoring adaptive/monitoring -f ./values.monitoring.yaml
 ```
 
 If you deploy the addon adaptive-monitoring chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file retrieved in step #2; it must match the value of your igress domain (`controlPlane.rootUrl`) for Adaptive Engine
-(as a fully qualified domain name, no scheme). Once deployed, you will be able to access 
-the Grafana dashboard for logs monitoring at your ingress domain + `/monitoring`.
+(as a fully qualified domain name, no scheme). Once deployed, you will be able to access the Grafana dashboard for logs monitoring at your ingress domain + `/monitoring/explore`.
 
 ## Using external secrets
 
