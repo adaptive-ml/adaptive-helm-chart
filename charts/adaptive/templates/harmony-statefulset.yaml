@@ -89,6 +89,14 @@ spec:
               value: "{{ $ports.torch.containerPort }}"
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
+            - name: CONTROL_PLANE_URL
+              value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}"
+            - name: GROUP
+              value: {{ .Values.harmony.group }}
+            - name: PARTITION_KEY
+              value: {{ .Values.harmony.partitionKey }}
+            - name: SERVICE_URL
+              value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
             - name: ADAPTIVE_MODE

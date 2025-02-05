@@ -63,6 +63,9 @@ harmony:
     tag: harmony:latest   # Add the harmony image tag
     pullPolicy: Always
 
+  group: default # Visible name of the group for this statefulset
+  partitionKey: default-statefulset # Partition name, should be unique across other groups
+
   replicaCount: 1
 
   # Should be equal to, or a divisor of the # of GPUs on each node
