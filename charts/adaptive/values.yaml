@@ -63,8 +63,8 @@ harmony:
     tag: harmony:latest   # Add the harmony image tag
     pullPolicy: Always
 
-  group: default # Visible name of the group for this statefulset
-  partitionKey: default-statefulset # Partition name, should be unique across other groups
+  group: default   # Visible name of the group for this statefulset
+  partitionKey: default-statefulset   # Partition name, should be unique across other groups
 
   replicaCount: 1
 
@@ -91,7 +91,7 @@ harmony:
   podLabels: {}
   extraEnvVars: {}
 
-  inferenceFleet: [] # Uncomment to deploy new partitions to handle inference
+  inferenceFleet: []   # Uncomment to deploy new partitions to handle inference
   #   - name: "Inference Pool"
   #     replicaCount: 0
 
