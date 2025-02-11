@@ -104,6 +104,4 @@ affinity: {}
 azure:  # secret names/keys for azure blob storage to proxy
   storageAccount:
     name: "your azure storage account name"
-    accessKey:
-      secretName: "adaptiveengine-storage-account"
-      secretKey:  "accessKey"
+    accessKey: "your azure storage access key"

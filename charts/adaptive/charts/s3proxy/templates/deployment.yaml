@@ -54,8 +54,8 @@ spec:
             - name: JCLOUDS_CREDENTIAL
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.azure.storageAccount.accessKey.secretName }}
-                  key: {{ .Values.azure.storageAccount.accessKey.secretKey }}
+                  name: {{ include "s3proxy.fullname" . }}
+                  key: targetCredential
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
