@@ -7,17 +7,17 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: nginx
+  repository: andrewgaul/s3proxy
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "2.6.0"
 
 # This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 # This is to override the chart name.
 nameOverride: ""
-fullnameOverride: ""
+fullnameOverride: "adaptive-s3proxy"
 
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
@@ -56,17 +56,13 @@ service:
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 80
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources:
+  limits:
+    cpu: 1000m
+    memory: 250Mi
+  requests:
+    cpu: 200m
+    memory: 250Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
@@ -84,7 +80,7 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
-  targetMemoryUtilizationPercentage: 90
+  targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
 volumes: []
@@ -104,3 +100,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+azure:  # secret names/keys for azure blob storage to proxy
+  storageAccount:
+    name: "your azure storage account name"
+    accessKey:
+      secretName: "adaptiveengine-storage-account"
+      secretKey:  "accessKey"

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: s3proxy
-description: A Helm chart for Kubernetes
+description: s3 adapter for object storage providers which don't provide s3 api 
 
 # A chart can be either an 'application' or a 'library' chart.
 #

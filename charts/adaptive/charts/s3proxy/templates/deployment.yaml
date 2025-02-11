@@ -36,7 +36,7 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-hel^m          env:
+          env:
             - name: S3PROXY_AUTHORIZATION
               value: none
             - name: JCLOUDS_IDENTITY

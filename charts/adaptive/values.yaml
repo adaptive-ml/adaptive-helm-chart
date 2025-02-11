@@ -118,3 +118,9 @@ controlPlane:
   #     effect: "NoSchedule"
 
   extraEnvVars: {}
+
+s3proxy:  # for azure deployments only, and any other object storage system not exposing s3 api
+  enabled: false
+  azure:
+    storageAccount: # the storage account to connect proxy to
+      name: "[your azure storage account name]"
