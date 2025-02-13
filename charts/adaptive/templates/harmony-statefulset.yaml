@@ -95,7 +95,7 @@ spec:
             - name: AWS_ENDPOINT_URL
               value: http://{{ .Values.s3proxy.fullnameOverride }}
             - name: S3_FORCE_PATH_STYLE
-              value: true
+              value: "true"
             {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
