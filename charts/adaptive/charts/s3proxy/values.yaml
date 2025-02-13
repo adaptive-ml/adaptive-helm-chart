@@ -121,5 +121,7 @@ readinessProbe:
 
 azure:  # secret names/keys for azure blob storage to proxy
   storageAccount:
-    name: "your azure storage account name"
-    accessKey: "your azure storage access key"
+    #  -- Azure storage account name
+    name: your_azure_account_name
+    #  -- Azure access key
+    accessKey: your_azure_access_key
