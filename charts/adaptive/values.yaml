@@ -121,6 +121,7 @@ controlPlane:
 
 s3proxy:  # set s3proxy.enabled=true for azure deployments only, and any other object storage system not exposing s3 api
   enabled: false
+  fullnameOverride: "adaptive-s3proxy"
   azure:
     storageAccount:  # the storage account to connect proxy to
       name: "[your azure storage account name]"

@@ -91,6 +91,12 @@ spec:
               value: "{{ $ports.queue.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
+            {{- if .Values.s3proxy.enabled }}
+            - name: AWS_ENDPOINT_URL
+              value: http://{{ .Values.s3proxy.fullnameOverride }}
+            - name: S3_FORCE_PATH_STYLE
+              value: true
+            {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
             {{- if .Values.harmony.extraEnvVars }}
