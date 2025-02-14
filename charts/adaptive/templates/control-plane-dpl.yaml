@@ -60,8 +60,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: dbUrl
-            - name: ADAPTIVE_HARMONY__URL
-              value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
             - name: ADAPTIVE_SERVER__BIND
               value: "0.0.0.0:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL

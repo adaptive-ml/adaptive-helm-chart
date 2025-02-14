@@ -1,38 +1,48 @@
 {{- $harmonySettings := include "adaptive.harmony.settings" . | fromJson }}
+
+{{- if .Values.harmony.inferenceFleet }}
+{{- range $pool := .Values.harmony.inferenceFleet }}
+
+{{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}
+---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: {{ include "adaptive.harmony.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | snakecase }}
+  namespace: {{ $.Release.Namespace}}
   labels:
-    {{- include "adaptive.labels" . | nindent 4 }}
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+    {{- include "adaptive.labels" $ | nindent 4 }}
+    {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 4 }}
+    inference-pool: {{ $pool.name | snakecase }}
 spec:
-  serviceName: {{ include "adaptive.harmony.headlessService.fullname" . }}
-  replicas: {{ .Values.harmony.replicaCount | default 1 | int }}
+  replicas: {{ $pool.replicaCount | default 1 | int }}
+  strategy:
+    type: RollingUpdate
   selector:
     matchLabels:
-      {{- include "adaptive.harmony.selectorLabels" . | nindent 6}}
+      {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 6}}
+      inference-pool: {{ $pool.name | snakecase }}
   template:
     metadata:
-      {{- with .Values.harmony.podAnnotations }}
+      {{- with $poolMerged.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "adaptive.labels" . | nindent 8 }}
-        {{- include "adaptive.harmony.selectorLabels" . | nindent 8 }}
-        {{- with .Values.harmony.podLabels }}
+        {{- include "adaptive.labels" $ | nindent 8 }}
+        {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 8 }}
+        inference-pool: {{ $pool.name | snakecase }}
+        {{- with $pool.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- if .Values.serviceAccount.name }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if $.Values.serviceAccount.name }}
+      serviceAccountName: {{ $.Values.serviceAccount.name }}
       {{- end }}
       nodeSelector:
-         {{- with .Values.harmony.nodeSelector}}
-         {{ toYaml . }}
-         {{- end}}
+        {{- with $poolMerged.nodeSelector }}
+        {{ toYaml . }}
+        {{- end}}
       tolerations:
         - key: "nvidia.com/gpu"
           operator: "Exists"
@@ -50,21 +60,21 @@ spec:
             mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
       containers:
         - name: harmony
-          image: "{{ include "adaptive.harmony.imageUri" . }}"
-          imagePullPolicy: {{ .Values.harmony.image.pullPolicy }}
+          image: "{{ include "adaptive.harmony.imageUri" $ }}"
+          imagePullPolicy: {{ $.Values.harmony.image.pullPolicy }}
           resources:
             limits:
-              {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
-              {{- if .Values.harmony.gpusPerReplica}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
+              {{- toYaml $poolMerged.resources.limits | nindent 14 }}
+              {{- if $poolMerged.gpusPerReplica}}
+              nvidia.com/gpu: {{ $poolMerged.gpusPerReplica }}
               {{- end}}
             requests:
-              {{- toYaml .Values.harmony.resources.requests | nindent 14 }}
-              {{- if .Values.harmony.gpusPerReplica}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
+              {{- toYaml $poolMerged.resources.requests | nindent 14 }}
+              {{- if $poolMerged.gpusPerReplica }}
+              nvidia.com/gpu: {{ $poolMerged.gpusPerReplica }}
               {{- end}}
           ports:
-            {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+            {{- $ports := include "adaptive.harmony.ports" $ | fromJson }}
             - containerPort: {{ $ports.http.containerPort }}
               name: {{ $ports.http.name }}
             - containerPort: {{ $ports.queue.containerPort }}
@@ -73,36 +83,42 @@ spec:
               name: {{ $ports.torch.name }} 
           envFrom:
             - secretRef:
-                name: {{ include "adaptive.harmony.configSecret.fullname" . }}
+                name: {{ include "adaptive.harmony.configSecret.fullname" $ }}
           env:
-            - name: ORDINAL
+            - name: MY_POD_NAME
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
+                  fieldPath: metadata.name
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: ORDINAL
+              value: 0
             - name: GPU_COUNT
-              value: "{{ .Values.harmony.gpusPerReplica | default 1 }}"
+              value: "{{ $poolMerged.gpusPerReplica | default 1 }}"
             - name: WORLD_SIZE
-              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerReplica) | default .Values.harmony.replicaCount }}"
+              value: "{{ $poolMerged.gpusPerReplica | default 1 }}"
             - name: MASTER_ADDR
-              value: "{{ include "adaptive.harmony.fullname" . }}-0.{{ include "adaptive.harmony.headlessService.fullname" . }}"
+              value: "127.0.0.1"
             - name: MASTER_PORT
               value: "{{ $ports.torch.containerPort }}"
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
-              value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}"
+              value: "http://{{ include "adaptive.controlPlane.service.fullname" $ }}"
             - name: GROUP
-              value: {{ .Values.harmony.group }}
+              value: {{ $pool.name }}
             - name: PARTITION_KEY
-              value: {{ .Values.harmony.partitionKey }}
+              value: "$(MY_POD_NAME)"
             - name: SERVICE_URL
-              value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
+              value: "http://$(MY_POD_IP):{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
             - name: ADAPTIVE_MODE
               value: PROD
-            {{- if .Values.harmony.extraEnvVars }}
-            {{- range $key, $value := .Values.harmony.extraEnvVars }}
+            {{- if $poolMerged.extraEnvVars }}
+            {{- range $key, $value := $poolMerged.extraEnvVars }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
@@ -124,8 +140,11 @@ spec:
           emptyDir: {}
         - name: harmony-settings-volume
           configMap:
-            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" . }}
+            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" $ }}
         - name: dshm
           emptyDir:
             medium: Memory
             sizeLimit: 8Gi
+
+{{- end }}
+{{- end }}
