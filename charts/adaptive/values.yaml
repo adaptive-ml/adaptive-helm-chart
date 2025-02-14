@@ -88,6 +88,9 @@ harmony:
 
   podAnnotations:
     ingest-adaptive-logs: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: 50053
   podLabels: {}
   extraEnvVars: {}
 
@@ -113,6 +116,10 @@ controlPlane:
 
   podAnnotations:
     ingest-adaptive-logs: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: /metrics
+    prometheus.io/port: 9000
+    
 
   podLabels: {}
 
