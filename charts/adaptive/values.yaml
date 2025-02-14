@@ -119,8 +119,6 @@ controlPlane:
     prometheus.io/scrape: "true"
     prometheus.io/path: /metrics
     prometheus.io/port: 9000
-    
-
   podLabels: {}
 
   nodeSelector: {}
@@ -146,7 +144,6 @@ prometheus-community:
 
   alertmanager:
     ## disable alert manager
-    ##
     enabled: false
 
   server:
