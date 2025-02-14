@@ -118,3 +118,49 @@ controlPlane:
   #     effect: "NoSchedule"
 
   extraEnvVars: {}
+
+# prometheus stack settings
+prometheus-community:
+  prometheus-node-exporter:
+    enabled: false
+
+  prometheus-pushgateway:
+    enabled: false
+
+  kube-state-metrics:
+    enabled: false
+
+  alertmanager:
+    ## disable alert manager
+    ##
+    enabled: false
+
+  server:
+    name: prometheus
+
+    # restrict prometheus scope to the namespace it's installed in
+    releaseNamespace: true
+
+    ## Prometheus server container image
+    image:
+      repository: quay.io/prometheus/prometheus
+      # if not set appVersion field from Chart.yaml is used
+      tag: "v3.1.0"
+      # When digest is set to a non-empty value, images will be pulled by digest (regardless of tag value).
+      digest: ""
+      pullPolicy: IfNotPresent
+
+    replicaCount: 2
+
+    statefulSet:
+      enabled: true
+
+    ## Prometheus data retention period
+    retention: "30d"
+    persistentVolume:
+      ## when true, prometheus uses PVC defined using "storageClass"
+      enabled: false
+      size: 10Gi
+
+    ## storage class
+    storageClass: "gp3"
