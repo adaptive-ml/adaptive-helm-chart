@@ -1,0 +1,26 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject  # CRD managed by Keda operator
+metadata:
+  name: {{ include "adaptive.harmony.deployment.fullname" $ }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "adaptive.harmony.deployment.fullname" $ }}
+  pollingInterval:  30                                      # Optional. Default: 30 seconds
+  cooldownPeriod:   180                                     # Optional. Default: 300 seconds
+  initialCooldownPeriod:  0                                 # Optional. Default: 0 seconds
+  minReplicaCount:  1                                       # Optional. Default: 0
+  maxReplicaCount:  10                                     # Optional. Default: 100
+  triggers:
+  - type: prometheus
+    metadata:
+      # prometheus endpoint
+      serverAddress: http://adaptive-prometheus
+      #  get the percent of timed-out requests (TODO adjust naming and labels)
+      query: (sum(rate(nb_timeouts[5m])) / clamp_min(sum(rate(nb_requests[5m])), 1)) * 100   
+      threshold: '10.0'
+      activationThreshold: '0'

@@ -147,6 +147,8 @@ prometheus:
     enabled: false
 
   server:
+    fullnameOverride: "adaptive-prometheus"
+
     name: prometheus
 
     # restrict prometheus scope to the namespace it's installed in
@@ -381,3 +383,9 @@ prometheus:
             - source_labels: [__meta_kubernetes_pod_node_name]
               action: replace
               target_label: node
+
+
+keda:
+  crds:
+    # -- Defines whether the KEDA CRDs have to be installed or not.
+    install: true
