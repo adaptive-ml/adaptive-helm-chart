@@ -336,6 +336,7 @@ prometheus:
         # * `prometheus-adaptive/path`: If the metrics path is not `/metrics` override this.
         # * `prometheus-adaptive/port`: Scrape the pod on the indicated port instead of the default of `9102`.
         - job_name: 'kubernetes-pods'
+          scrape_interval: 5s
           honor_labels: true
 
           kubernetes_sd_configs:
