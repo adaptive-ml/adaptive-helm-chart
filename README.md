@@ -83,7 +83,7 @@ harmony:
 
 See the full `charts/adaptive/values.yaml` file for further customization.
 
-##### 4. Deploy the chart with:
+##### 4. Deploy the chart with
 
 ```
 helm install adaptive adaptive/adaptive -f ./values.yaml
@@ -117,3 +117,8 @@ helm install external-secrets \
 ```
 helm install adaptive adaptive/adaptive -f charts/adaptive/values_external_secret.yaml
 ```
+
+## About persistence and volumes
+
+- **monitoring** stack helm chart: by default Logs and Grafana data are not persisted. You should enable `grafana.enablePersistence=true` and set `grafana.storageClass` to an existing storage class name in target k8s cluster.
+- **adaptive** helm chart: it installs Prometheus which may require metrics data being persisted. By default `prometheus-community.server.persistentVolume.enabled=false`. When enabling peristence, i'll have to specify the used storage class name: `prometheus-community.server.storageClass`.

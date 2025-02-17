@@ -51,8 +51,8 @@ spec:
               containerPort: {{ .Values.grafana.ports.port }}
               protocol: TCP
           volumeMounts:
-          {{- if eq .Values.global.env.local false }}
-          - name: {{ .Values.grafana.sc.name}}
+          {{- if eq .Values.grafana.enablePersistence false }}
+          - name: {{ .Values.grafana.storageClass }}
             mountPath: /var/lib/grafana
           {{- end }}
           - name: datasource
@@ -93,8 +93,8 @@ spec:
                 path: dashboard.json
               - key: dashboard
                 path: dashboard.yml
-        {{- if eq .Values.global.env.local false }}
-        - name: {{ .Values.grafana.sc.name }}
+        {{- if eq .Values.grafana.enablePersistence false }}
+        - name: {{ .Values.grafana.storageClass }}
           persistentVolumeClaim:
             claimName: {{ .Values.grafana.pvc.name }}
         {{- end }}

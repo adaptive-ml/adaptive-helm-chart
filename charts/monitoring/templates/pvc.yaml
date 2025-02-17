@@ -1,11 +1,11 @@
-{{- if eq .Values.global.env.local false }}
+{{- if eq .Values.grafana.enablePersistence false }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ .Values.grafana.pvc.name }}
   namespace: {{ .Values.global.namespace }}
 spec:
-  storageClassName: {{ .Values.grafana.sc.name}}
+  storageClassName: {{ .Values.grafana.storageClass }}
   accessModes:
     - ReadWriteOnce
   resources:
