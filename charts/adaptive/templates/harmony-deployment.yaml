@@ -109,6 +109,8 @@ spec:
               value: "http://{{ include "adaptive.controlPlane.service.fullname" $ }}"
             - name: GROUP
               value: {{ $pool.name }}
+            - name: GROUP_CAPABILITIES
+              value: "INFERENCE"
             - name: PARTITION_KEY
               value: "$(MY_POD_NAME)"
             - name: SERVICE_URL
