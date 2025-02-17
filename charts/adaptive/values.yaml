@@ -132,7 +132,7 @@ controlPlane:
   extraEnvVars: {}
 
 # prometheus stack settings
-prometheus-community:
+prometheus:
   prometheus-node-exporter:
     enabled: false
 
