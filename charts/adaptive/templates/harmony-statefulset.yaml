@@ -93,6 +93,8 @@ spec:
               value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}"
             - name: GROUP
               value: {{ .Values.harmony.group }}
+            - name: GROUP_CAPABILITIES
+              value: "TRAINING,INFERENCE,EVALUATION"
             - name: PARTITION_KEY
               value: {{ .Values.harmony.partitionKey }}
             - name: SERVICE_URL
