@@ -1,15 +1,21 @@
+{{- if .Values.harmony.inferenceFleet }}
+{{- range $pool := .Values.harmony.inferenceFleet }}
+
+{{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}
+---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject  # CRD managed by Keda operator
 metadata:
-  name: {{ include "adaptive.harmony.deployment.fullname" $ }}
+  name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | snakecase }}
   labels:
-    {{- include "adaptive.labels" . | nindent 4 }}
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+    {{- include "adaptive.labels" $ | nindent 4 }}
+    {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 4 }}
+    inference-pool: {{ $pool.name | snakecase }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "adaptive.harmony.deployment.fullname" $ }}
+    name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | snakecase }}
   pollingInterval:  30                                      # Optional. Default: 30 seconds
   cooldownPeriod:   180                                     # Optional. Default: 300 seconds
   initialCooldownPeriod:  0                                 # Optional. Default: 0 seconds
@@ -20,7 +26,10 @@ spec:
     metadata:
       # prometheus endpoint
       serverAddress: http://adaptive-prometheus
-      #  get the percent of timed-out requests (TODO adjust naming and labels)
-      query: (sum(rate(nb_timeouts[5m])) / clamp_min(sum(rate(nb_requests[5m])), 1)) * 100   
+      #  get the percent of timed-out requests
+      query: sum(rate(nb_timeouts{pool="{{ $pool.name }}"}[5m])) / clamp_min(sum(rate(harmony_generation_requests{pool="{{ $pool.name }}"}[5m])), 1) * 100
+      #  TODO PASS TRESHOLD from values
       threshold: '10.0'
       activationThreshold: '0'
+{{- end }}
+{{- end }}
