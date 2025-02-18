@@ -134,3 +134,18 @@ helm install adaptive adaptive/adaptive -f charts/adaptive/values_external_secre
 
 - **monitoring** stack helm chart: by default Logs and Grafana data are not persisted. You should enable `grafana.enablePersistence=true` and set `grafana.storageClass` to an existing storage class name in target k8s cluster.
 - **adaptive** helm chart: it installs Prometheus which may require metrics data being persisted. By default `prometheus.server.persistentVolume.enabled=false`. When enabling peristence, i'll have to specify the used storage class name: `prometheus.server.storageClass`.
+
+## Compatibility with Azure blob storage
+
+The deployment supports any s3-compliant buckets, and Azure bucket storage out-of-the box.
+
+The default is s3, and to enable using Azure blob storage instead, please set this override in the helm values:
+
+```yaml
+s3proxy:
+  enabled: true
+  azure:
+    storageAccount:
+      name: your_azure_account_name
+      accessKey: your_azure_access_key
+```

@@ -389,3 +389,13 @@ keda:
   crds:
     # -- Defines whether the KEDA CRDs have to be installed or not.
     install: true
+
+s3proxy:  # set s3proxy.enabled=true for deployments using azure blob storage instead of s3
+  enabled: false
+  fullnameOverride: "adaptive-s3proxy"
+  azure:  # secret names/keys for azure blob storage to proxy
+    storageAccount:
+      #  -- Azure storage account name
+      name: your_azure_account_name
+      #  -- Azure access key
+      accessKey: your_azure_access_key
