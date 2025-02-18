@@ -3,6 +3,26 @@ entries:
   adaptive:
   - apiVersion: v2
     appVersion: "1.0"
+    created: "2025-02-18T10:14:22.069358989Z"
+    dependencies:
+    - condition: s3proxy.enabled
+      name: s3proxy
+      repository: ""
+      version: 0.1.0
+    description: Helm Chart for Adaptive Engine
+    digest: 292ebc556ced0cff79f189e0bbc537c54a1f611eb5d7036b1c140183cc5a4984
+    icon: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAXVBMVEXt6ujv6+fr6+fv6enr6efv79/p6ent6+jU0s9ZVlNAPTqjoJ3g3tu7ubavrarHxcMnJCEzMC00MS6WlJFyb2xMSUaKh4SKiIV+e3jIxsNxbmtlYl9lY2Dh39xNSkednTH/AAAAB3RSTlO/QEAwkBAwtdHlmAAAAK9JREFUeF7N00cSgzAMBVCnSq6Fnnr/YyYEbDFBZs1fafFmrDIWp8NmLkLAZo67A/iQ3zSmCJrwS18COszBAlAJSB7okGNZMBBwLMAqAVXooUtAF8Br7rIFDhjvwU0gekT8AyjHp7VBxIFGJXCr0g5p2prAYkWW6mgIuJByhzrXPYEuAwUqg8iBN0jCBCw9sag116QHeNJJuTHpJLheVDvdwMkx9WrVFvf7cc5iM9cPZL8jDpv6dmsAAAAASUVORK5CYII=
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - name: adaptive-ml
+      url: https://www.adaptive-ml.com/
+    name: adaptive
+    type: application
+    urls:
+    - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/adaptive-0.1.0/adaptive-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v2
+    appVersion: "1.0"
     created: "2025-02-17T17:32:52.430117227Z"
     description: Helm Chart for Adaptive Engine
     digest: c5384fa50b85662f8331d69f70307e2e3b71fe345f9075d3cc9a053d33bac227
@@ -101,4 +121,4 @@ entries:
     urls:
     - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/monitoring-0.1.0/monitoring-0.1.0.tgz
     version: 0.1.0
-generated: "2025-02-17T17:32:52.430145359Z"
+generated: "2025-02-18T10:14:22.069387653Z"
