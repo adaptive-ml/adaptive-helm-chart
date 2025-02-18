@@ -117,3 +117,18 @@ helm install external-secrets \
 ```
 helm install adaptive adaptive/adaptive -f charts/adaptive/values_external_secret.yaml
 ```
+
+## Compatibility with Azure blob storage
+
+The deployment supports any s3-compliant buckets, and Azure bucket storage out-of-the box.
+
+The default is s3, and to enable using Azure blob storage instead, please set this override in the helm values:
+
+```yaml
+s3proxy:
+  enabled: true
+  azure:
+    storageAccount:
+      name: your_azure_account_name
+      accessKey: your_azure_access_key
+```
