@@ -37,6 +37,9 @@ Control plane and harmony components full names
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+{{- define "adaptive.harmony.deployment.fullname"}}
+{{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
 
 
 {{/*
@@ -95,6 +98,11 @@ app.kubernetes.io/component: control-plane
 
 {{- define "adaptive.harmony.selectorLabels" -}}
 app.kubernetes.io/component: harmony
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.harmony.deployment.selectorLabels" -}}
+app.kubernetes.io/component: harmony-dpl
 {{ include "adaptive.sharedSelectorLabels" . }}
 {{- end }}
 
