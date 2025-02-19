@@ -19,17 +19,17 @@ spec:
   pollingInterval:  30                                      # Optional. Default: 30 seconds
   cooldownPeriod:   180                                     # Optional. Default: 300 seconds
   initialCooldownPeriod:  0                                 # Optional. Default: 0 seconds
-  minReplicaCount:  1                                       # Optional. Default: 0
-  maxReplicaCount:  10                                     # Optional. Default: 100
+  minReplicaCount:  {{ $pool.minReplicaCount | default 1 | int }}   # Optional. Default: 1
+  maxReplicaCount:  {{ $pool.maxReplicaCount | default 2 | int }}   # Optional. Default: 2
   triggers:
   - type: prometheus
     metadata:
       # prometheus endpoint
       serverAddress: http://adaptive-prometheus
       #  get the percent of timed-out requests
-      query: sum(rate(nb_timeouts{pool="{{ $pool.name }}"}[5m])) / clamp_min(sum(rate(harmony_generation_requests{pool="{{ $pool.name }}"}[5m])), 1) * 100
+      query: sum(rate(harmony_ttft_timeout_count{pool="{{ $pool.name }}"}[5m])) / clamp_min(sum(rate(harmony_ttft_ms_count{pool="{{ $pool.name }}"}[5m])), 1) * 100
       #  TODO PASS TRESHOLD from values
-      threshold: '10.0'
+      threshold: '5.0'
       activationThreshold: '0'
 {{- end }}
 {{- end }}

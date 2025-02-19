@@ -15,7 +15,7 @@ metadata:
     {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 4 }}
     inference-pool: {{ $pool.name | snakecase }}
 spec:
-  replicas: {{ $pool.replicaCount | default 1 | int }}
+  replicas: {{ $pool.minReplicaCount | default 1 | int }}
   strategy:
     type: RollingUpdate
   selector:

@@ -90,13 +90,14 @@ harmony:
     ingest-adaptive-logs: "true"
     prometheus.io/scrape: "adaptive"
     prometheus.io/path: /metrics
-    prometheus.io/port: 50053
+    prometheus.io/port: "50053"
   podLabels: {}
   extraEnvVars: {}
 
   inferenceFleet: []   # Uncomment to deploy new partitions to handle inference
   #   - name: "Inference Pool"
-  #     replicaCount: 0
+  #     minReplicaCount: 1
+  #     maxReplicaCount: 5
 
 controlPlane:
   image:
@@ -118,7 +119,7 @@ controlPlane:
     ingest-adaptive-logs: "true"
     prometheus.io/scrape: "adaptive"
     prometheus.io/path: /metrics
-    prometheus.io/port: 9000
+    prometheus.io/port: "9000"
   podLabels: {}
 
   nodeSelector: {}
@@ -170,6 +171,7 @@ prometheus:
 
     ## Prometheus data retention period
     retention: "30d"
+
     persistentVolume:
       ## when true, prometheus uses PVC defined using "storageClass"
       enabled: false
@@ -178,7 +180,7 @@ prometheus:
     ## storage class
     storageClass: "gp3"
 
-  ## Prometheus scraping configuration
+  ## Prometheus scraping configuration (adavanced - do not change this )
   serverFiles:
     prometheus.yml:
       rule_files:
