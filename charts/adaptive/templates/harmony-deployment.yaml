@@ -8,12 +8,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | snakecase }}
+  name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | kebabcase }}
   namespace: {{ $.Release.Namespace}}
   labels:
     {{- include "adaptive.labels" $ | nindent 4 }}
     {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 4 }}
-    inference-pool: {{ $pool.name | snakecase }}
+    inference-pool: {{ $pool.name | kebabcase }}
 spec:
   replicas: {{ $pool.minReplicaCount | default 1 | int }}
   strategy:
@@ -21,7 +21,7 @@ spec:
   selector:
     matchLabels:
       {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 6}}
-      inference-pool: {{ $pool.name | snakecase }}
+      inference-pool: {{ $pool.name | kebabcase }}
   template:
     metadata:
       {{- with $poolMerged.podAnnotations }}
@@ -31,7 +31,7 @@ spec:
       labels:
         {{- include "adaptive.labels" $ | nindent 8 }}
         {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 8 }}
-        inference-pool: {{ $pool.name | snakecase }}
+        inference-pool: {{ $pool.name | kebabcase }}
         {{- with $pool.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -96,7 +96,7 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: ORDINAL
-              value: 0
+              value: "0"
             - name: GPU_COUNT
               value: "{{ $poolMerged.gpusPerReplica | default 1 }}"
             - name: WORLD_SIZE

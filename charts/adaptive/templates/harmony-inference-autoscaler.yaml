@@ -6,16 +6,16 @@
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject  # CRD managed by Keda operator
 metadata:
-  name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | snakecase }}
+  name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | kebabcase }}
   labels:
     {{- include "adaptive.labels" $ | nindent 4 }}
     {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 4 }}
-    inference-pool: {{ $pool.name | snakecase }}
+    inference-pool: {{ $pool.name | kebabcase }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | snakecase }}
+    name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | kebabcase }}
   pollingInterval:  30                                      # Optional. Default: 30 seconds
   cooldownPeriod:   180                                     # Optional. Default: 300 seconds
   initialCooldownPeriod:  0                                 # Optional. Default: 0 seconds
