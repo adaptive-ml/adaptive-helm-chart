@@ -41,7 +41,7 @@ spec:
             - name: GF_SERVER_DOMAIN
               value: "{{ .Values.grafana.proxy.domain }}"
             - name: GF_SERVER_ROOT_URL
-              value: "https://{{ .Values.grafana.proxy.domain }}/monitoring/"
+              value: "{{ .Values.grafana.proxy.scheme }}://{{ .Values.grafana.proxy.domain }}/monitoring/"
             {{- end }}
           securityContext:
             allowPrivilegeEscalation: false            

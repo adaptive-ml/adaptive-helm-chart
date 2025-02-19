@@ -59,6 +59,7 @@ grafana:
   proxy:
     enable: true  # Whether to enable grafana in reverse proxy mode
     domain: "www.your-adaptive-domain.com"  # The ingress domain host for grafana ui; should match the root URL used in adaptive chart
+    scheme: "https" # do not change unless you don't have ssl (localhost hosts for example)
   selectorLabels:
     app: grafana
   configmap:
