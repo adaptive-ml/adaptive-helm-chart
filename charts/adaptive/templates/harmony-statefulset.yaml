@@ -75,6 +75,8 @@ spec:
             - secretRef:
                 name: {{ include "adaptive.harmony.configSecret.fullname" . }}
           env:
+            - name: IMAGE_TAG
+              value: {{ .Values.harmony.image.tag | quote }}
             - name: ORDINAL
               valueFrom:
                 fieldRef:

@@ -69,6 +69,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: oidc_providers
+            - name: IMAGE_TAG
+              value: {{ .Values.controlPlane.image.tag | quote }}
             - name: ADAPTIVE_AUTH__SESSION__SECURE
               value: {{ .Values.auth.session.secure | default "true" | quote }}
             - name: ADAPTIVE_AUTH__SESSION__EXPIRATION_SECONDS
