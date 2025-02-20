@@ -5,8 +5,6 @@
 replicaCount: 1
 
 global:
-  env:
-    local: true
   namespace: default
   image:
     pullPolicy: IfNotPresent
@@ -77,5 +75,5 @@ grafana:
   pvc:
     name: grafana
     size: 2Gi
-  sc:
-    name: grafana
+  storageClass: ""  # the name of the storage class.
+  enablePersistence: false  # whether the volumes persistence is enabled, requires storageClass to be set to an existing storage class in target k8s cluster

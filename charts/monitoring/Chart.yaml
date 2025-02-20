@@ -1,6 +1,7 @@
 apiVersion: v2
 name: monitoring
 description: A Helm chart for installing monitoring stack for adaptive engine
+kubeVersion: ">=1.26.0-0"
 dependencies:
   - name: "loki"
     version: "0.1.0"
