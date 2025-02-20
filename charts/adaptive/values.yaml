@@ -135,3 +135,30 @@ s3proxy:  # set s3proxy.enabled=true for deployments using azure blob storage in
       name: your_azure_account_name
       #  -- Azure access key
       accessKey: your_azure_access_key
+
+
+tensorboard:
+  # If set to true, harmony jobs will use tensorboard for logging
+  # A tensorboard sidecar pod will be deployed next to the harmony 
+  # ordinal 0 pod in the statefulset
+  enabled: false
+  image:
+    imageUri: tensorflow/tensorflow:latest
+    pullPolicy: IfNotPresent
+  resources: 
+    limits: 
+      cpu: 1000m
+      memory: 1Gi
+    requests: 
+      cpu: 500m
+      memory: 1Gi
+  # Configure peristence of the logs,
+  # by default use an ephemeral volume, so data will be lost after a restart.
+  persistentVolume:
+    enabled: false
+    annotations: {}
+    labels: {}
+    accessModes: {}
+    storageClass: ""
+  emptyDir:
+    sizeLimit: null
