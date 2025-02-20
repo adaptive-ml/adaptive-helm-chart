@@ -51,8 +51,8 @@ spec:
               containerPort: {{ .Values.grafana.ports.port }}
               protocol: TCP
           volumeMounts:
-          {{- if eq .Values.global.env.local false }}
-          - name: {{ .Values.grafana.sc.name}}
+          {{- if .Values.grafana.enablePersistence }}
+          - name: {{ .Values.grafana.storageClass }}
             mountPath: /var/lib/grafana
           {{- end }}
           - name: datasource
@@ -81,39 +81,20 @@ spec:
       volumes:
         - name: datasource
           configMap:
-            name: {{ .Values.grafana.configmap.name}}
+            name: {{ .Values.grafana.configmap.name }}
             items:
               - key: datasource
                 path: datasource.yml
         - name: dashboard
           configMap:
-            name: {{ .Values.grafana.configmap.name}}
+            name: {{ .Values.grafana.configmap.name }}
             items:
               - key: dashboard.json
                 path: dashboard.json
               - key: dashboard
                 path: dashboard.yml
-        {{- if eq .Values.global.env.local false }}
-        - name: {{ .Values.grafana.sc.name }}
+        {{- if .Values.grafana.enablePersistence }}
+        - name: {{ .Values.grafana.storageClass }}
           persistentVolumeClaim:
             claimName: {{ .Values.grafana.pvc.name }}
         {{- end }}
-
-
-
-              
-            
- #         livenessProbe:
- #           httpGet:
- #             path: /
- #             port: http
- #         readinessProbe:
- #           httpGet:
- #             path: /
- #             port: http
-
-
-#       - ./monitor/grafana.ini:/etc/grafana/grafana.ini
- #     - ./monitor/dashboard.json:/etc/dashboard.json
-#      - ./monitor/provision.yml:/etc/grafana/provisioning/datasources/datasource.yml
-#      - ./monitor/dashboards/:/etc/grafana/provisioning/dashboards/
