@@ -8,6 +8,18 @@ A Helm Chart to deploy Adaptive Engine.
 
 ---
 
+## Prerequisites
+
+1. Nvidia operator installed in the target k8s cluster: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
+2. k8s version >=1.26.
+
+3. For inference autoscaling. Adaptive engine supports horizontal pods scaling for inference fleets. This is automatic based on Qos metrics (TTFT), and technical metrics (required gpus vs available gpus). For the target k8s cluster to support nodes austocaling. Those requirements should be met:
+    - *Cluster Autoscaler* enabled and correctly configured.
+    - Node pool (or equivalent in your cloud provider) should allow scaling GPU nodes.
+    - Your cloud provider must support on-demand provisioning of GPU instances.
+
+4. Storage classes: for logs and Prometheus timeseries persistence. for further details see section `About persistence and volumes`
+
 ##### 1. Add the charts from this repository:
 
 ```
@@ -83,7 +95,7 @@ harmony:
 
 See the full `charts/adaptive/values.yaml` file for further customization.
 
-##### 4. Deploy the chart with:
+##### 4. Deploy the chart with
 
 ```
 helm install adaptive adaptive/adaptive -f ./values.yaml
@@ -117,6 +129,11 @@ helm install external-secrets \
 ```
 helm install adaptive adaptive/adaptive -f charts/adaptive/values_external_secret.yaml
 ```
+
+## About persistence and volumes
+
+- **monitoring** stack helm chart: by default Logs and Grafana data are not persisted. You should enable `grafana.enablePersistence=true` and set `grafana.storageClass` to an existing storage class name in target k8s cluster.
+- **adaptive** helm chart: it installs Prometheus which may require metrics data being persisted. By default `prometheus.server.persistentVolume.enabled=false`. When enabling peristence, i'll have to specify the used storage class name: `prometheus.server.storageClass`.
 
 ## Compatibility with Azure blob storage
 
