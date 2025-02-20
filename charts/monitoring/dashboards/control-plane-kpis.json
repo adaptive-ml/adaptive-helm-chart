@@ -181,12 +181,12 @@
                   "value": null
                 },
                 {
-                  "color": "green",
-                  "value": 0.97
+                  "color": "orange",
+                  "value": 0.9
                 },
                 {
-                  "color": "yellow",
-                  "value": 0.971
+                  "color": "dark-green",
+                  "value": 0.91
                 }
               ]
             },
@@ -227,7 +227,7 @@
             },
             "disableTextWrap": false,
             "editorMode": "code",
-            "expr": "(sum(rate(concorde_http_server_request_duration_seconds_count{http_response_status_code=~\"5..\"}[$__range])) * 100) / sum(rate(concorde_http_server_request_duration_seconds_count[$__range]))",
+            "expr": "(sum(rate(concorde_http_server_request_duration_seconds_count{http_response_status_code!~\"5..\"}[$__range])) * 100) / sum(rate(concorde_http_server_request_duration_seconds_count[$__range]))",
             "fullMetaSearch": false,
             "includeNullMetadata": true,
             "instant": false,
@@ -2008,13 +2008,13 @@
       ]
     },
     "time": {
-      "from": "now-5m",
+      "from": "now-12h",
       "to": "now"
     },
     "timepicker": {},
     "timezone": "browser",
     "title": "Control plane KPIs (http/database/interactions)",
     "uid": "ddlna2zs1zwg0c",
-    "version": 7,
+    "version": 9,
     "weekStart": ""
   }
