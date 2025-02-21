@@ -27,9 +27,9 @@ spec:
       # prometheus endpoint
       serverAddress: http://adaptive-prometheus
       #  get the percent of timed-out requests
-      query: sum(rate(harmony_ttft_timeout_count{pool="{{ $pool.name }}"}[5m])) / clamp_min(sum(rate(harmony_ttft_ms_count{pool="{{ $pool.name }}"}[5m])), 1) * 100
+      query: clamp_max(sum(rate(harmony_ttft_timeout_count{pool="{{ $pool.name }}"}[5m])) / clamp_min(sum(rate(harmony_generation_requests_count{pool="{{ $pool.name }}"}[5m])), 0.00001), 1)
       #  TODO PASS TRESHOLD from values
-      threshold: '5.0'
+      threshold: '0.1'
       activationThreshold: '0'
 {{- end }}
 {{- end }}
