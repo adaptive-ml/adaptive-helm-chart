@@ -28,7 +28,7 @@ helm show values adaptive/adaptive > values.yaml
 helm show values adaptive/monitoring > values.monitoring.yaml
 ```
 
-##### 3. Edit the values.yaml file to customize the Helm chart for your environment. Here are the key sections:
+##### 3. Edit the adaptive chart's `values.yaml` file to customize it for your environment. Here are the key sections:
 
 ###### Secrets for model registry, database and auth
 ```yaml
@@ -83,7 +83,7 @@ harmony:
 
 See the full `charts/adaptive/values.yaml` file for further customization.
 
-##### 4. Deploy the chart with:
+##### 4. Deploy the charts with:
 
 ```
 helm install adaptive adaptive/adaptive -f ./values.yaml
@@ -120,9 +120,9 @@ helm install adaptive adaptive/adaptive -f charts/adaptive/values_external_secre
 
 ## Compatibility with Azure blob storage
 
-The deployment supports any s3-compliant buckets, and Azure bucket storage out-of-the box.
+The Adaptive Helm chart supports any S3-compliant storage service, and Azure Blob Storage out-of-the box via [s3proxy](https://github.com/gaul/s3proxy). The default is S3.
 
-The default is s3, and to enable using Azure blob storage instead, please set this override in the helm values:
+To enable Azure Blob Storage, please set this override in the helm values:
 
 ```yaml
 s3proxy:
