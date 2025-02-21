@@ -145,11 +145,11 @@ tensorboard:
   image:
     imageUri: tensorflow/tensorflow:latest
     pullPolicy: IfNotPresent
-  resources: 
-    limits: 
+  resources:
+    limits:
       cpu: 1000m
       memory: 1Gi
-    requests: 
+    requests:
       cpu: 500m
       memory: 1Gi
   # Configure peristence of the logs,
