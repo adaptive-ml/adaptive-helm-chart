@@ -17,11 +17,12 @@ helm repo update adaptive
 ```
 
 You can then run `helm search repo adaptive` to see the charts.
-There are 2 charts in this repo: 
+There are 2 charts in this repo:
+
 - `adaptive`, the main chart to deploy Adaptive Engine
 - `monitoring`, an optional addon chart to monitor Adaptive Engine logs with Grafana
 
-##### 2. Get the default values.yaml configuration file: 
+##### 2. Get the default values.yaml configuration file:
 
 ```
 helm show values adaptive/adaptive > values.yaml
@@ -31,6 +32,7 @@ helm show values adaptive/monitoring > values.monitoring.yaml
 ##### 3. Edit the values.yaml file to customize the Helm chart for your environment. Here are the key sections:
 
 ###### Secrets for model registry, database and auth
+
 ```yaml
 secrets:
   # S3 bucket for model registry
@@ -59,7 +61,9 @@ secrets:
           # if true, user account will be created if it does not exist
           allow_sign_up: true
 ```
+
 ###### Container images
+
 ```yaml
 # Adaptive Registry you have been granted access to
 containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com
@@ -75,10 +79,25 @@ controlPlane:
 ```
 
 ###### GPU Resources
+
 ```yaml
 harmony:
-    # Should be equal to, or a divisor of the # of GPUs on each node
-    gpusPerReplica: 8
+  # Should be equal to, or a divisor of the # of GPUs on each node
+  gpusPerReplica: 8
+```
+
+###### Tensorboard support
+
+To track training job progress, you can enable tensorboard support.
+This will start a tensorboard server. By default the logs are not persisted and are saved in a temporary dir.
+
+```yaml
+tensorboard:
+  enabled: true # default to false
+  # Use the persistent volume config to enable log saving across restarts
+  persistentVolume:
+    enabled: true
+    storageClass: "..."
 ```
 
 See the full `charts/adaptive/values.yaml` file for further customization.
