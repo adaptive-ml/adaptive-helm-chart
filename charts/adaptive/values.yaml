@@ -139,7 +139,7 @@ s3proxy:  # set s3proxy.enabled=true for deployments using azure blob storage in
 
 tensorboard:
   # If set to true, harmony jobs will use tensorboard for logging
-  # A tensorboard sidecar pod will be deployed next to the harmony 
+  # A tensorboard sidecar pod will be deployed next to the harmony
   # ordinal 0 pod in the statefulset
   enabled: false
   image:
