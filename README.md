@@ -149,10 +149,26 @@ helm install external-secrets \
 helm install adaptive adaptive/adaptive -f charts/adaptive/values_external_secret.yaml
 ```
 
+## Inference placements and autoscaling
+
+It is possible to define harmony deployment groups dedicated to inference tasks. Below the example of the values override:
+
+```yaml
+harmony:
+  inferenceFleet:
+     - name: "Pool-A"
+       minReplicaCount: 1
+       maxReplicaCount: 5
+```
+
+Please note that the `autoscaling.enabled` is set to `false` by default. When disabled, the `maxReplicaCount` is ignored and the the pool has a fixed number of replicas equal to `minReplicaCount`.
+
+When `autoscaling.enabled=true`, the inference autoscaling is activated and the autoscaler can scale inference pool up to `maxReplicaCount` replicas for each.
+
 ## About persistence and volumes
 
 - **monitoring** stack helm chart: by default Logs and Grafana data are not persisted. You should enable `grafana.enablePersistence=true` and set `grafana.storageClass` to an existing storage class name in target k8s cluster.
-- **adaptive** helm chart: it installs Prometheus which may require metrics data being persisted. By default `prometheus.server.persistentVolume.enabled=false`. When enabling peristence, i'll have to specify the used storage class name: `prometheus.server.storageClass`.
+- **adaptive** helm chart: it installs Prometheus which may require metrics data being persisted. By default `prometheus.server.persistentVolume.enabled=false`. When enabling peristence, you will have to specify the used storage class name: `prometheus.server.storageClass`.
 
 ## Compatibility with Azure blob storage
 

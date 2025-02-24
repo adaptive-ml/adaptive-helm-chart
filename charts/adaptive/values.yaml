@@ -99,6 +99,11 @@ harmony:
   #     minReplicaCount: 1
   #     maxReplicaCount: 5
 
+autoscaling:
+  enabled: false    # whether to enable autoscaling for inference
+  coolDownPeriodSeconds: 180  # duration to await before scaling down pods
+  ttftTimeoutThreshold: 0.1   # propotion of timed out completion requests above which the autocaler decides to scale-out
+
 controlPlane:
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
@@ -178,7 +183,7 @@ prometheus:
       size: 10Gi
 
     ## storage class
-    storageClass: "gp3"
+    storageClass: ""
 
   ## Prometheus scraping configuration (adavanced - do not change this )
   serverFiles:
