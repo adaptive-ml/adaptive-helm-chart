@@ -17,7 +17,7 @@ spec:
     kind: Deployment
     name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | kebabcase }}
   pollingInterval:  30                                      # Optional. Default: 30 seconds
-  cooldownPeriod:   180                                     # Optional. Default: 300 seconds
+  cooldownPeriod:   180                                     # Optional. Default: 180 seconds
   initialCooldownPeriod:  0                                 # Optional. Default: 0 seconds
   minReplicaCount:  {{ $pool.minReplicaCount | default 1 | int }}   # Optional. Default: 1
   maxReplicaCount:  {{ $pool.maxReplicaCount | default 2 | int }}   # Optional. Default: 2
