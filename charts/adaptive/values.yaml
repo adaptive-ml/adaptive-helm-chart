@@ -142,8 +142,8 @@ tensorboard:
   # A tensorboard sidecar pod will be deployed next to the harmony
   # ordinal 0 pod in the statefulset
   enabled: false
+  imageUri: tensorflow/tensorflow:latest
   image:
-    imageUri: tensorflow/tensorflow:latest
     pullPolicy: IfNotPresent
   resources:
     limits:
