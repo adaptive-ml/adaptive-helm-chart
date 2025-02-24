@@ -81,6 +81,13 @@ spec:
               value: {{ .Values.auth.default_role | default "admin" | quote }}
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
+            {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
+            {{- if .Values.tensorboard.enabled }}
+            - name: ADAPTIVE_TENSORBOARD__ENABLED
+              value: "true"
+            - name: ADAPTIVE_TENSORBOARD__URL
+              value: "http://{{ include "adaptive.harmony.service.fullname" . }}:{{ $harmonyPorts.tensorboard.containerPort }}"
+            {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}
             - name: {{ $key }}
