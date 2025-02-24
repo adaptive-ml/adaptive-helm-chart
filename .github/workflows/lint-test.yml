@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/setup-python@v5.3.0
         with:
-          python-version: '3.x'
+          python-version: "3.x"
           check-latest: true
 
       - name: Set up chart-testing
@@ -62,4 +62,5 @@ jobs:
           helm repo add stable https://charts.helm.sh/stable
           helm repo update
           helm install --dry-run --debug adaptive-stack ./charts/adaptive
+          helm install --dry-run --debug adaptive-stack-tensorboard ./charts/adaptive --set tensorboard.enabled=true
           helm install --dry-run --debug adaptive-monitoring ./charts/monitoring
