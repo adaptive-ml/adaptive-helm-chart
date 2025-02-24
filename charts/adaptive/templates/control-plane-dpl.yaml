@@ -60,8 +60,6 @@ spec:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: dbUrl
-            - name: ADAPTIVE_HARMONY__URL
-              value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
             - name: ADAPTIVE_SERVER__BIND
               value: "0.0.0.0:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
@@ -71,6 +69,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: oidc_providers
+            - name: IMAGE_TAG
+              value: {{ .Values.controlPlane.image.tag | quote }}
             - name: ADAPTIVE_AUTH__SESSION__SECURE
               value: {{ .Values.auth.session.secure | default "true" | quote }}
             - name: ADAPTIVE_AUTH__SESSION__EXPIRATION_SECONDS
@@ -81,6 +81,13 @@ spec:
               value: {{ .Values.auth.default_role | default "admin" | quote }}
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
+            {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
+            {{- if .Values.tensorboard.enabled }}
+            - name: ADAPTIVE_TENSORBOARD__ENABLED
+              value: "true"
+            - name: ADAPTIVE_TENSORBOARD__URL
+              value: "http://{{ include "adaptive.harmony.service.fullname" . }}:{{ $harmonyPorts.tensorboard.containerPort }}"
+            {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}
             - name: {{ $key }}

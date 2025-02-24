@@ -75,6 +75,8 @@ spec:
             - secretRef:
                 name: {{ include "adaptive.harmony.configSecret.fullname" . }}
           env:
+            - name: IMAGE_TAG
+              value: {{ .Values.harmony.image.tag | quote }}
             - name: ORDINAL
               valueFrom:
                 fieldRef:
@@ -89,10 +91,30 @@ spec:
               value: "{{ $ports.torch.containerPort }}"
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
+            - name: CONTROL_PLANE_URL
+              value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}"
+            - name: GROUP
+              value: {{ .Values.harmony.group }}
+            - name: GROUP_CAPABILITIES
+              value: "TRAINING,INFERENCE,EVALUATION"
+            - name: PARTITION_KEY
+              value: {{ .Values.harmony.partitionKey }}
+            - name: SERVICE_URL
+              value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
+            {{- if .Values.s3proxy.enabled }}
+            - name: AWS_ENDPOINT_URL
+              value: http://{{ .Values.s3proxy.fullnameOverride }}
+            - name: S3_FORCE_PATH_STYLE
+              value: "true"
+            {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
+            {{- if .Values.tensorboard.enabled }}
+            - name: TENSORBOARD_LOGGING_DIR
+              value: "/logdir"
+            {{- end }}
             {{- if .Values.harmony.extraEnvVars }}
             {{- range $key, $value := .Values.harmony.extraEnvVars }}
             - name: {{ $key }}
@@ -109,6 +131,30 @@ spec:
               subPath: docker.json
             - name: dshm
               mountPath: /dev/shm
+            {{- if .Values.tensorboard.enabled }}
+            - name: tensorboard-volume
+              mountPath: /logdir
+            {{- end }}
+        {{- if .Values.tensorboard.enabled }}
+        - name: tensorboard
+          image: "{{ include "adaptive.tensorboard.imageUri" . }}"
+          imagePullPolicy: {{ .Values.tensorboard.image.pullPolicy }}
+          ports:
+            - containerPort: {{ $ports.tensorboard.containerPort }}
+              name: {{ $ports.tensorboard.name }}
+          command:
+            - "tensorboard"
+            - "--logdir=/logdir"
+            - "--host=0.0.0.0"
+            - "--port={{ $ports.tensorboard.containerPort }}"
+          {{- if .Values.tensorboard.resources }}
+          resources:
+{{ toYaml .Values.tensorboard.resources | indent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tensorboard-volume
+              mountPath: /logdir
+        {{- end }}
       volumes:
         - name: cloud-cache-volume
           emptyDir: {}
@@ -121,3 +167,41 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 8Gi
+{{- if .Values.tensorboard.enabled}}
+{{- if .Values.tensorboard.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: tensorboard-volume
+        {{- if .Values.tensorboard.persistentVolume.annotations }}
+        annotations:
+{{ toYaml .Values.tensorboard.persistentVolume.annotations | indent 10 }}
+        {{- end }}
+        {{- if .Values.tensorboard.persistentVolume.labels }}
+        labels:
+{{ toYaml .Values.tensorboard.persistentVolume.labels | indent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+{{ toYaml .Values.tensorboard.persistentVolume.accessModes | indent 10 }}
+        resources:
+          requests:
+            storage: "{{ .Values.tensorboard.persistentVolume.size }}"
+      {{- if .Values.tensorboard.persistentVolume.storageClass }}
+      {{- if (eq "-" .Values.tensorboard.persistentVolume.storageClass) }}
+        storageClassName: ""
+      {{- else }}
+        storageClassName: "{{ .Values.tensorboard.persistentVolume.storageClass }}"
+      {{- end }}
+      {{- end }}
+{{- else }}
+        - name: tensorboard-volume
+          emptyDir:
+          {{- if .Values.tensorboard.emptyDir.sizeLimit }}
+            sizeLimit: {{ .Values.tensorboard.emptyDir.sizeLimit }}
+          {{- else }}
+            {}
+          {{- end -}}
+{{- end }}
+{{- end }}

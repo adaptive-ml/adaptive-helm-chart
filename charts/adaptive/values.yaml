@@ -63,6 +63,9 @@ harmony:
     tag: harmony:latest   # Add the harmony image tag
     pullPolicy: Always
 
+  group: default   # Visible name of the group for this statefulset
+  partitionKey: default-statefulset   # Partition name, should be unique across other groups
+
   replicaCount: 1
 
   # Should be equal to, or a divisor of the # of GPUs on each node
@@ -87,6 +90,10 @@ harmony:
     ingest-adaptive-logs: "true"
   podLabels: {}
   extraEnvVars: {}
+
+  inferenceFleet: []   # Uncomment to deploy new partitions to handle inference
+  #   - name: "Inference Pool"
+  #     replicaCount: 0
 
 controlPlane:
   image:
@@ -118,3 +125,40 @@ controlPlane:
   #     effect: "NoSchedule"
 
   extraEnvVars: {}
+
+s3proxy:  # set s3proxy.enabled=true for deployments using azure blob storage instead of s3
+  enabled: false
+  fullnameOverride: "adaptive-s3proxy"
+  azure:  # secret names/keys for azure blob storage to proxy
+    storageAccount:
+      #  -- Azure storage account name
+      name: your_azure_account_name
+      #  -- Azure access key
+      accessKey: your_azure_access_key
+
+
+tensorboard:
+  # If set to true, harmony jobs will use tensorboard for logging
+  # A tensorboard sidecar pod will be deployed next to the harmony
+  # ordinal 0 pod in the statefulset
+  enabled: false
+  imageUri: tensorflow/tensorflow:latest
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  # Configure peristence of the logs,
+  # by default use an ephemeral volume, so data will be lost after a restart.
+  persistentVolume:
+    enabled: false
+    annotations: {}
+    labels: {}
+    accessModes: []
+    storageClass: ""
+  emptyDir:
+    sizeLimit: null

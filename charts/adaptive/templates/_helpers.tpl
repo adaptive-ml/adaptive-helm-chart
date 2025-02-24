@@ -37,6 +37,9 @@ Control plane and harmony components full names
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+{{- define "adaptive.harmony.deployment.fullname"}}
+{{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
 
 
 {{/*
@@ -98,6 +101,11 @@ app.kubernetes.io/component: harmony
 {{ include "adaptive.sharedSelectorLabels" . }}
 {{- end }}
 
+{{- define "adaptive.harmony.deployment.selectorLabels" -}}
+app.kubernetes.io/component: harmony-dpl
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
 {{/*
 Harmony ports
 */}}
@@ -105,7 +113,8 @@ Harmony ports
 {
   "http": {"name": "http", "containerPort": 50053, "port": 80},
   "queue": {"name": "queue", "containerPort": 50052},
-  "torch": {"name": "torch", "containerPort": 7777}
+  "torch": {"name": "torch", "containerPort": 7777},
+  "tensorboard": {"name": "tensorboard", "containerPort": 6006}
 }
 {{- end }}
 
@@ -158,4 +167,7 @@ Build the image URIs from registry, repository, name, and tag
 {{- end }}
 {{- define "adaptive.controlPlane.imageUri" -}}
 {{- printf "%s/%s:%s" .Values.containerRegistry .Values.controlPlane.image.repository .Values.controlPlane.image.tag | trimSuffix "/" }}
+{{- end }}
+{{- define "adaptive.tensorboard.imageUri" -}}
+{{- printf "%s" .Values.tensorboard.imageUri }}
 {{- end }}
