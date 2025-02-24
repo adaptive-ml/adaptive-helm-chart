@@ -61,6 +61,19 @@ jobs:
         run: |
           helm repo add stable https://charts.helm.sh/stable
           helm repo update
+
+          echo "::group::Testing adaptive default install"
           helm install --dry-run --debug adaptive-stack ./charts/adaptive
+          echo "::endgroup::"
+
+          echo "::group::Testing adaptive with tensorboard enabled"
           helm install --dry-run --debug adaptive-stack-tensorboard ./charts/adaptive --set tensorboard.enabled=true
+          echo "::endgroup::"
+
+          echo "::group::Testing adaptive with s3proxy enabled"
+          helm install --dry-run --debug adaptive-stack-tensorboard ./charts/adaptive --set s3proxy.enabled=true
+          echo "::endgroup::"
+
+          echo "::group::Testing monitoring stack"
           helm install --dry-run --debug adaptive-monitoring ./charts/monitoring
+          echo "::endgroup::"
