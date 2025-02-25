@@ -1,0 +1,34 @@
+{{- if and .Values.harmony.computePool .Values.autoscaling.enabled }}
+{{- range $pool := .Values.harmony.computePool }}
+
+{{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject  # CRD managed by Keda operator
+metadata:
+  name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | kebabcase }}
+  labels:
+    {{- include "adaptive.labels" $ | nindent 4 }}
+    {{- include "adaptive.harmony.deployment.selectorLabels" $ | nindent 4 }}
+    inference-pool: {{ $pool.name | kebabcase }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "adaptive.harmony.deployment.fullname" $ }}-{{ $pool.name | kebabcase }}
+  pollingInterval:  30                                      # Optional. Default: 30 seconds
+  cooldownPeriod:   {{ $.Values.autoscaling.coolDownPeriodSeconds | default 180 | int }} 
+  initialCooldownPeriod:  0                                 # Optional. Default: 0 seconds
+  minReplicaCount:  {{ $pool.minReplicaCount | default 1 | int }}   # Optional. Default: 1
+  maxReplicaCount:  {{ $pool.maxReplicaCount | default 2 | int }}   # Optional. Default: 2
+  triggers:
+  - type: prometheus
+    metadata:
+      # prometheus endpoint
+      serverAddress: http://adaptive-prometheus
+      #  get the percent of timed-out requests
+      query: clamp_max(sum(rate(harmony_ttft_timeout_count{pool="{{ $pool.name }}"}[5m])) / clamp_min(sum(rate(harmony_generation_requests_count{pool="{{ $pool.name }}"}[5m])), 0.00001), 1)
+      threshold: '{{ $.Values.autoscaling.ttftTimeoutThreshold }}'
+      activationThreshold: '0'
+{{- end }}
+{{- end }}
