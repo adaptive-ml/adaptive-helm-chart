@@ -1,7 +1,7 @@
 {{- $harmonySettings := include "adaptive.harmony.settings" . | fromJson }}
 
-{{- if .Values.harmony.inferenceFleet }}
-{{- range $pool := .Values.harmony.inferenceFleet }}
+{{- if .Values.harmony.computePool }}
+{{- range $pool := .Values.harmony.computePool }}
 
 {{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}
 ---

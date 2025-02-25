@@ -94,7 +94,7 @@ harmony:
   podLabels: {}
   extraEnvVars: {}
 
-  inferenceFleet: []   # Uncomment to deploy new partitions to handle inference
+  computePool: []   # Uncomment to deploy new partitions to handle inference
   #   - name: "Inference Pool"
   #     minReplicaCount: 1
   #     maxReplicaCount: 5

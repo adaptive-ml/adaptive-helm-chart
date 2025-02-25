@@ -13,7 +13,7 @@ A Helm Chart to deploy Adaptive Engine.
 1. Nvidia operator installed in the target k8s cluster: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
 2. k8s version >=1.26.
 
-3. For inference autoscaling. Adaptive engine supports horizontal pods scaling for inference fleets. This is automatic based on Qos metrics (TTFT), and technical metrics (required gpus vs available gpus). For the target k8s cluster to support nodes austocaling. Those requirements should be met:
+3. For inference autoscaling. Adaptive engine supports horizontal pods scaling for those pools. This is automatic based on Qos metrics (TTFT), and technical metrics (required gpus vs available gpus). For the target k8s cluster to support nodes austocaling. Those requirements should be met:
     - *Cluster Autoscaler* enabled and correctly configured.
     - Node pool (or equivalent in your cloud provider) should allow scaling GPU nodes.
     - Your cloud provider must support on-demand provisioning of GPU instances.
@@ -155,7 +155,7 @@ It is possible to define harmony deployment groups dedicated to inference tasks.
 
 ```yaml
 harmony:
-  inferenceFleet:
+  computePool:
      - name: "Pool-A"
        minReplicaCount: 1
        maxReplicaCount: 5

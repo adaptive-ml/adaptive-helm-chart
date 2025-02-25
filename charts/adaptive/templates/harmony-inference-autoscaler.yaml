@@ -1,5 +1,5 @@
-{{- if and .Values.harmony.inferenceFleet .Values.autoscaling.enabled }}
-{{- range $pool := .Values.harmony.inferenceFleet }}
+{{- if and .Values.harmony.computePool .Values.autoscaling.enabled }}
+{{- range $pool := .Values.harmony.computePool }}
 
 {{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}
 ---
