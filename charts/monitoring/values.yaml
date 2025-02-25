@@ -5,17 +5,11 @@
 replicaCount: 1
 
 global:
-  env:
-    local: true
-    azure: false
-    aws: false
   namespace: default
   image:
     pullPolicy: IfNotPresent
   metrics:
     present: true
-  pv:
-    provisioner: aws-ebs
 
 
 image:
@@ -65,10 +59,11 @@ grafana:
   proxy:
     enable: true  # Whether to enable grafana in reverse proxy mode
     domain: "www.your-adaptive-domain.com"  # The ingress domain host for grafana ui; should match the root URL used in adaptive chart
+    scheme: "https"  # do not change unless you don't have ssl (localhost hosts for example)
   selectorLabels:
     app: grafana
   configmap:
-    name: grafana
+    name: grafana-configmap
   volume:
     name: grafana
   ports:
@@ -80,5 +75,5 @@ grafana:
   pvc:
     name: grafana
     size: 2Gi
-  sc:
-    name: grafana
+  storageClass: ""  # the name of the storage class.
+  enablePersistence: false  # whether the volumes persistence is enabled, requires storageClass to be set to an existing storage class in target k8s cluster
