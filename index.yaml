@@ -3,6 +3,33 @@ entries:
   adaptive:
   - apiVersion: v2
     appVersion: "1.0"
+    created: "2025-02-25T14:20:10.471467134Z"
+    dependencies:
+    - name: prometheus
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 27.3.0
+    - condition: autoscaling.enabled
+      name: keda
+      repository: https://kedacore.github.io/charts
+      version: 2.16.0
+    - condition: s3proxy.enabled
+      name: s3proxy
+      repository: ""
+      version: 0.1.0
+    description: Helm Chart for Adaptive Engine
+    digest: affc44a892ab148d962e882bcb326f2ddb781c4a7b0828a646f36b2615e57fb7
+    icon: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAXVBMVEXt6ujv6+fr6+fv6enr6efv79/p6ent6+jU0s9ZVlNAPTqjoJ3g3tu7ubavrarHxcMnJCEzMC00MS6WlJFyb2xMSUaKh4SKiIV+e3jIxsNxbmtlYl9lY2Dh39xNSkednTH/AAAAB3RSTlO/QEAwkBAwtdHlmAAAAK9JREFUeF7N00cSgzAMBVCnSq6Fnnr/YyYEbDFBZs1fafFmrDIWp8NmLkLAZo67A/iQ3zSmCJrwS18COszBAlAJSB7okGNZMBBwLMAqAVXooUtAF8Br7rIFDhjvwU0gekT8AyjHp7VBxIFGJXCr0g5p2prAYkWW6mgIuJByhzrXPYEuAwUqg8iBN0jCBCw9sag116QHeNJJuTHpJLheVDvdwMkx9WrVFvf7cc5iM9cPZL8jDpv6dmsAAAAASUVORK5CYII=
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - name: adaptive-ml
+      url: https://www.adaptive-ml.com/
+    name: adaptive
+    type: application
+    urls:
+    - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/adaptive-0.2.0/adaptive-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
+    appVersion: "1.0"
     created: "2025-02-24T16:57:10.772005838Z"
     dependencies:
     - condition: s3proxy.enabled
@@ -163,6 +190,27 @@ entries:
   monitoring:
   - apiVersion: v2
     appVersion: 1.2.0
+    created: "2025-02-25T14:20:10.594139175Z"
+    dependencies:
+    - name: loki
+      repository: ""
+      version: 0.1.0
+    - name: promtail
+      repository: ""
+      version: 0.1.0
+    description: A Helm chart for installing monitoring stack for adaptive engine
+    digest: 82d1a528f22a0c433de87693370e914d3b2bd1e00cc0fd59d79900d061acc929
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - name: adaptive-ml
+      url: https://www.adaptive-ml.com/
+    name: monitoring
+    type: application
+    urls:
+    - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/monitoring-0.1.2/monitoring-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: 1.2.0
     created: "2025-02-03T10:58:10.821597329Z"
     dependencies:
     - name: loki
@@ -181,4 +229,4 @@ entries:
     urls:
     - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/monitoring-0.1.0/monitoring-0.1.0.tgz
     version: 0.1.0
-generated: "2025-02-24T16:57:10.772079827Z"
+generated: "2025-02-25T14:20:10.594191051Z"
