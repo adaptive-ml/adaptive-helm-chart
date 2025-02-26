@@ -124,7 +124,7 @@ controlPlane:
     ingest-adaptive-logs: "true"
     prometheus.io/scrape: "adaptive"
     prometheus.io/path: /metrics
-    prometheus.io/port: "9000"
+    prometheus.io/port: "9009"
   podLabels: {}
 
   nodeSelector: {}
