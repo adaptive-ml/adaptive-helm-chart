@@ -105,6 +105,7 @@ autoscaling:
   ttftTimeoutThreshold: 0.1   # propotion of timed out completion requests above which the autocaler decides to scale-out
 
 controlPlane:
+  sharedDirType: s3
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: control-plane:latest   # Add the control plane image tag
@@ -136,6 +137,7 @@ controlPlane:
   #     effect: "NoSchedule"
 
   extraEnvVars: {}
+
 
 # prometheus stack settings
 prometheus:
@@ -436,3 +438,13 @@ tensorboard:
 
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
+
+# Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
+volumes: []
+    # - name: model-registry
+    #   persistentVolumeClaim:
+    #     claimName: model-registry-pvc
+
+volumeMounts: []
+    # - name: model-registry
+    #   mountPath: /model-registry
