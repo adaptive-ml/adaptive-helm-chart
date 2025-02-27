@@ -9,7 +9,6 @@ icon: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAXVBM
 maintainers:
   - name: adaptive-ml
     url: https://www.adaptive-ml.com/
-
 dependencies:
   - name: prometheus
     version: "27.3.0"
@@ -21,4 +20,3 @@ dependencies:
   - name: "s3proxy"
     version: "0.1.0"
     condition: s3proxy.enabled
-
