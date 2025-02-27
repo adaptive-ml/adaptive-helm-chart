@@ -62,6 +62,10 @@ spec:
             mountPath: {{ $harmonySettings.working_dir }}
           - name: cloud-cache-volume
             mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
+          # Merging additional volumes from values.yaml
+          {{- with $.Values.volumeMounts }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
       containers:
         - name: harmony
           image: "{{ include "adaptive.harmony.imageUri" $ }}"
@@ -141,6 +145,10 @@ spec:
               subPath: docker.json
             - name: dshm
               mountPath: /dev/shm
+            # Merging additional volumes from values.yaml
+            {{- with $.Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
         - name: cloud-cache-volume
           emptyDir: {}
@@ -153,6 +161,9 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 8Gi
-
+        # Merging additional volumes from values.yaml
+        {{- with $.Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
 {{- end }}
 {{- end }}

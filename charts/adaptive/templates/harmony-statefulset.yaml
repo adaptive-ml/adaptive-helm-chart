@@ -52,6 +52,10 @@ spec:
             mountPath: {{ $harmonySettings.working_dir }}
           - name: cloud-cache-volume
             mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
+          # extra volume Mounts from values.yaml
+          {{- with .Values.volumeMounts }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
       containers:
         - name: harmony
           image: "{{ include "adaptive.harmony.imageUri" . }}"
@@ -139,6 +143,10 @@ spec:
             - name: tensorboard-volume
               mountPath: /logdir
             {{- end }}
+            # extra volume Mounts from values.yaml
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
         {{- if .Values.tensorboard.enabled }}
         - name: tensorboard
           image: "{{ include "adaptive.tensorboard.imageUri" . }}"
@@ -171,6 +179,10 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 8Gi
+        # extra volume Mounts from values.yaml
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
 {{- if .Values.tensorboard.enabled}}
 {{- if .Values.tensorboard.persistentVolume.enabled }}
   volumeClaimTemplates:

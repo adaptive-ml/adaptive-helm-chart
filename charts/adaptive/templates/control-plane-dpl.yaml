@@ -31,6 +31,10 @@ spec:
       {{- if .Values.serviceAccount.name }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       nodeSelector:
         {{- with .Values.controlPlane.nodeSelector}}
         {{ toYaml . }}
@@ -46,6 +50,10 @@ spec:
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
           ports:
             - containerPort: {{ $ports.http.containerPort }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           envFrom:
             - secretRef:
                 name: {{ include "adaptive.harmony.configSecret.fullname" . }}
@@ -56,7 +64,7 @@ spec:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: cookiesSecret
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
-              value: "s3"
+              value: {{ .Values.controlPlane.sharedDirType | quote }}
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
             - name: ADAPTIVE_DB__URL
