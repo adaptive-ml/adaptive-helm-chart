@@ -21,3 +21,4 @@ dependencies:
   - name: "s3proxy"
     version: "0.1.0"
     condition: s3proxy.enabled
+
