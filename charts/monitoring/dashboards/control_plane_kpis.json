@@ -93,7 +93,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -143,7 +143,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -164,7 +164,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -223,7 +223,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -243,7 +243,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -294,7 +294,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -315,7 +315,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -370,7 +370,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -390,7 +390,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -446,7 +446,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -466,7 +466,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -585,7 +585,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "editorMode": "builder",
             "expr": "sum(rate(concorde_http_server_request_duration_seconds_count{http_response_status_code=~\"2..|3..\"}[$__range]))",
@@ -597,7 +597,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "editorMode": "builder",
             "expr": "sum(rate(concorde_http_server_request_duration_seconds_count{http_response_status_code=~\"4..\"}[$__range]))",
@@ -610,7 +610,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -631,7 +631,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -751,7 +751,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -767,7 +767,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -784,7 +784,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -805,7 +805,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -858,7 +858,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -878,7 +878,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -935,7 +935,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -967,7 +967,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "fieldConfig": {
               "defaults": {
@@ -1163,7 +1163,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1180,7 +1180,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1199,7 +1199,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1216,7 +1216,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1233,7 +1233,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1296,7 +1296,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "fieldConfig": {
               "defaults": {
@@ -1345,7 +1345,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1366,7 +1366,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "fieldConfig": {
               "defaults": {
@@ -1415,7 +1415,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1436,7 +1436,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "fieldConfig": {
               "defaults": {
@@ -1494,7 +1494,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "code",
@@ -1514,7 +1514,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "fieldConfig": {
               "defaults": {
@@ -1567,7 +1567,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1587,7 +1587,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "fieldConfig": {
               "defaults": {
@@ -1643,7 +1643,7 @@
               {
                 "datasource": {
                   "type": "prometheus",
-                  "uid": "${DS_PROMETHEUS}"
+                  "uid": "adaptive-prometheus"
                 },
                 "disableTextWrap": false,
                 "editorMode": "builder",
@@ -1682,7 +1682,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -1800,7 +1800,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -1816,7 +1816,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -1837,7 +1837,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -1890,7 +1890,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -1910,7 +1910,7 @@
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "fieldConfig": {
           "defaults": {
@@ -1963,7 +1963,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "${DS_PROMETHEUS}"
+              "uid": "adaptive-prometheus"
             },
             "disableTextWrap": false,
             "editorMode": "builder",
@@ -1990,7 +1990,7 @@
           "current": {},
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "definition": "label_values(up{app_kubernetes_io_component=\"control-plane\"},node)",
           "includeAll": false,
