@@ -89,8 +89,12 @@ spec:
           configMap:
             name: {{ .Values.grafana.configmap.name }}
             items:
-              - key: dashboard.json
-                path: dashboard.json
+              - key: harmony_metrics.json
+                path: harmony_metrics.json
+              - key: control_plane_kpis.json
+                path: control_plane_kpis.json
+              - key: adaptive_engine_health.json
+                path: adaptive_engine_health.json
               - key: dashboard
                 path: dashboard.yml
         {{- if .Values.grafana.enablePersistence }}

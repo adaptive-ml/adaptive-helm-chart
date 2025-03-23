@@ -6,3 +6,9 @@ datasources:
     url: http://loki:3100
     jsonData:
       httpMethod: POST
+  - name: Prometheus
+    type: prometheus 
+    access: proxy
+    url: http://adaptive-prometheus
+    jsonData:
+      httpMethod: POST
