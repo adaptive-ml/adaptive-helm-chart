@@ -19,7 +19,7 @@ S3PROXY_IGNORE_UNKNOWN_HEADERS=true
 JCLOUDS_CREDENTIAL=*****
 ```
 
-`JCLOUDS_CREDENTIAL` should be replace by your azure secret key.
+`JCLOUDS_CREDENTIAL` should be replaced by your azure secret key.
 
 Test using aws client: `aws --endpoint-url="http://localhost:8081/" s3 ls testyacine/hf_cache/hub/`
 
