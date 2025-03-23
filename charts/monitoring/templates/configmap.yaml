@@ -8,8 +8,12 @@ data:
 {{ .Files.Get "grafana.ini" | indent 4}}
   datasource: |-
 {{ .Files.Get "datasource.yml" | indent 4}}
-  dashboard.json: |-
-{{ .Files.Get "home.json" | indent 4}}
+  adaptive_engine_health.json: |-
+{{ .Files.Get "dashboards/adaptive_engine_health.json" | indent 4}}
+  control_plane_kpis.json: |-
+{{ .Files.Get "dashboards/control_plane_kpis.json" | indent 4}}
+  harmony_metrics.json: |-
+{{ .Files.Get "dashboards/harmony_metrics.json" | indent 4}}
   dashboard: |-
 {{ .Files.Get "dashboard.yml" | indent 4 }}
 

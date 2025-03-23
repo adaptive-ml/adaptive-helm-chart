@@ -24,8 +24,16 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if .Values.serviceAccount.name }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       nodeSelector:
         {{- with .Values.controlPlane.nodeSelector}}
@@ -42,6 +50,10 @@ spec:
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
           ports:
             - containerPort: {{ $ports.http.containerPort }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           envFrom:
             - secretRef:
                 name: {{ include "adaptive.harmony.configSecret.fullname" . }}
@@ -52,7 +64,13 @@ spec:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: cookiesSecret
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
-              value: "s3"
+              value: {{ .Values.controlPlane.sharedDirType | quote }}
+            {{- if .Values.s3proxy.enabled }}
+            - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
+              value: http://{{ .Values.s3proxy.fullnameOverride }}
+            - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
+              value: "true"
+            {{- end }}
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
             - name: ADAPTIVE_DB__URL
@@ -81,6 +99,13 @@ spec:
               value: {{ .Values.auth.default_role | default "admin" | quote }}
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
+            {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
+            {{- if .Values.tensorboard.enabled }}
+            - name: ADAPTIVE_TENSORBOARD__ENABLED
+              value: "true"
+            - name: ADAPTIVE_TENSORBOARD__URL
+              value: "http://{{ include "adaptive.harmony.service.fullname" . }}:{{ $harmonyPorts.tensorboard.containerPort }}"
+            {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}
             - name: {{ $key }}
