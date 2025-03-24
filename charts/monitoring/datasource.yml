@@ -7,7 +7,8 @@ datasources:
     jsonData:
       httpMethod: POST
   - name: Prometheus
-    type: prometheus 
+    type: prometheus
+    uid: adaptive-prometheus
     access: proxy
     url: http://adaptive-prometheus
     jsonData:

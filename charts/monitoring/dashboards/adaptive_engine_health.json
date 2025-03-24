@@ -55,7 +55,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "adaptive-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -122,7 +122,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -154,7 +154,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "definition": "label_values(up{app_kubernetes_io_name=\"adaptive\"},inference_pool)",
         "hide": 2,
@@ -175,7 +175,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "definition": "label_values(up{app_kubernetes_io_name=\"adaptive\"},app_kubernetes_io_component)",
         "label": "Component",

@@ -1,9 +1,9 @@
 
 ## s3proxy
 
-This deployment is an s3 adapter for object storage providers which don't provide s3 api.
+This Helm chart is an s3 adapter for object storage providers which don't provide an s3-interoperable API. It uses [s3proxy](https://github.com/gaul/s3proxy).
 
-Run locally:
+To run locally:
 
 `docker run --env-file .env --memory=250m --cpus=0.5 -p 8081:8081 andrewgaul/s3proxy:2.6.0`
 
@@ -19,7 +19,7 @@ S3PROXY_IGNORE_UNKNOWN_HEADERS=true
 JCLOUDS_CREDENTIAL=*****
 ```
 
-`JCLOUDS_CREDENTIAL` being the azure secret key.
+`JCLOUDS_CREDENTIAL` should be replaced by your azure secret key.
 
 Test using aws client: `aws --endpoint-url="http://localhost:8081/" s3 ls testyacine/hf_cache/hub/`
 
@@ -32,7 +32,7 @@ Requirements:
 RAM: 250MB
 CPU: 0.5 core is totally ok
 
-monitor with cadvisor:
+Monitor with cadvisor:
 
 
 ````

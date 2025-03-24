@@ -61,7 +61,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "adaptive-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -145,7 +145,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "editorMode": "code",
           "expr": "sum(rate(harmony_ttft_timeout_count{pool=\"$pool\"}[5m])) / clamp_min(sum(rate(harmony_ttft_ms_count{pool=\"$pool\"}[5m])), 1) * 100",
@@ -160,7 +160,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "adaptive-prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -226,7 +226,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, rate(harmony_ttft_ms_bucket{pool=\"$pool\"}[10m]))",
@@ -251,7 +251,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -338,7 +338,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "adaptive-prometheus"
               },
               "editorMode": "code",
               "expr": "rate(harmony_ttft_timeout_count{pool=\"$pool\"}[15m]) / rate(harmony_generation_requests_count{pool=\"$pool\"}[15m])",
@@ -367,7 +367,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -450,7 +450,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "adaptive-prometheus"
               },
               "editorMode": "code",
               "expr": "harmony_ttft_ms_count{pool=\"$pool\"}",
@@ -479,7 +479,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "fieldConfig": {
             "defaults": {
@@ -551,7 +551,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "adaptive-prometheus"
               },
               "editorMode": "code",
               "expr": "sum(rate(harmony_request_duration_s_bucket{pool=\"$pool\"}[$__interval])) by (le)",
@@ -581,7 +581,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "adaptive-prometheus"
           },
           "description": "Generation request per minute",
           "fieldConfig": {
@@ -666,7 +666,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "adaptive-prometheus"
               },
               "editorMode": "code",
               "expr": "(sum by (model) (rate(harmony_generation_requests_count{pool=\"$pool\"}[5m]))) * 60",
@@ -693,7 +693,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "adaptive-prometheus"
         },
         "definition": "label_values(harmony_generation_requests_count,pool)",
         "description": "Inference pool",
