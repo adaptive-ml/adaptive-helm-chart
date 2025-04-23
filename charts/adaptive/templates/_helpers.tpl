@@ -118,6 +118,15 @@ Harmony ports
 }
 {{- end }}
 
+{{/*
+Harmony service HTTP endpoint
+*/}}
+{{- define "adaptive.harmony.httpEndpoint" -}}
+{{- $ports := fromJson (include "adaptive.harmony.ports" .) -}}
+{{- printf "http://%s:%d" (include "adaptive.harmony.service.fullname" .) (int $ports.http.port) }}
+{{- end }}
+
+
 {{- define "adaptive.oidc_providers" -}}
 [
   {{- range .Values.secrets.auth.oidc.providers -}}
@@ -144,6 +153,13 @@ Control plane ports
 {
   "http": {"name": "http", "containerPort": 9000}
 }
+{{- end }}
+
+{{/*
+Control plane HTTP endpoint
+*/}}
+{{- define "adaptive.controlPlane.httpEndpoint" -}}
+{{- printf "http://%s:%d" (include "adaptive.controlPlane.service.fullname" .) (int .Values.controlPlane.servicePort) }}
 {{- end }}
 
 {{/*
