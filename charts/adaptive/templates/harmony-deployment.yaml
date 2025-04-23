@@ -116,7 +116,7 @@ spec:
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
-              value: "http://{{ include "adaptive.controlPlane.service.fullname" $ }}"
+              value: "{{ include "adaptive.controlPlane.publicHttpEndpoint" $ }}"
             - name: GROUP
               value: {{ $pool.name }}
             - name: GROUP_CAPABILITIES

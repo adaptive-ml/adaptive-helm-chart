@@ -100,7 +100,7 @@ spec:
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
-              value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}"
+              value: "{{ include "adaptive.controlPlane.publicHttpEndpoint" . }}"
             - name: GROUP
               value: {{ .Values.harmony.group }}
             - name: GROUP_CAPABILITIES
@@ -108,7 +108,7 @@ spec:
             - name: PARTITION_KEY
               value: {{ .Values.harmony.partitionKey }}
             - name: SERVICE_URL
-              value: "http://{{ include "adaptive.harmony.service.fullname" . }}"
+              value: "{{ include "adaptive.harmony.httpEndpoint" . }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
             {{- if .Values.s3proxy.enabled }}
