@@ -158,7 +158,7 @@ Control plane ports
 {{/*
 Control plane HTTP endpoint
 */}}
-{{- define "adaptive.controlPlane.httpEndpoint" -}}
+{{- define "adaptive.controlPlane.publicHttpEndpoint" -}}
 {{- printf "http://%s:%d" (include "adaptive.controlPlane.service.fullname" .) (int .Values.controlPlane.servicePort) }}
 {{- end }}
 
