@@ -100,7 +100,7 @@ spec:
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
-              value: "{{ include "adaptive.controlPlane.publicHttpEndpoint" . }}"
+              value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" . }}"
             - name: GROUP
               value: {{ .Values.harmony.group }}
             - name: GROUP_CAPABILITIES
