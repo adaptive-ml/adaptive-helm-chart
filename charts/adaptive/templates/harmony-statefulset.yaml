@@ -33,14 +33,16 @@ spec:
       {{- if .Values.serviceAccount.name }}
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- end }}
+      {{- if .Values.harmony.nodeSelector}}
       nodeSelector:
          {{- with .Values.harmony.nodeSelector}}
          {{ toYaml . }}
          {{- end}}
+      {{- end}}
+      {{- if .Values.harmony.tolerations}}
       tolerations:
-        - key: "nvidia.com/gpu"
-          operator: "Exists"
-          effect: "NoSchedule"
+        {{- toYaml .Values.harmony.tolerations | nindent 8 }}
+      {{- end}} 
       initContainers:
       - name: init-permissions
         image: busybox
