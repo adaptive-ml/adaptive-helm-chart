@@ -8,6 +8,10 @@ A Helm Chart to deploy Adaptive Engine.
 
 ---
 
+## Compatibility
+
+- Helm chart versions < 0.5.0 are not compatible with adaptive version 0.5.0 or highter.
+
 ## Prerequisites
 
 1. Nvidia operator installed in the target k8s cluster: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
