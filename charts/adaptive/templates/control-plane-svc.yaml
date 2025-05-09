@@ -14,6 +14,3 @@ spec:
     - name: {{ $ports.http.name }}
       port: {{ .Values.controlPlane.servicePort | default 80 | int}}
       targetPort: {{ $ports.http.containerPort }}
-    - name: {{ $ports.internal.name }}
-      port: {{ $ports.internal.containerPort }}
-      targetPort: {{ $ports.internal.containerPort }}
