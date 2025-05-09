@@ -93,12 +93,20 @@ harmony:
     prometheus.io/port: "50053"
   podLabels: {}
   extraEnvVars: {}
-
-  computePool: []   # Uncomment to deploy new partitions to handle inference
-  #   - name: "Inference Pool"
-  #     minReplicaCount: 1
-  #     maxReplicaCount: 5
-
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+  computePool:   # Uncomment to deploy new partitions to handle inference. Any values not specified will be copied from harmony section, otherwise if specified will override them
+    # - name: "Inference Pool"
+    #   minReplicaCount: 1
+    #   maxReplicaCount: 5
+    #   tolerations:
+    #     - key: "nvidia.com/gpu"
+    #       operator: "Exists"
+    #       effect: "NoSchedule"
+    #   nodeSelector: {}
+    #   gpusPerReplica: 4
 autoscaling:
   enabled: false    # whether to enable autoscaling for inference
   coolDownPeriodSeconds: 180  # duration to await before scaling down pods
