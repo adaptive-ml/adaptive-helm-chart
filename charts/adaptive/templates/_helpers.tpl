@@ -151,15 +151,17 @@ Control plane ports
 */}}
 {{- define "adaptive.controlPlane.ports" -}}
 {
-  "http": {"name": "http", "containerPort": 9000}
+  "http": {"name": "http", "containerPort": 9000},
+  "internal": {"name": "internal", "containerPort": 9009}
 }
 {{- end }}
 
 {{/*
-Control plane HTTP endpoint
+Control plane HTTP private endpoint
 */}}
-{{- define "adaptive.controlPlane.publicHttpEndpoint" -}}
-{{- printf "http://%s:%d" (include "adaptive.controlPlane.service.fullname" .) (int .Values.controlPlane.servicePort) }}
+{{- define "adaptive.controlPlane.privateHttpEndpoint" -}}
+{{- $ports := fromJson (include "adaptive.controlPlane.ports" .) -}}
+{{- printf "http://%s:%d" (include "adaptive.controlPlane.service.fullname" .) (int $ports.internal.containerPort) }}
 {{- end }}
 
 {{/*
