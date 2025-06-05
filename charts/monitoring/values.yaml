@@ -5,7 +5,6 @@
 replicaCount: 1
 
 global:
-  namespace: default
   image:
     pullPolicy: IfNotPresent
   metrics:
