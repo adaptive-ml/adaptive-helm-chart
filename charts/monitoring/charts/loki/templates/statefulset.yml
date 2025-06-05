@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: {{ .Values.loki.kind}}
 metadata:
-  namespace: {{ .Values.global.namespace }}
+  namespace: {{ .Release.Namespace }}
   name: {{ .Values.loki.name }}
   {{- with .Values.loki.labels }}
   labels:
