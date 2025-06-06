@@ -5,7 +5,7 @@ metadata:
 subjects:
     - kind: ServiceAccount
       name: promtail-serviceaccount
-      namespace: default
+      namespace: {{ .Release.Namespace }}
 roleRef:
     kind: ClusterRole
     name: promtail-clusterrole
