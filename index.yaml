@@ -406,6 +406,27 @@ entries:
   monitoring:
   - apiVersion: v2
     appVersion: 1.2.0
+    created: "2025-06-06T15:00:38.088180975Z"
+    dependencies:
+    - name: loki
+      repository: ""
+      version: 0.1.0
+    - name: promtail
+      repository: ""
+      version: 0.1.0
+    description: A Helm chart for installing monitoring stack for adaptive engine
+    digest: 19bf871512781909f7e8c3c88bfd62b9e26b40689c6993b1c35f17f683fa5281
+    kubeVersion: '>=1.26.0-0'
+    maintainers:
+    - name: adaptive-ml
+      url: https://www.adaptive-ml.com/
+    name: monitoring
+    type: application
+    urls:
+    - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/monitoring-0.1.5/monitoring-0.1.5.tgz
+    version: 0.1.5
+  - apiVersion: v2
+    appVersion: 1.2.0
     created: "2025-03-24T07:43:26.656102188Z"
     dependencies:
     - name: loki
@@ -487,4 +508,4 @@ entries:
     urls:
     - https://github.com/adaptive-ml/adaptive-helm-chart/releases/download/monitoring-0.1.0/monitoring-0.1.0.tgz
     version: 0.1.0
-generated: "2025-05-09T09:31:53.680606803Z"
+generated: "2025-06-06T15:00:38.088227802Z"
