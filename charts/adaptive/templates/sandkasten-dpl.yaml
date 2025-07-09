@@ -48,15 +48,7 @@ spec:
           imagePullPolicy: {{ .Values.sandkasten.image.pullPolicy }}
           securityContext:
             allowPrivilegeEscalation: true
-            capabilities:
-              add:
-                - SYS_ADMIN
-                - NET_ADMIN
-                - SYS_CHROOT
-                - SETUID
-                - SETGID
-              drop:
-                - ALL
+            privileged: true
           ports:
             - containerPort: {{ .Values.sandkasten.servicePort }}
           volumeMounts:
