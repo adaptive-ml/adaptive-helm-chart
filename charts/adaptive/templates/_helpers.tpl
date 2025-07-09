@@ -176,12 +176,6 @@ Control plane ports
 }
 {{- end }}
 
-{{- define "adaptive.sandkasten.ports" -}}
-{
-  "http": {"name": "http", "containerPort": 3005},
-}
-{{- end }}
-
 {{/*
 Control plane HTTP private endpoint
 */}}
@@ -195,8 +189,7 @@ Control plane HTTP private endpoint
 sandkasten HTTP private endpoint
 */}}
 {{- define "adaptive.sandkasten.privateHttpEndpoint" -}}
-{{- $ports := fromJson (include "adaptive.sandkasten.ports" .) -}}
-{{- printf "http://%s:%d" (include "adaptive.sandkasten.service.fullname" .) (int $ports.http.containerPort) }}
+{{- printf "http://%s:%d" (include "adaptive.sandkasten.service.fullname" .) (int .Values.sandkasten.servicePort)}}
 {{- end }}
 
 {{/*

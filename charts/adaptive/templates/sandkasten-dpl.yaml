@@ -50,7 +50,7 @@ spec:
           securityContext:
             privileged: true
           ports:
-            - containerPort: {{ $ports.http.containerPort }}
+            - containerPort: {{ .Values.sandkasten.servicePort }}
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
