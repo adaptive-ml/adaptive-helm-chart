@@ -42,7 +42,6 @@ spec:
       tolerations:
         {{- toYaml .Values.sandkasten.tolerations | nindent 8 }}
       {{- end}} 
-      {{- $ports := include "adaptive.sandkasten.ports" . | fromJson }}
       containers:
         - name: sandkasten
           image: "{{ include "adaptive.sandkasten.imageUri" . }}"
