@@ -25,6 +25,13 @@ Control plane and harmony components full names
 {{- printf "%s-svc" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
+{{- define "adaptive.sandkasten.fullname" -}}
+{{- printf "%s-sandkasten" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.sandkasten.service.fullname"}}
+{{- printf "%s-svc" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+
 {{- define "adaptive.harmony.fullname" -}}
 {{- printf "%s-harmony" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
@@ -106,6 +113,12 @@ app.kubernetes.io/component: harmony-dpl
 {{ include "adaptive.sharedSelectorLabels" . }}
 {{- end }}
 
+{{- define "adaptive.sandkasten.selectorLabels" -}}
+app.kubernetes.io/component: sandkasten
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+
 {{/*
 Harmony ports
 */}}
@@ -126,6 +139,13 @@ Harmony service HTTP endpoint
 {{- printf "http://%s:%d" (include "adaptive.harmony.service.fullname" .) (int $ports.http.port) }}
 {{- end }}
 
+{{/*
+Harmony service ws endpoint
+*/}}
+{{- define "adaptive.harmony.wsEndpoint" -}}
+{{- $ports := fromJson (include "adaptive.harmony.ports" .) -}}
+{{- printf "ws://%s:%d" (include "adaptive.harmony.service.fullname" .) (int $ports.http.port) }}
+{{- end }}
 
 {{- define "adaptive.oidc_providers" -}}
 [
@@ -164,6 +184,14 @@ Control plane HTTP private endpoint
 {{- printf "http://%s:%d" (include "adaptive.controlPlane.service.fullname" .) (int $ports.internal.containerPort) }}
 {{- end }}
 
+
+{{/*
+sandkasten HTTP private endpoint
+*/}}
+{{- define "adaptive.sandkasten.privateHttpEndpoint" -}}
+{{- printf "http://%s:%d" (include "adaptive.sandkasten.service.fullname" .) (int .Values.sandkasten.servicePort)}}
+{{- end }}
+
 {{/*
 Harmony settings
 */}}
@@ -188,4 +216,7 @@ Build the image URIs from registry, repository, name, and tag
 {{- end }}
 {{- define "adaptive.tensorboard.imageUri" -}}
 {{- printf "%s" .Values.tensorboard.imageUri }}
+{{- end }}
+{{- define "adaptive.sandkasten.imageUri" -}}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository .Values.sandkasten.image.tag | trimSuffix "/" }}
 {{- end }}
