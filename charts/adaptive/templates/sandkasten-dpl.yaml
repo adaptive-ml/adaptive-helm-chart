@@ -47,7 +47,16 @@ spec:
           image: "{{ include "adaptive.sandkasten.imageUri" . }}"
           imagePullPolicy: {{ .Values.sandkasten.image.pullPolicy }}
           securityContext:
-            privileged: true
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+                - NET_ADMIN
+                - SYS_CHROOT
+                - SETUID
+                - SETGID
+              drop:
+                - ALL
           ports:
             - containerPort: {{ .Values.sandkasten.servicePort }}
           volumeMounts:
