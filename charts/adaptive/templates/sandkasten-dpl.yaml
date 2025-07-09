@@ -50,12 +50,12 @@ spec:
             privileged: true
           ports:
             - containerPort: {{ .Values.sandkasten.servicePort }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
-          - name: working-dir
-            mountPath: /working_dir
+            {{- end }}
+            - name: working-dir
+              mountPath: /working_dir
           env:
             - name: HARMONY_WS_ENDPOINT
               value: "{{ include "adaptive.harmony.wsEndpoint" . }}"
