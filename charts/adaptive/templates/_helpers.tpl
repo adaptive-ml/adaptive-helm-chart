@@ -37,6 +37,9 @@ Control plane and harmony components full names
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+{{- define "adaptive.harmony.alloyConfigMap.fullname"}}
+{{- printf "%s-alloy-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
 {{- define "adaptive.harmony.deployment.fullname"}}
 {{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
@@ -114,7 +117,8 @@ Harmony ports
   "http": {"name": "http", "containerPort": 50053, "port": 80},
   "queue": {"name": "queue", "containerPort": 50052},
   "torch": {"name": "torch", "containerPort": 7777},
-  "tensorboard": {"name": "tensorboard", "containerPort": 6006}
+  "tensorboard": {"name": "tensorboard", "containerPort": 6006},
+  "alloy": {"name": "alloy", "containerPort": 12345}
 }
 {{- end }}
 

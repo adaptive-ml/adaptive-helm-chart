@@ -20,7 +20,7 @@ secrets:
   dbUrl: postgres://username:password@db_adress:5432/db_name
 
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
-  cookiesSecret: change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315   # Must be >= 64 chars
+  cookiesSecret: change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315 # Must be >= 64 chars
 
   auth:
     oidc:
@@ -30,13 +30,13 @@ secrets:
           # Key of your provider, the callback url will be '<rootUrl>/api/v1/auth/login/<key>/callback'
           key: "google"
 
-          issuer_url: "https://accounts.google.com"   # openid connect issuer url
+          issuer_url: "https://accounts.google.com" # openid connect issuer url
 
-          client_id: "replace_client_id"   # client id
+          client_id: "replace_client_id" # client id
 
-          client_secret: "replace_client_secret"   # client_secret, optional
+          client_secret: "replace_client_secret" # client_secret, optional
 
-          scopes: ["email", "profile"]   # scopes required for auth, requires email and profile
+          scopes: ["email", "profile"] # scopes required for auth, requires email and profile
 
           # true if your provider supports pkce (recommended)
           pkce: true
@@ -51,20 +51,20 @@ auth:
     # Set the secure flag for the session cookie: they are only valid on https and localhost
     # Should be true in prod - (use false if the app is accessed through insecure http)
     secure: true
-    expiration_seconds: 518400   # 6 days
+    expiration_seconds: 518400 # 6 days
   # List of email addresses for admins; overrides default_role when these users are created
   admins: []
 
-containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com   # Add the Adaptive Registry you have been granted access to
+containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com # Add the Adaptive Registry you have been granted access to
 
 harmony:
   image:
-    repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
-    tag: harmony:latest   # Add the harmony image tag
+    repository: adaptive-repository # Add the Adaptive Repository you have been granted access to
+    tag: harmony:latest # Add the harmony image tag
     pullPolicy: Always
 
-  group: default   # Visible name of the group for this statefulset
-  partitionKey: default-statefulset   # Partition name, should be unique across other groups
+  group: default # Visible name of the group for this statefulset
+  partitionKey: default-statefulset # Partition name, should be unique across other groups
 
   replicaCount: 1
 
@@ -72,7 +72,7 @@ harmony:
   # If you are not deploying on GPU, comment out the line
   gpusPerReplica: 8
 
-  nodeSelector:   # Uncomment to deploy harmony on specify EKS node group or GKE node pool
+  nodeSelector: # Uncomment to deploy harmony on specify EKS node group or GKE node pool
     {}
     # eks.amazonaws.com/nodegroup: gpu-node-group-name
     # cloud.google.com/gke-accelerator: a2-ultragpu-4g
@@ -97,7 +97,7 @@ harmony:
     - key: "nvidia.com/gpu"
       operator: "Exists"
       effect: "NoSchedule"
-  computePool:   # Uncomment to deploy new partitions to handle inference. Any values not specified will be copied from harmony section, otherwise if specified will override them
+  computePool: # Uncomment to deploy new partitions to handle inference. Any values not specified will be copied from harmony section, otherwise if specified will override them
     # - name: "Inference Pool"
     #   minReplicaCount: 1
     #   maxReplicaCount: 5
@@ -108,18 +108,18 @@ harmony:
     #   nodeSelector: {}
     #   gpusPerReplica: 4
 autoscaling:
-  enabled: false    # whether to enable autoscaling for inference
-  coolDownPeriodSeconds: 180  # duration to await before scaling down pods
-  ttftTimeoutThreshold: 0.1   # propotion of timed out completion requests above which the autocaler decides to scale-out
+  enabled: false # whether to enable autoscaling for inference
+  coolDownPeriodSeconds: 180 # duration to await before scaling down pods
+  ttftTimeoutThreshold: 0.1 # propotion of timed out completion requests above which the autocaler decides to scale-out
 
 controlPlane:
   sharedDirType: s3
   image:
-    repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
-    tag: control-plane:latest   # Add the control plane image tag
+    repository: adaptive-repository # Add the Adaptive Repository you have been granted access to
+    tag: control-plane:latest # Add the control plane image tag
     pullPolicy: Always
 
-  servicePort: 80   # Port where app will be exposed
+  servicePort: 80 # Port where app will be exposed
 
   # Full url of the application as visible from a web browser. Important if you use SSO
   rootUrl: "http://localhost:9000"
@@ -145,7 +145,6 @@ controlPlane:
   #     effect: "NoSchedule"
 
   extraEnvVars: {}
-
 
 # prometheus stack settings
 prometheus:
@@ -201,7 +200,7 @@ prometheus:
       rule_files:
         - /etc/config/recording_rules.yml
         - /etc/config/alerting_rules.yml
-      ## Below two files are DEPRECATED will be removed from this default values file
+        ## Below two files are DEPRECATED will be removed from this default values file
         - /etc/config/rules
         - /etc/config/alerts
 
@@ -209,7 +208,7 @@ prometheus:
         - job_name: prometheus
           static_configs:
             - targets:
-              - localhost:9090
+                - localhost:9090
 
         # A scrape configuration for running Prometheus on a Kubernetes cluster.
         # This uses separate scrape configs for cluster components (i.e. API server, node)
@@ -225,7 +224,7 @@ prometheus:
         # the endpoints associated with the default/kubernetes service using the
         # default named port `https`. This works for single API server deployments as
         # well as HA API server deployments.
-        - job_name: 'kubernetes-apiservers'
+        - job_name: "kubernetes-apiservers"
 
           kubernetes_sd_configs:
             - role: endpoints
@@ -255,11 +254,16 @@ prometheus:
           # will add targets for each API server which Kubernetes adds an endpoint to
           # the default/kubernetes service.
           relabel_configs:
-            - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            - source_labels:
+                [
+                  __meta_kubernetes_namespace,
+                  __meta_kubernetes_service_name,
+                  __meta_kubernetes_endpoint_port_name,
+                ]
               action: keep
               regex: default;kubernetes;https
 
-        - job_name: 'kubernetes-nodes'
+        - job_name: "kubernetes-nodes"
 
           # Default to scraping over https. If required, just disable this or change to
           # `http`.
@@ -295,8 +299,7 @@ prometheus:
               target_label: __metrics_path__
               replacement: /api/v1/nodes/$1/proxy/metrics
 
-
-        - job_name: 'kubernetes-nodes-cadvisor'
+        - job_name: "kubernetes-nodes-cadvisor"
 
           # Default to scraping over https. If required, just disable this or change to
           # `http`.
@@ -354,7 +357,7 @@ prometheus:
         # to set this to `https` & most likely set the `tls_config` of the scrape config.
         # * `prometheus-adaptive/path`: If the metrics path is not `/metrics` override this.
         # * `prometheus-adaptive/port`: Scrape the pod on the indicated port instead of the default of `9102`.
-        - job_name: 'kubernetes-pods'
+        - job_name: "kubernetes-pods"
           scrape_interval: 5s
           honor_labels: true
 
@@ -362,23 +365,34 @@ prometheus:
             - role: pod
 
           relabel_configs:
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            - source_labels:
+                [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
               action: keep
               regex: adaptive
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
+            - source_labels:
+                [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
               action: replace
               regex: (https?)
               target_label: __scheme__
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            - source_labels:
+                [__meta_kubernetes_pod_annotation_prometheus_io_path]
               action: replace
               target_label: __metrics_path__
               regex: (.+)
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
+            - source_labels:
+                [
+                  __meta_kubernetes_pod_annotation_prometheus_io_port,
+                  __meta_kubernetes_pod_ip,
+                ]
               action: replace
               regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
-              replacement: '[$2]:$1'
+              replacement: "[$2]:$1"
               target_label: __address__
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
+            - source_labels:
+                [
+                  __meta_kubernetes_pod_annotation_prometheus_io_port,
+                  __meta_kubernetes_pod_ip,
+                ]
               action: replace
               regex: (\d+);((([0-9]+?)(\.|$)){4})
               replacement: $2:$1
@@ -401,22 +415,20 @@ prometheus:
               action: replace
               target_label: node
 
-
 keda:
   crds:
     # -- Defines whether the KEDA CRDs have to be installed or not.
     install: true
 
-s3proxy:  # set s3proxy.enabled=true for deployments using azure blob storage instead of s3
+s3proxy: # set s3proxy.enabled=true for deployments using azure blob storage instead of s3
   enabled: false
   fullnameOverride: "adaptive-s3proxy"
-  azure:  # secret names/keys for azure blob storage to proxy
+  azure: # secret names/keys for azure blob storage to proxy
     storageAccount:
       #  -- Azure storage account name
       name: your_azure_account_name
       #  -- Azure access key
       accessKey: your_azure_access_key
-
 
 tensorboard:
   # If set to true, harmony jobs will use tensorboard for logging
@@ -444,15 +456,29 @@ tensorboard:
   emptyDir:
     sizeLimit: null
 
+alloy:
+  imageUri: grafana/alloy:latest
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
-volumes: []
-    # - name: model-registry
-    #   persistentVolumeClaim:
-    #     claimName: model-registry-pvc
+volumes:
+  []
+  # - name: model-registry
+  #   persistentVolumeClaim:
+  #     claimName: model-registry-pvc
 
-volumeMounts: []
-    # - name: model-registry
-    #   mountPath: /model-registry
+volumeMounts:
+  []
+  # - name: model-registry
+  #   mountPath: /model-registry
