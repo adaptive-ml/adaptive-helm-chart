@@ -449,7 +449,7 @@ mlflow:
   # A separate MLflow tracking server will be deployed
   # Takes priority over tensorboard if both are enabled
   enabled: false
-  imageUri: python:3.8-slim
+  imageUri: python:3.12-slim
   image:
     pullPolicy: IfNotPresent
   
