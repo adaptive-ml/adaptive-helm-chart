@@ -126,7 +126,7 @@ spec:
             - name: ADAPTIVE_MODE
               value: PROD
             {{- if .Values.mlflow.enabled }}
-            - name: MLFLOW_TRACKING_URI
+            - name: MLFLOW_MONITORING_LINK
               value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ include "adaptive.mlflow.ports" . | fromJson | get "http" | get "port" }}"
             {{- else if .Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
