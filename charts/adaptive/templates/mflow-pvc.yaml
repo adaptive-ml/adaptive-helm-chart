@@ -1,0 +1,30 @@
+{{- if and .Values.mlflow.enabled .Values.mlflow.persistentVolume.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "adaptive.mlflow.pvc.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.mlflow.persistentVolume.annotations }}
+  annotations:
+    {{- toYaml .Values.mlflow.persistentVolume.annotations | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.mlflow.selectorLabels" . | nindent 4 }}
+    {{- if .Values.mlflow.persistentVolume.labels }}
+    {{- toYaml .Values.mlflow.persistentVolume.labels | nindent 4 }}
+    {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.mlflow.persistentVolume.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.mlflow.persistentVolume.size }}
+  {{- if .Values.mlflow.persistentVolume.storageClass }}
+  {{- if (eq "-" .Values.mlflow.persistentVolume.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.mlflow.persistentVolume.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }} 

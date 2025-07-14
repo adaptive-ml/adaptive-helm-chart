@@ -1,0 +1,19 @@
+{{- if .Values.mlflow.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.mlflow.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.mlflow.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "adaptive.mlflow.selectorLabels" . | nindent 4 }}
+  ports:
+    {{- $ports := include "adaptive.mlflow.ports" . | fromJson }}
+    - name: {{ $ports.http.name }}
+      port: {{ $ports.http.port }}
+      targetPort: {{ $ports.http.containerPort }}
+{{- end }} 

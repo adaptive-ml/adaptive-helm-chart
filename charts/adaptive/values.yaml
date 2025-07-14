@@ -443,6 +443,58 @@ tensorboard:
     storageClass: ""
   emptyDir:
     sizeLimit: null
+  
+mlflow:
+  # If set to true, jobs will use MLflow for experiment tracking
+  # A separate MLflow tracking server will be deployed
+  # Takes priority over tensorboard if both are enabled
+  enabled: false
+  imageUri: python:3.8-slim
+  image:
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  # MLflow server configuration
+  backendStoreUri: sqlite:///mlflow-storage/mlflow.db
+  defaultArtifactRoot: /mlflow-storage/artifacts
+  serveArtifacts: true
+  
+  # Storage configuration - ensure mountPath aligns with backendStoreUri and defaultArtifactRoot paths
+  mountPath: /mlflow-storage
+  
+  # Resources for MLflow server
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  # Configure persistence for MLflow data
+  persistentVolume:
+    enabled: false
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+    labels: {}
+    storageClass: ""
+  emptyDir:
+    sizeLimit: null
+  
+  # Node selection and tolerations
+  nodeSelector: {}
+  tolerations: []
+  
+  # Pod annotations and labels
+  podAnnotations: {}
+  podLabels: {}
+  
+  # Additional environment variables
+  extraEnvVars: {}
+
 
 alloy:
   imageUri: grafana/alloy:latest
