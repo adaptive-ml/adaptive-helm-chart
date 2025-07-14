@@ -1,47 +1,56 @@
 {{- $harmonySettings := include "adaptive.harmony.settings" . | fromJson }}
+
+{{- if .Values.computePool.training }}
+{{- range $pool := .Values.computePool.training }}
+
+{{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "adaptive.harmony.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "adaptive.harmony.fullname" $ }}-{{ $pool.name | kebabcase }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "adaptive.labels" . | nindent 4 }}
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+    {{- include "adaptive.labels" $ | nindent 4 }}
+    {{- include "adaptive.harmony.selectorLabels" $ | nindent 4 }}
+    training-pool: {{ $pool.name | kebabcase }}
 spec:
-  serviceName: {{ include "adaptive.harmony.headlessService.fullname" . }}
-  replicas: {{ .Values.harmony.replicaCount | default 1 | int }}
+  serviceName: {{ include "adaptive.harmony.fullname" $ }}-{{ $pool.name | kebabcase }}-hdls-svc
+  replicas: {{ $pool.replicaCount | default 1 | int }}
   selector:
     matchLabels:
-      {{- include "adaptive.harmony.selectorLabels" . | nindent 6}}
+      {{- include "adaptive.harmony.selectorLabels" $ | nindent 6}}
+      training-pool: {{ $pool.name | kebabcase }}
   template:
     metadata:
-      {{- with .Values.harmony.podAnnotations }}
+      {{- with $poolMerged.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "adaptive.labels" . | nindent 8 }}
-        {{- include "adaptive.harmony.selectorLabels" . | nindent 8 }}
-        {{- with .Values.harmony.podLabels }}
+        {{- include "adaptive.labels" $ | nindent 8 }}
+        {{- include "adaptive.harmony.selectorLabels" $ | nindent 8 }}
+        training-pool: {{ $pool.name | kebabcase }}
+        {{- with $poolMerged.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with $.Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.serviceAccount.name }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if $.Values.serviceAccount.name }}
+      serviceAccountName: {{ $.Values.serviceAccount.name }}
       {{- end }}
-      {{- if .Values.harmony.nodeSelector}}
+      {{- if $poolMerged.nodeSelector}}
       nodeSelector:
-         {{- with .Values.harmony.nodeSelector}}
+         {{- with $poolMerged.nodeSelector}}
          {{ toYaml . }}
          {{- end}}
       {{- end}}
-      {{- if .Values.harmony.tolerations}}
+      {{- if $poolMerged.tolerations}}
       tolerations:
-        {{- toYaml .Values.harmony.tolerations | nindent 8 }}
+        {{- toYaml $poolMerged.tolerations | nindent 8 }}
       {{- end}} 
       initContainers:
       - name: init-permissions
@@ -55,26 +64,26 @@ spec:
           - name: cloud-cache-volume
             mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
           # extra volume Mounts from values.yaml
-          {{- with .Values.volumeMounts }}
+          {{- with $.Values.volumeMounts }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
       containers:
         - name: harmony
-          image: "{{ include "adaptive.harmony.imageUri" . }}"
-          imagePullPolicy: {{ .Values.harmony.image.pullPolicy }}
+          image: "{{ include "adaptive.harmony.imageUri" $ }}"
+          imagePullPolicy: {{ $.Values.harmony.image.pullPolicy }}
           resources:
             limits:
-              {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
-              {{- if .Values.harmony.gpusPerReplica}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
+              {{- toYaml $poolMerged.resources.limits | nindent 14 }}
+              {{- if $poolMerged.gpusPerReplica}}
+              nvidia.com/gpu: {{ $poolMerged.gpusPerReplica }}
               {{- end}}
             requests:
-              {{- toYaml .Values.harmony.resources.requests | nindent 14 }}
-              {{- if .Values.harmony.gpusPerReplica}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
+              {{- toYaml $poolMerged.resources.requests | nindent 14 }}
+              {{- if $poolMerged.gpusPerReplica}}
+              nvidia.com/gpu: {{ $poolMerged.gpusPerReplica }}
               {{- end}}
           ports:
-            {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+            {{- $ports := include "adaptive.harmony.ports" $ | fromJson }}
             - containerPort: {{ $ports.http.containerPort }}
               name: {{ $ports.http.name }}
             - containerPort: {{ $ports.queue.containerPort }}
@@ -83,50 +92,50 @@ spec:
               name: {{ $ports.torch.name }} 
           envFrom:
             - secretRef:
-                name: {{ include "adaptive.harmony.configSecret.fullname" . }}
+                name: {{ include "adaptive.harmony.configSecret.fullname" $ }}
           env:
             - name: IMAGE_TAG
-              value: {{ .Values.harmony.image.tag | quote }}
+              value: {{ $.Values.harmony.image.tag | quote }}
             - name: ORDINAL
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
             - name: GPU_COUNT
-              value: "{{ .Values.harmony.gpusPerReplica | default 1 }}"
+              value: "{{ $poolMerged.gpusPerReplica | default 1 }}"
             - name: WORLD_SIZE
-              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerReplica) | default .Values.harmony.replicaCount }}"
+              value: "{{ mul (int $pool.replicaCount) (int $poolMerged.gpusPerReplica) | default $pool.replicaCount }}"
             - name: MASTER_ADDR
-              value: "{{ include "adaptive.harmony.fullname" . }}-0.{{ include "adaptive.harmony.headlessService.fullname" . }}"
+              value: "{{ include "adaptive.harmony.fullname" $ }}-{{ $pool.name | kebabcase }}-0.{{ include "adaptive.harmony.fullname" $ }}-{{ $pool.name | kebabcase }}-hdls-svc"
             - name: MASTER_PORT
               value: "{{ $ports.torch.containerPort }}"
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
-              value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" . }}"
+              value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" $ }}"
             - name: GROUP
-              value: {{ .Values.harmony.group }}
+              value: {{ $pool.group | default $pool.name }}
             - name: GROUP_CAPABILITIES
-              value: "TRAINING,INFERENCE,EVALUATION"
+              value: {{ $pool.groupCapabilities | default "TRAINING,INFERENCE,EVALUATION" | quote }}
             - name: PARTITION_KEY
-              value: {{ .Values.harmony.partitionKey }}
+              value: {{ $pool.partitionKey | default (printf "%s-statefulset" ($pool.name | kebabcase)) }}
             - name: SERVICE_URL
-              value: "{{ include "adaptive.harmony.httpEndpoint" . }}"
+              value: "http://{{ include "adaptive.harmony.fullname" $ }}-{{ $pool.name | kebabcase }}-svc:{{ $ports.http.port }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
-            {{- if .Values.s3proxy.enabled }}
+            {{- if $.Values.s3proxy.enabled }}
             - name: AWS_ENDPOINT_URL
-              value: http://{{ .Values.s3proxy.fullnameOverride }}
+              value: http://{{ $.Values.s3proxy.fullnameOverride }}
             - name: S3_FORCE_PATH_STYLE
               value: "true"
             {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
-            {{- if .Values.tensorboard.enabled }}
+            {{- if $.Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
               value: "/logdir"
             {{- end }}
-            {{- if .Values.harmony.extraEnvVars }}
-            {{- range $key, $value := .Values.harmony.extraEnvVars }}
+            {{- if $poolMerged.extraEnvVars }}
+            {{- range $key, $value := $poolMerged.extraEnvVars }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
@@ -141,18 +150,18 @@ spec:
               subPath: docker.json
             - name: dshm
               mountPath: /dev/shm
-            {{- if .Values.tensorboard.enabled }}
+            {{- if $.Values.tensorboard.enabled }}
             - name: tensorboard-volume
               mountPath: /logdir
             {{- end }}
             # extra volume Mounts from values.yaml
-            {{- with .Values.volumeMounts }}
+            {{- with $.Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-        {{- if .Values.tensorboard.enabled }}
+        {{- if $.Values.tensorboard.enabled }}
         - name: tensorboard
-          image: "{{ include "adaptive.tensorboard.imageUri" . }}"
-          imagePullPolicy: {{ .Values.tensorboard.image.pullPolicy }}
+          image: "{{ include "adaptive.tensorboard.imageUri" $ }}"
+          imagePullPolicy: {{ $.Values.tensorboard.image.pullPolicy }}
           ports:
             - containerPort: {{ $ports.tensorboard.containerPort }}
               name: {{ $ports.tensorboard.name }}
@@ -161,9 +170,9 @@ spec:
             - "--logdir=/logdir"
             - "--host=0.0.0.0"
             - "--port={{ $ports.tensorboard.containerPort }}"
-          {{- if .Values.tensorboard.resources }}
+          {{- if $.Values.tensorboard.resources }}
           resources:
-{{ toYaml .Values.tensorboard.resources | indent 12 }}
+{{ toYaml $.Values.tensorboard.resources | indent 12 }}
           {{- end }}
           volumeMounts:
             - name: tensorboard-volume
@@ -176,50 +185,43 @@ spec:
           emptyDir: {}
         - name: harmony-settings-volume
           configMap:
-            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" . }}
+            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" $ }}
         - name: dshm
           emptyDir:
             medium: Memory
             sizeLimit: 8Gi
         # extra volume Mounts from values.yaml
-        {{- with .Values.volumes }}
+        {{- with $.Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-{{- if .Values.tensorboard.enabled}}
-{{- if .Values.tensorboard.persistentVolume.enabled }}
+{{- if $.Values.tensorboard.enabled}}
+{{- if $.Values.tensorboard.persistentVolume.enabled }}
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
         name: tensorboard-volume
-        {{- if .Values.tensorboard.persistentVolume.annotations }}
+        {{- if $.Values.tensorboard.persistentVolume.annotations }}
         annotations:
-{{ toYaml .Values.tensorboard.persistentVolume.annotations | indent 10 }}
+{{ toYaml $.Values.tensorboard.persistentVolume.annotations | indent 10 }}
         {{- end }}
-        {{- if .Values.tensorboard.persistentVolume.labels }}
+        {{- if $.Values.tensorboard.persistentVolume.labels }}
         labels:
-{{ toYaml .Values.tensorboard.persistentVolume.labels | indent 10 }}
+{{ toYaml $.Values.tensorboard.persistentVolume.labels | indent 10 }}
         {{- end }}
       spec:
         accessModes:
-{{ toYaml .Values.tensorboard.persistentVolume.accessModes | indent 10 }}
+{{ toYaml $.Values.tensorboard.persistentVolume.accessModes | indent 10 }}
         resources:
           requests:
-            storage: "{{ .Values.tensorboard.persistentVolume.size }}"
-      {{- if .Values.tensorboard.persistentVolume.storageClass }}
-      {{- if (eq "-" .Values.tensorboard.persistentVolume.storageClass) }}
-        storageClassName: ""
-      {{- else }}
-        storageClassName: "{{ .Values.tensorboard.persistentVolume.storageClass }}"
-      {{- end }}
-      {{- end }}
+            storage: {{ $.Values.tensorboard.persistentVolume.size | quote }}
+        {{- if $.Values.tensorboard.persistentVolume.storageClassName }}
+        storageClassName: {{ $.Values.tensorboard.persistentVolume.storageClassName }}
+        {{- end }}
 {{- else }}
         - name: tensorboard-volume
-          emptyDir:
-          {{- if .Values.tensorboard.emptyDir.sizeLimit }}
-            sizeLimit: {{ .Values.tensorboard.emptyDir.sizeLimit }}
-          {{- else }}
-            {}
-          {{- end -}}
+          emptyDir: {}
 {{- end }}
 {{- end }}
+{{- end }}
+{{- end }} 

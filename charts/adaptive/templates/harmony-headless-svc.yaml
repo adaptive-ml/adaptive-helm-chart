@@ -1,17 +1,22 @@
+{{- if .Values.computePool.training }}
+{{- range $pool := .Values.computePool.training }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "adaptive.harmony.headlessService.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "adaptive.harmony.fullname" $ }}-{{ $pool.name | kebabcase }}-hdls-svc
+  namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "adaptive.labels" . | nindent 4 }}
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+    {{- include "adaptive.labels" $ | nindent 4 }}
+    {{- include "adaptive.harmony.selectorLabels" $ | nindent 4 }}
+    training-pool: {{ $pool.name | kebabcase }}
 spec:
   clusterIP: None
   selector:
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 6}}
+    {{- include "adaptive.harmony.selectorLabels" $ | nindent 4}}
+    training-pool: {{ $pool.name | kebabcase }}
   ports:
-    {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+    {{- $ports := include "adaptive.harmony.ports" $ | fromJson }}
     - name: {{ $ports.http.name }}
       port: {{ $ports.http.containerPort }}
       targetPort: {{ $ports.http.containerPort }}
@@ -21,3 +26,5 @@ spec:
     - name: {{ $ports.torch.name }}
       port: {{ $ports.torch.containerPort }}
       targetPort: {{ $ports.torch.containerPort }}
+{{- end }}
+{{- end }}

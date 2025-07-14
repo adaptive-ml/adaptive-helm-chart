@@ -104,7 +104,7 @@ spec:
             - name: ADAPTIVE_TENSORBOARD__ENABLED
               value: "true"
             - name: ADAPTIVE_TENSORBOARD__URL
-              value: "http://{{ include "adaptive.harmony.service.fullname" . }}:{{ $harmonyPorts.tensorboard.containerPort }}"
+              value: "http://{{ include "adaptive.harmony.fullname" . }}-{{ (index .Values.computePool.training 0).name | kebabcase }}-svc:{{ $harmonyPorts.tensorboard.containerPort }}"
             {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}

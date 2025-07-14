@@ -28,12 +28,7 @@ Control plane and harmony components full names
 {{- define "adaptive.harmony.fullname" -}}
 {{- printf "%s-harmony" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
-{{- define "adaptive.harmony.service.fullname"}}
-{{- printf "%s-svc" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
-{{- define "adaptive.harmony.headlessService.fullname"}}
-{{- printf "%s-hdls-svc" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
+
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
@@ -118,15 +113,7 @@ Harmony ports
 }
 {{- end }}
 
-{{/*
-Harmony service HTTP endpoint
-*/}}
-{{- define "adaptive.harmony.httpEndpoint" -}}
-{{- $ports := fromJson (include "adaptive.harmony.ports" .) -}}
-{{- printf "http://%s:%d" (include "adaptive.harmony.service.fullname" .) (int $ports.http.port) }}
-{{- end }}
-
-
+# ODIC providers config 
 {{- define "adaptive.oidc_providers" -}}
 [
   {{- range .Values.secrets.auth.oidc.providers -}}

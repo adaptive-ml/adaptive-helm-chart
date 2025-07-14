@@ -1,0 +1,25 @@
+{{- if not (or .Values.computePool.training .Values.computePool.inference) }}
+{{- fail "At least one compute pool must be specified. Please configure computePool.training or computePool.inference in your values.yaml" }}
+{{- end }}
+
+{{- if and (not .Values.computePool.training) (not .Values.computePool.inference) }}
+{{- fail "At least one compute pool must be specified. Please configure computePool.training or computePool.inference in your values.yaml" }}
+{{- end }}
+
+{{- if .Values.computePool.training }}
+{{- if not (kindIs "slice" .Values.computePool.training) }}
+{{- fail "computePool.training must be a list of pools" }}
+{{- end }}
+{{- if eq (len .Values.computePool.training) 0 }}
+{{- fail "computePool.training cannot be empty if specified. Please define at least one training pool or remove the computePool.training section" }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.computePool.inference }}
+{{- if not (kindIs "slice" .Values.computePool.inference) }}
+{{- fail "computePool.inference must be a list of pools" }}
+{{- end }}
+{{- if eq (len .Values.computePool.inference) 0 }}
+{{- fail "computePool.inference cannot be empty if specified. Please define at least one inference pool or remove the computePool.inference section" }}
+{{- end }}
+{{- end }} 

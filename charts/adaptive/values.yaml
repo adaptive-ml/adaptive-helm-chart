@@ -63,11 +63,7 @@ harmony:
     tag: harmony:latest   # Add the harmony image tag
     pullPolicy: Always
 
-  group: default   # Visible name of the group for this statefulset
-  partitionKey: default-statefulset   # Partition name, should be unique across other groups
-
-  replicaCount: 1
-
+  # Default settings for all compute pools (can be overridden per pool)
   # Should be equal to, or a divisor of the # of GPUs on each node
   # If you are not deploying on GPU, comment out the line
   gpusPerReplica: 8
@@ -97,7 +93,26 @@ harmony:
     - key: "nvidia.com/gpu"
       operator: "Exists"
       effect: "NoSchedule"
-  computePool:   # Uncomment to deploy new partitions to handle inference. Any values not specified will be copied from harmony section, otherwise if specified will override them
+
+# Compute pools configuration - at least one pool must be specified
+computePool:
+  # Training-enabled compute pools
+  training:
+    - name: "default"  # Default training pool - at least one must be present
+      partitionKey: "default-statefulset"  # Partition name, should be unique across other groups
+      replicaCount: 1
+    # - name: "Training Pool 1"
+    #   group: "training-pool-1"
+    #   partitionKey: "training-pool-1-statefulset"
+    #   replicaCount: 2
+    #   groupCapabilities: "TRAINING,INFERENCE,EVALUATION"
+    #   tolerations:
+    #     - key: "nvidia.com/gpu"
+    #       operator: "Exists"
+    #       effect: "NoSchedule"
+    #   nodeSelector: {}
+    #   gpusPerReplica: 8
+  inference:   # Uncomment to deploy new partitions to handle inference only. Any values not specified will be copied from harmony section, otherwise if specified will override them
     # - name: "Inference Pool"
     #   minReplicaCount: 1
     #   maxReplicaCount: 5
