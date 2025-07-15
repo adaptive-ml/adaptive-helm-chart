@@ -62,6 +62,10 @@ spec:
         - name: harmony
           image: "{{ include "adaptive.harmony.imageUri" . }}"
           imagePullPolicy: {{ .Values.harmony.image.pullPolicy }}
+          {{- if .Values.harmony.securityContext }}
+          securityContext:
+            {{- toYaml .Values.harmony.securityContext | nindent 12 }}
+          {{- end }}
           resources:
             limits:
               {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
