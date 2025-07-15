@@ -124,6 +124,8 @@ spec:
             {{- if .Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
               value: "/logdir"
+            - name: JOB_LOG_DIR
+              value: "{{ $harmonySettings.working_dir }}/job_logs"
             {{- end }}
             {{- if .Values.harmony.extraEnvVars }}
             {{- range $key, $value := .Values.harmony.extraEnvVars }}
@@ -169,6 +171,26 @@ spec:
             - name: tensorboard-volume
               mountPath: /logdir
         {{- end }}
+        - name: job-log-exporter
+          image: {{ .Values.alloy.imageUri }}
+          imagePullPolicy: {{ .Values.alloy.image.pullPolicy }}
+          ports:
+            - containerPort: {{ $ports.alloy.containerPort }}
+              name: {{ $ports.alloy.name }}
+          command:
+            - "run"
+            - "--server.http.listen-addr=0.0.0.0:{{ $ports.alloy.containerPort }}"
+            - "--storage.path=/var/lib/alloy/data"
+            - "/etc/alloy/config.alloy"
+          {{- if .Values.alloy.resources }}
+          resources:
+{{ toYaml .Values.alloy.resources | indent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: workdir-volume
+              mountPath: /workdir/
+            - name: alloy-config
+              mountPath: "/etc/alloy"
       volumes:
         - name: cloud-cache-volume
           emptyDir: {}
@@ -177,6 +199,9 @@ spec:
         - name: harmony-settings-volume
           configMap:
             name: {{ include "adaptive.harmony.settingsConfigMap.fullname" . }}
+        - name: alloy-config
+          configMap:
+            name: {{ include "adaptive.harmony.alloyConfigMap.fullname" . }}
         - name: dshm
           emptyDir:
             medium: Memory
