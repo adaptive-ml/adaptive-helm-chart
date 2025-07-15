@@ -177,7 +177,7 @@ spec:
           ports:
             - containerPort: {{ $ports.alloy.containerPort }}
               name: {{ $ports.alloy.name }}
-          command:
+          args:
             - "run"
             - "--server.http.listen-addr=0.0.0.0:{{ $ports.alloy.containerPort }}"
             - "--storage.path=/var/lib/alloy/data"
