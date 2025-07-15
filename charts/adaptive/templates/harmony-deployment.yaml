@@ -75,6 +75,10 @@ spec:
       containers:
         - name: harmony
           image: "{{ include "adaptive.harmony.imageUri" $ }}"
+          {{- if $poolMerged.securityContext }}
+          securityContext:
+            {{- toYaml $poolMerged.securityContext | nindent 12 }}
+          {{- end }}
           imagePullPolicy: {{ $.Values.harmony.image.pullPolicy }}
           resources:
             limits:
