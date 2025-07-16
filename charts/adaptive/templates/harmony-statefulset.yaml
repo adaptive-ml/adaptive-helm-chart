@@ -127,7 +127,7 @@ spec:
               value: PROD
             {{- if .Values.mlflow.enabled }}
             - name: MLFLOW_TRACKING_URI
-              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ include "adaptive.mlflow.ports" . | fromJson | get "http" | get "port" }}"
+              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
             {{- else if .Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
               value: "/logdir"
