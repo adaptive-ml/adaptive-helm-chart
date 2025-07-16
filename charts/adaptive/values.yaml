@@ -443,7 +443,7 @@ tensorboard:
     storageClass: ""
   emptyDir:
     sizeLimit: null
-  
+
 mlflow:
   # If set to true, jobs will use MLflow for experiment tracking
   # A separate MLflow tracking server will be deployed
@@ -452,18 +452,18 @@ mlflow:
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   image:
     pullPolicy: IfNotPresent
-  
+
   replicaCount: 1
-  workers: 4 # Recommended: 2-4 workers per CPU core. With 1 CPU limit, 4 workers is optimal
-  
+  workers: 4  # Recommended: 2-4 workers per CPU core. With 1 CPU limit, 4 workers is optimal
+
   # MLflow server configuration
   backendStoreUri: sqlite:///mlflow-storage/mlflow.db
   defaultArtifactRoot: /mlflow-storage/artifacts
   serveArtifacts: true
-  
+
   # Storage configuration - ensure mountPath aligns with backendStoreUri and defaultArtifactRoot paths
   mountPath: /mlflow-storage
-  
+
   # Resources for MLflow server
   resources:
     limits:
@@ -472,7 +472,7 @@ mlflow:
     requests:
       cpu: 500m
       memory: 1Gi
-  
+
   # Configure persistence for MLflow data
   persistentVolume:
     enabled: false
@@ -484,15 +484,15 @@ mlflow:
     storageClass: ""
   emptyDir:
     sizeLimit: null
-  
+
   # Node selection and tolerations
   nodeSelector: {}
   tolerations: []
-  
+
   # Pod annotations and labels
   podAnnotations: {}
   podLabels: {}
-  
+
   # Additional environment variables
   extraEnvVars: {}
 
