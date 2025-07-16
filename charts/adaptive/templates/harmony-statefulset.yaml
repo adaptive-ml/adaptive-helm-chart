@@ -125,14 +125,14 @@ spec:
             {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
+            - name: JOB_LOG_DIR
+              value: "{{ $harmonySettings.working_dir }}/job_logs"
             {{- if .Values.mlflow.enabled }}
             - name: MLFLOW_TRACKING_URI
               value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
             {{- else if .Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
               value: "/logdir"
-            - name: JOB_LOG_DIR
-              value: "{{ $harmonySettings.working_dir }}/job_logs"
             {{- end }}
             {{- if .Values.harmony.extraEnvVars }}
             {{- range $key, $value := .Values.harmony.extraEnvVars }}
