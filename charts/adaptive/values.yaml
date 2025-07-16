@@ -458,7 +458,10 @@ mlflow:
 
   # MLflow server configuration
   backendStoreUri: sqlite:///mlflow-storage/mlflow.db
-  defaultArtifactRoot: /mlflow-storage/artifacts
+  # Use mlflow-artifacts:/ URI scheme - artifacts sent via HTTP to server, stored server-side
+  # This way, multiple training partitions can upload artifacts without relying on shared storage
+  # Highly advised to stick to this scheme
+  defaultArtifactRoot: mlflow-artifacts:/
   serveArtifacts: true
 
   # Storage configuration - ensure mountPath aligns with backendStoreUri and defaultArtifactRoot paths

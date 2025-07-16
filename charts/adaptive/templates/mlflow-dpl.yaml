@@ -64,6 +64,8 @@ spec:
             {{- if .Values.mlflow.serveArtifacts }}
             - name: MLFLOW_SERVE_ARTIFACTS
               value: "true"
+            - name: MLFLOW_ARTIFACTS_DESTINATION
+               value: "{{ .Values.mlflow.mountPath }}/artifacts"
             {{- else }}
             - name: MLFLOW_SERVE_ARTIFACTS
               value: "false"
