@@ -44,6 +44,8 @@ spec:
         - name: mlflow
           image: "{{ include "adaptive.mlflow.imageUri" . }}"
           imagePullPolicy: {{ .Values.mlflow.image.pullPolicy }}
+          command: ["mlflow"]
+          args: ["server"]
           ports:
             {{- $ports := include "adaptive.mlflow.ports" . | fromJson }}
             - containerPort: {{ $ports.http.containerPort }}
