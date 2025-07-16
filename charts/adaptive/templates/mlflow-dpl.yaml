@@ -48,20 +48,24 @@ spec:
             {{- $ports := include "adaptive.mlflow.ports" . | fromJson }}
             - containerPort: {{ $ports.http.containerPort }}
               name: {{ $ports.http.name }}
-          command:
-            - "/bin/sh"
-            - "-c"
-            - |
-              pip install mlflow==3.1.1
-              mlflow server \
-                --backend-store-uri "{{ .Values.mlflow.backendStoreUri }}" \
-                --default-artifact-root "{{ .Values.mlflow.defaultArtifactRoot }}" \
-                --host 0.0.0.0 \
-                --port {{ $ports.http.containerPort }} \
-                {{- if .Values.mlflow.serveArtifacts }}
-                --serve-artifacts
-                {{- end }}
           env:
+            - name: MLFLOW_BACKEND_STORE_URI
+              value: "{{ .Values.mlflow.backendStoreUri }}"
+            - name: MLFLOW_DEFAULT_ARTIFACT_ROOT
+              value: "{{ .Values.mlflow.defaultArtifactRoot }}"
+            - name: MLFLOW_HOST
+              value: "0.0.0.0"
+            - name: MLFLOW_PORT
+              value: "{{ $ports.http.containerPort }}"
+            - name: MLFLOW_WORKERS
+              value: "{{ .Values.mlflow.workers }}"
+            {{- if .Values.mlflow.serveArtifacts }}
+            - name: MLFLOW_SERVE_ARTIFACTS
+              value: "true"
+            {{- else }}
+            - name: MLFLOW_SERVE_ARTIFACTS
+              value: "false"
+            {{- end }}
             {{- if .Values.mlflow.extraEnvVars }}
             {{- range $key, $value := .Values.mlflow.extraEnvVars }}
             - name: {{ $key }}
