@@ -44,6 +44,18 @@ Control plane and harmony components full names
 {{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
+# MLFlow names 
+{{- define "adaptive.mlflow.fullname" -}}
+{{- printf "%s-mlflow" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.mlflow.service.fullname"}}
+{{- printf "%s-svc" (include "adaptive.mlflow.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.mlflow.pvc.fullname"}}
+{{- printf "%s-pvc" (include "adaptive.mlflow.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+
+
 
 {{/*
 Secret related fullnames
@@ -63,6 +75,7 @@ Secret related fullnames
 {{- define "adaptive.harmony.externalSecret.fullname"}}
 {{- printf "%s-ext-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+
 
 
 {{/*
@@ -109,6 +122,12 @@ app.kubernetes.io/component: harmony-dpl
 {{ include "adaptive.sharedSelectorLabels" . }}
 {{- end }}
 
+# MLFlow selector labels
+{{- define "adaptive.mlflow.selectorLabels" -}}
+app.kubernetes.io/component: mlflow
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
 {{/*
 Harmony ports
 */}}
@@ -119,6 +138,15 @@ Harmony ports
   "torch": {"name": "torch", "containerPort": 7777},
   "tensorboard": {"name": "tensorboard", "containerPort": 6006},
   "alloy": {"name": "alloy", "containerPort": 12345}
+}
+{{- end }}
+
+{{/*
+MLFlow ports
+*/}}
+{{- define "adaptive.mlflow.ports" -}}
+{
+  "http": {"name": "http", "containerPort": 5000, "port": 5000}
 }
 {{- end }}
 
@@ -192,4 +220,7 @@ Build the image URIs from registry, repository, name, and tag
 {{- end }}
 {{- define "adaptive.tensorboard.imageUri" -}}
 {{- printf "%s" .Values.tensorboard.imageUri }}
+{{- end }}
+{{- define "adaptive.mlflow.imageUri" -}}
+{{- printf "%s" .Values.mlflow.imageUri }}
 {{- end }}
