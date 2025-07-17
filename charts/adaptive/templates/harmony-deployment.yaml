@@ -139,6 +139,8 @@ spec:
               value: info
             - name: ADAPTIVE_MODE
               value: PROD
+            - name: JOB_LOG_DIR
+              value: "{{ $harmonySettings.working_dir }}/job_logs"
             {{- if $poolMerged.extraEnvVars }}
             {{- range $key, $value := $poolMerged.extraEnvVars }}
             - name: {{ $key }}
