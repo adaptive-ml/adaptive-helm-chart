@@ -1,0 +1,10 @@
+ezua:
+  authorizationPolicy:
+    namespace: "istio-system"
+    providerName: "oauth2-proxy"
+    matchLabels:
+      istio: "ingressgateway"
+
+  virtualService:
+    endpoint: "adaptive.{DOMAIN_NAME}"
+    istioGateway: "istio-system/ezaf-gateway"
