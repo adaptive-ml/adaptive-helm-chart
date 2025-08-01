@@ -34,6 +34,9 @@ spec:
       volumes:
         - name: working-dir
           emptyDir: {}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       nodeSelector:
         {{- with .Values.sandkasten.nodeSelector}}
         {{ toYaml . }}
