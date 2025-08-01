@@ -72,6 +72,9 @@ harmony:
   # If you are not deploying on GPU, comment out the line
   gpusPerReplica: 8
 
+  # If true jobs will be run in the sandkasten container
+  enableSandbox: true
+
   nodeSelector:   # Uncomment to deploy harmony on specify EKS node group or GKE node pool
     {}
     # eks.amazonaws.com/nodegroup: gpu-node-group-name
