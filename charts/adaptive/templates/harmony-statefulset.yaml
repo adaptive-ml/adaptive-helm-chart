@@ -62,6 +62,10 @@ spec:
         - name: harmony
           image: "{{ include "adaptive.harmony.imageUri" . }}"
           imagePullPolicy: {{ .Values.harmony.image.pullPolicy }}
+          {{- if .Values.harmony.securityContext }}
+          securityContext:
+            {{- toYaml .Values.harmony.securityContext | nindent 12 }}
+          {{- end }}
           resources:
             limits:
               {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
@@ -123,7 +127,12 @@ spec:
             {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
-            {{- if .Values.tensorboard.enabled }}
+            - name: JOB_LOG_DIR
+              value: "{{ $harmonySettings.working_dir }}/job_logs"
+            {{- if .Values.mlflow.enabled }}
+            - name: MLFLOW_TRACKING_URI
+              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+            {{- else if .Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
               value: "/logdir"
             {{- end }}
@@ -171,6 +180,26 @@ spec:
             - name: tensorboard-volume
               mountPath: /logdir
         {{- end }}
+        - name: job-log-exporter
+          image: {{ .Values.alloy.imageUri }}
+          imagePullPolicy: {{ .Values.alloy.image.pullPolicy }}
+          ports:
+            - containerPort: {{ $ports.alloy.containerPort }}
+              name: {{ $ports.alloy.name }}
+          args:
+            - "run"
+            - "--server.http.listen-addr=0.0.0.0:{{ $ports.alloy.containerPort }}"
+            - "--storage.path=/var/lib/alloy/data"
+            - "/etc/alloy/config.alloy"
+          {{- if .Values.alloy.resources }}
+          resources:
+{{ toYaml .Values.alloy.resources | indent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: workdir-volume
+              mountPath: /workdir/
+            - name: alloy-config
+              mountPath: "/etc/alloy"
       volumes:
         - name: cloud-cache-volume
           emptyDir: {}
@@ -179,6 +208,9 @@ spec:
         - name: harmony-settings-volume
           configMap:
             name: {{ include "adaptive.harmony.settingsConfigMap.fullname" . }}
+        - name: alloy-config
+          configMap:
+            name: {{ include "adaptive.harmony.alloyConfigMap.fullname" . }}
         - name: dshm
           emptyDir:
             medium: Memory

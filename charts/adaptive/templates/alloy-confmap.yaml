@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "adaptive.harmony.alloyConfigMap.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+data:
+  config.alloy: | 
+    logging {
+      level  = "info"
+      format = "logfmt"
+    }
+
+    // Set loki endpoint
+    loki.write "grafana_loki" {
+      endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+      }
+    }
+
+    // discover job files from the /logs folder
+    local.file_match "job_files" {
+      path_targets = [{"__path__" = "/workdir/job_logs/job_*.*.log"}]
+      sync_period  = "5s"
+    }
+
+    // extract job_id from filename
+    discovery.relabel "job_files_labels" {
+      targets = local.file_match.job_files.targets
+
+      rule {
+        source_labels = ["__path__"]
+        regex = ".*/job_([^.]+).*\\.log"
+        target_label = "job_id"
+      }
+      rule {
+        source_labels = ["__path__"]
+        regex = ".*/job_[^.]+\\.([^.]+)\\.log"
+        target_label = "type"
+      }
+      rule {
+        target_label = "service_name"
+        replacement = "harmony"
+      }
+    }
+
+    // send job files to loki
+    loki.source.file "job_files" {
+      targets = discovery.relabel.job_files_labels.output
+      forward_to = [loki.write.grafana_loki.receiver]
+    }

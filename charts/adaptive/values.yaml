@@ -465,6 +465,74 @@ tensorboard:
   emptyDir:
     sizeLimit: null
 
+mlflow:
+  # If set to true, jobs will use MLflow for experiment tracking
+  # A separate MLflow tracking server will be deployed
+  # Takes priority over tensorboard if both are enabled
+  enabled: false
+  imageUri: ghcr.io/mlflow/mlflow:v3.1.1
+  image:
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+  workers: 4  # Recommended: 2-4 workers per CPU core. With 1 CPU limit, 4 workers is optimal
+
+  # MLflow server configuration
+  backendStoreUri: sqlite:///mlflow-storage/mlflow.db
+  # Use mlflow-artifacts:/ URI scheme - artifacts sent via HTTP to server, stored server-side
+  # This way, multiple training partitions can upload artifacts without relying on shared storage
+  # Highly advised to stick to this scheme
+  defaultArtifactRoot: mlflow-artifacts:/
+  serveArtifacts: true
+
+  # Storage configuration - ensure mountPath aligns with backendStoreUri and defaultArtifactRoot paths
+  mountPath: /mlflow-storage
+
+  # Resources for MLflow server
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  # Configure persistence for MLflow data
+  persistentVolume:
+    enabled: false
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    annotations: {}
+    labels: {}
+    storageClass: ""
+  emptyDir:
+    sizeLimit: null
+
+  # Node selection and tolerations
+  nodeSelector: {}
+  tolerations: []
+
+  # Pod annotations and labels
+  podAnnotations: {}
+  podLabels: {}
+
+  # Additional environment variables
+  extraEnvVars: {}
+
+
+alloy:
+  imageUri: grafana/alloy:latest
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 

@@ -1,0 +1,102 @@
+{{- if .Values.mlflow.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "adaptive.mlflow.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.mlflow.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.mlflow.replicaCount | default 1 | int }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.mlflow.selectorLabels" . | nindent 6}}
+  template:
+    metadata:
+      {{- with .Values.mlflow.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.mlflow.selectorLabels" . | nindent 8 }}
+        {{- with .Values.mlflow.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- with .Values.mlflow.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mlflow.tolerations }}
+      tolerations:
+        {{- toYaml .Values.mlflow.tolerations | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mlflow
+          image: "{{ include "adaptive.mlflow.imageUri" . }}"
+          imagePullPolicy: {{ .Values.mlflow.image.pullPolicy }}
+          command: ["mlflow"]
+          args: ["server"]
+          ports:
+            {{- $ports := include "adaptive.mlflow.ports" . | fromJson }}
+            - containerPort: {{ $ports.http.containerPort }}
+              name: {{ $ports.http.name }}
+          env:
+            - name: MLFLOW_BACKEND_STORE_URI
+              value: "{{ .Values.mlflow.backendStoreUri }}"
+            - name: MLFLOW_DEFAULT_ARTIFACT_ROOT
+              value: "{{ .Values.mlflow.defaultArtifactRoot }}"
+            - name: MLFLOW_HOST
+              value: "0.0.0.0"
+            - name: MLFLOW_PORT
+              value: "{{ $ports.http.containerPort }}"
+            - name: MLFLOW_WORKERS
+              value: "{{ .Values.mlflow.workers }}"
+            {{- if .Values.mlflow.serveArtifacts }}
+            - name: MLFLOW_SERVE_ARTIFACTS
+              value: "true"
+            - name: MLFLOW_ARTIFACTS_DESTINATION
+              value: "{{ .Values.mlflow.mountPath }}/artifacts"
+            {{- else }}
+            - name: MLFLOW_SERVE_ARTIFACTS
+              value: "false"
+            {{- end }}
+            {{- if .Values.mlflow.extraEnvVars }}
+            {{- range $key, $value := .Values.mlflow.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          {{- if .Values.mlflow.resources }}
+          resources:
+            {{- toYaml .Values.mlflow.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: mlflow-storage
+              mountPath: {{ .Values.mlflow.mountPath }}
+
+      volumes:
+        {{- if .Values.mlflow.persistentVolume.enabled }}
+        - name: mlflow-storage
+          persistentVolumeClaim:
+            claimName: {{ include "adaptive.mlflow.pvc.fullname" . }}
+        {{- else }}
+        - name: mlflow-storage
+          emptyDir:
+          {{- if .Values.mlflow.emptyDir.sizeLimit }}
+            sizeLimit: {{ .Values.mlflow.emptyDir.sizeLimit }}
+          {{- else }}
+            {}
+          {{- end -}}
+        {{- end }}
+
+{{- end }} 

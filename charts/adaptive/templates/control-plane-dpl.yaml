@@ -106,6 +106,14 @@ spec:
             - name: ADAPTIVE_TENSORBOARD__URL
               value: "http://{{ include "adaptive.harmony.service.fullname" . }}:{{ $harmonyPorts.tensorboard.containerPort }}"
             {{- end }}
+            {{- if .Values.mlflow.enabled }}
+            - name: ADAPTIVE_MLFLOW__ENABLED
+              value: "true"
+            - name: ADAPTIVE_MLFLOW__URL
+              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+            - name: MLFLOW_TRACKING_URI
+              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+            {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}
             - name: {{ $key }}

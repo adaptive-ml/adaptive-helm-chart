@@ -44,9 +44,24 @@ Control plane and harmony components full names
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+{{- define "adaptive.harmony.alloyConfigMap.fullname"}}
+{{- printf "%s-alloy-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
 {{- define "adaptive.harmony.deployment.fullname"}}
 {{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+
+# MLFlow names 
+{{- define "adaptive.mlflow.fullname" -}}
+{{- printf "%s-mlflow" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.mlflow.service.fullname"}}
+{{- printf "%s-svc" (include "adaptive.mlflow.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.mlflow.pvc.fullname"}}
+{{- printf "%s-pvc" (include "adaptive.mlflow.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+
 
 
 {{/*
@@ -67,6 +82,7 @@ Secret related fullnames
 {{- define "adaptive.harmony.externalSecret.fullname"}}
 {{- printf "%s-ext-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+
 
 
 {{/*
@@ -119,6 +135,12 @@ app.kubernetes.io/component: sandkasten
 {{- end }}
 
 
+# MLFlow selector labels
+{{- define "adaptive.mlflow.selectorLabels" -}}
+app.kubernetes.io/component: mlflow
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
 {{/*
 Harmony ports
 */}}
@@ -127,7 +149,17 @@ Harmony ports
   "http": {"name": "http", "containerPort": 50053, "port": 80},
   "queue": {"name": "queue", "containerPort": 50052},
   "torch": {"name": "torch", "containerPort": 7777},
-  "tensorboard": {"name": "tensorboard", "containerPort": 6006}
+  "tensorboard": {"name": "tensorboard", "containerPort": 6006},
+  "alloy": {"name": "alloy", "containerPort": 12345}
+}
+{{- end }}
+
+{{/*
+MLFlow ports
+*/}}
+{{- define "adaptive.mlflow.ports" -}}
+{
+  "http": {"name": "http", "containerPort": 5000, "port": 5000}
 }
 {{- end }}
 
@@ -217,6 +249,11 @@ Build the image URIs from registry, repository, name, and tag
 {{- define "adaptive.tensorboard.imageUri" -}}
 {{- printf "%s" .Values.tensorboard.imageUri }}
 {{- end }}
+<<<<<<< HEAD
 {{- define "adaptive.sandkasten.imageUri" -}}
 {{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository .Values.sandkasten.image.tag | trimSuffix "/" }}
+=======
+{{- define "adaptive.mlflow.imageUri" -}}
+{{- printf "%s" .Values.mlflow.imageUri }}
+>>>>>>> origin/main
 {{- end }}

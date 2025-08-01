@@ -76,6 +76,10 @@ spec:
         - name: harmony
           image: "{{ include "adaptive.harmony.imageUri" $ }}"
           imagePullPolicy: {{ $.Values.harmony.image.pullPolicy }}
+          {{- if $poolMerged.securityContext }}
+          securityContext:
+            {{- toYaml $poolMerged.securityContext | nindent 12 }}
+          {{- end }}
           resources:
             limits:
               {{- toYaml $poolMerged.resources.limits | nindent 14 }}
@@ -137,6 +141,8 @@ spec:
               value: info
             - name: ADAPTIVE_MODE
               value: PROD
+            - name: JOB_LOG_DIR
+              value: "{{ $harmonySettings.working_dir }}/job_logs"
             {{- if $poolMerged.extraEnvVars }}
             {{- range $key, $value := $poolMerged.extraEnvVars }}
             - name: {{ $key }}
