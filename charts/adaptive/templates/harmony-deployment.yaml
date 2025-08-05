@@ -141,6 +141,8 @@ spec:
               value: PROD
             - name: JOB_LOG_DIR
               value: "{{ $harmonySettings.working_dir }}/job_logs"
+            - name: PYTHONIOENCODING
+              value: "utf-8"
             {{- if $poolMerged.extraEnvVars }}
             {{- range $key, $value := $poolMerged.extraEnvVars }}
             - name: {{ $key }}

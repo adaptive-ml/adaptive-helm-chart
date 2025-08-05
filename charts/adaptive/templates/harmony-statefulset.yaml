@@ -125,6 +125,8 @@ spec:
             {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
+            - name: PYTHONIOENCODING
+              value: "utf-8"
             - name: JOB_LOG_DIR
               value: "{{ $harmonySettings.working_dir }}/job_logs"
             {{- if .Values.mlflow.enabled }}
