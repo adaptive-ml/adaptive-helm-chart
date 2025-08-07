@@ -448,7 +448,7 @@ mlflow:
   # If set to true, jobs will use MLflow for experiment tracking
   # A separate MLflow tracking server will be deployed
   # Takes priority over tensorboard if both are enabled
-  enabled: false
+  enabled: true
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   image:
     pullPolicy: IfNotPresent
@@ -464,8 +464,20 @@ mlflow:
   defaultArtifactRoot: mlflow-artifacts:/
   serveArtifacts: true
 
-  # Storage configuration - ensure mountPath aligns with backendStoreUri and defaultArtifactRoot paths
-  mountPath: /mlflow-storage
+  # Storage configuration for mlflow database and artifacts
+  volumes:
+    - name: mlflow-storage
+      emptyDir: {}
+    # Example for NFS hostPath:
+    # - name: mlflow-storage
+    #   hostPath:
+    #     path: /mnt/nfs/mlflow
+    #     type: Directory
+
+  # Ensure mountPath matches the backenStoreUri
+  volumeMounts:
+    - name: mlflow-storage
+      mountPath: /mlflow-storage
 
   # Resources for MLflow server
   resources:
@@ -475,18 +487,6 @@ mlflow:
     requests:
       cpu: 500m
       memory: 1Gi
-
-  # Configure persistence for MLflow data
-  persistentVolume:
-    enabled: false
-    size: 10Gi
-    accessModes:
-      - ReadWriteOnce
-    annotations: {}
-    labels: {}
-    storageClass: ""
-  emptyDir:
-    sizeLimit: null
 
   # Node selection and tolerations
   nodeSelector: {}
