@@ -515,6 +515,35 @@ alloy:
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 
+redis:
+  enabled: true  # Set to false to disable Redis deployment
+
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+
+  port: 6379
+
+  # Redis authentication (optional)
+  auth:
+    username: ""  # Leave empty for no username
+    password: ""  # Leave empty for no password
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  podAnnotations: {}
+  podLabels: {}
+  extraEnvVars: {}
+  nodeSelector: {}
+  tolerations: []
+
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry
