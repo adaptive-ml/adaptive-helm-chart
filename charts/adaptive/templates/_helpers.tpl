@@ -223,6 +223,7 @@ Build the image URIs from registry, repository, name, and tag
 {{- end }}
 {{- define "adaptive.mlflow.imageUri" -}}
 {{- printf "%s" .Values.mlflow.imageUri }}
+{{- end }}
 
 {{/*
 Redis related helpers
