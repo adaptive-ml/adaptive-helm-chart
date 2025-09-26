@@ -224,3 +224,35 @@ Build the image URIs from registry, repository, name, and tag
 {{- define "adaptive.mlflow.imageUri" -}}
 {{- printf "%s" .Values.mlflow.imageUri }}
 {{- end }}
+
+{{/*
+Redis related helpers
+*/}}
+{{- define "adaptive.redis.fullname" -}}
+{{- printf "%s-redis" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.redis.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.redis.selectorLabels" -}}
+app.kubernetes.io/component: redis
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.redis.secret.fullname" -}}
+{{- printf "%s-secret" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.redis.url" -}}
+{{- $host := include "adaptive.redis.service.fullname" . -}}
+{{- $port := .Values.redis.port | int -}}
+{{- if and .Values.redis.auth.username .Values.redis.auth.password -}}
+{{- printf "redis://%s:%s@%s:%d" .Values.redis.auth.username .Values.redis.auth.password $host $port -}}
+{{- else if .Values.redis.auth.password -}}
+{{- printf "redis://:%s@%s:%d" .Values.redis.auth.password $host $port -}}
+{{- else -}}
+{{- printf "redis://%s:%d" $host $port -}}
+{{- end -}}
+{{- end }}
