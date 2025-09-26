@@ -99,7 +99,7 @@ spec:
               value: {{ .Values.auth.default_role | default "admin" | quote }}
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
-            - name: REDIS_URL
+            - name: ADAPTIVE_REDIS__URL
               valueFrom:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
