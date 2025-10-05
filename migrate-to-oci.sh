@@ -32,8 +32,11 @@ command -v curl >/dev/null 2>&1 || { echo -e "${RED}Error: curl is not installed
 
 # Check Helm version
 HELM_VERSION=$(helm version --short | grep -oE 'v[0-9]+\.[0-9]+' | sed 's/v//')
+readonly HELM_VERSION
 HELM_MAJOR=$(echo $HELM_VERSION | cut -d. -f1)
+readonly HELM_MAJOR
 HELM_MINOR=$(echo $HELM_VERSION | cut -d. -f2)
+readonly HELM_MINOR
 
 if [ "$HELM_MAJOR" -lt 3 ] || ([ "$HELM_MAJOR" -eq 3 ] && [ "$HELM_MINOR" -lt 8 ]); then
     echo -e "${RED}Error: Helm 3.8.0 or higher is required for OCI support${NC}"
