@@ -4,7 +4,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 ## Installing the Chart
 
-[Helm](https://helm.sh) must be installed to use the charts.
+[Helm](https://helm.sh) must be installed to use the charts. Helm 3.8.0 or higher is required.
 
 ---
 
@@ -24,28 +24,46 @@ A Helm Chart to deploy Adaptive Engine.
 
 4. Storage classes: for logs and Prometheus timeseries persistence. for further details see section `About persistence and volumes`
 
-##### 1. Add the charts from this repository:
+##### 1. Install the charts from GitHub OCI Registry
 
-```
-helm repo remove adaptive 2>/dev/null
-helm repo add adaptive https://adaptive-ml.github.io/adaptive-helm-chart/
-helm repo update adaptive
-```
-
-You can then run `helm search repo adaptive` to see the charts.
-There are 2 charts in this repo:
+The charts are published to GitHub Container Registry (GHCR) as OCI artifacts. There are 2 charts available:
 
 - `adaptive`, the main chart to deploy Adaptive Engine
 - `monitoring`, an optional addon chart to monitor Adaptive Engine logs with Grafana
 
-##### 2. Get the default values.yaml configuration file:
+**For public packages:**
+```bash
+# Install adaptive chart
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2
 
-```
-helm show values adaptive/adaptive > values.yaml
-helm show values adaptive/monitoring > values.monitoring.yaml
+# Install monitoring chart
+helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5
 ```
 
-##### 3. Edit the adaptive chart's `values.yaml` file to customize it for your environment. Here are the key sections:
+**For private packages (authentication required):**
+```bash
+# Login to GitHub Container Registry
+echo $GITHUB_TOKEN | helm registry login ghcr.io -u <github-username> --password-stdin
+
+# Pull and install the chart
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2
+```
+
+##### 2. Get the default values.yaml configuration file
+
+```bash
+# Pull the chart to inspect values
+helm pull oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 --untar
+helm pull oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5 --untar
+
+# Or use helm show (requires Helm 3.8+)
+helm show values oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 > values.yaml
+helm show values oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5 > values.monitoring.yaml
+```
+
+**Note:** To view available chart versions, visit the [GitHub Packages page](https://github.com/orgs/adaptive-ml/packages) for this repository.
+
+##### 3. Edit the `values.yaml` file to customize it for your environment. Here are the key sections
 
 ###### Secrets for model registry, database and auth
 
@@ -120,9 +138,9 @@ See the full `charts/adaptive/values.yaml` file for further customization.
 
 ##### 4. Deploy the chart with
 
-```
-helm install adaptive adaptive/adaptive -f ./values.yaml
-helm install adaptive-monitoring adaptive/monitoring -f ./values.monitoring.yaml
+```bash
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 -f ./values.yaml
+helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5 -f ./values.monitoring.yaml
 ```
 
 If you deploy the addon adaptive-monitoring chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file retrieved in step #2; it must match the value of your igress domain (`controlPlane.rootUrl`) for Adaptive Engine
@@ -149,8 +167,8 @@ helm install external-secrets \
 
 3. Deploy the Helm chart using the updated values file
 
-```
-helm install adaptive adaptive/adaptive -f charts/adaptive/values_external_secret.yaml
+```bash
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 -f charts/adaptive/values_external_secret.yaml
 ```
 
 ## Inference placements and autoscaling

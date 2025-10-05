@@ -1,6 +1,5 @@
-
-## Reference: https://github.com/helm/chart-releaser-action
-name: Release the helm chart
+## Reference: https://helm.sh/docs/topics/registries/
+name: Publish Helm Charts to OCI Registry
 on:
   push:
     branches:
@@ -9,7 +8,8 @@ on:
 jobs:
   publish:
     permissions:
-      contents: write  # for helm/chart-releaser-action to push chart release and create a release
+      contents: read
+      packages: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,15 +20,25 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4
         with:
-          version: v3.10.1
+          version: v3.14.0
 
-      - name: Configure Git
+      - name: Log in to GitHub Container Registry
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      # Step 5: Package and upload Helm chart
-      - name: Upload Helm chart to GitHub release
-        uses: helm/chart-releaser-action@v1.7.0
-        env:
-          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package and Push Adaptive Chart
+        run: |
+          cd charts
+          helm dependency update adaptive
+          helm package adaptive
+          helm push adaptive-*.tgz oci://ghcr.io/${{ github.repository_owner }}
+
+      - name: Package and Push Monitoring Chart
+        run: |
+          cd charts
+          helm package monitoring
+          helm push monitoring-*.tgz oci://ghcr.io/${{ github.repository_owner }}
+
+      - name: Logout from Registry
+        if: always()
+        run: helm registry logout ghcr.io
