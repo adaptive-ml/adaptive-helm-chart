@@ -34,10 +34,10 @@ The charts are published to GitHub Container Registry (GHCR) as OCI artifacts. T
 **For public packages:**
 ```bash
 # Install adaptive chart
-helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive
 
 # Install monitoring chart
-helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5
+helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring
 ```
 
 **For private packages (authentication required):**
@@ -46,19 +46,21 @@ helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring --version 
 echo $GITHUB_TOKEN | helm registry login ghcr.io -u <github-username> --password-stdin
 
 # Pull and install the chart
-helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive
 ```
+
+> For all of the previous helm commands you can specify the helm chart version by passing `--version` argument.
 
 ##### 2. Get the default values.yaml configuration file
 
 ```bash
 # Pull the chart to inspect values
-helm pull oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 --untar
-helm pull oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5 --untar
+helm pull oci://ghcr.io/adaptive-ml/adaptive --untar
+helm pull oci://ghcr.io/adaptive-ml/monitoring --untar
 
 # Or use helm show (requires Helm 3.8+)
-helm show values oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 > values.yaml
-helm show values oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5 > values.monitoring.yaml
+helm show values oci://ghcr.io/adaptive-ml/adaptive > values.yaml
+helm show values oci://ghcr.io/adaptive-ml/monitoring > values.monitoring.yaml
 ```
 
 **Note:** To view available chart versions, visit the [GitHub Packages page](https://github.com/orgs/adaptive-ml/packages) for this repository.
