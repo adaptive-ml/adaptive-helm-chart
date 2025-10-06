@@ -75,4 +75,4 @@ jobs:
       - name: Verify Chart with Cosign
         if: steps.changes.outputs.changed == 'true'
         run: |
-          cosign verify ghcr.io/${{ github.repository_owner }}/${{ matrix.chart.name }}:${{ steps.chart_version.outputs.version }} --certificate-identity-regexp='.*' --certificate-oidc-issuer=https://token.actions.githubusercontent.com   
+          cosign verify ghcr.io/${{ github.repository_owner }}/${{ matrix.chart.name }}:${{ steps.chart_version.outputs.version }} --certificate-identity-regexp='^https://github\.com/${{ github.repository_owner }}/.*$' --certificate-oidc-issuer=https://token.actions.githubusercontent.com   
