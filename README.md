@@ -15,9 +15,10 @@ A Helm Chart to deploy Adaptive Engine.
 ## Prerequisites
 
 1. Nvidia operator installed in the target k8s cluster: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
+
 2. k8s version >=1.26.
 
-3. For inference autoscaling. Adaptive engine supports horizontal pods scaling for those pools. This is automatic based on Qos metrics (TTFT), and technical metrics (required gpus vs available gpus). For the target k8s cluster to support nodes austocaling. Those requirements should be met:
+3. For inference autoscaling (optional feature). Adaptive engine supports horizontal pods scaling for those pools. This is automatic based on Qos metrics (TTFT), and technical metrics (required gpus vs available gpus). For the target k8s cluster to support nodes austocaling. Those requirements should be met:
     - *Cluster Autoscaler* enabled and correctly configured.
     - Node pool (or equivalent in your cloud provider) should allow scaling GPU nodes.
     - Your cloud provider must support on-demand provisioning of GPU instances.
@@ -31,22 +32,12 @@ The charts are published to GitHub Container Registry (GHCR) as OCI artifacts. T
 - `adaptive`, the main chart to deploy Adaptive Engine
 - `monitoring`, an optional addon chart to monitor Adaptive Engine logs with Grafana
 
-**For public packages:**
 ```bash
 # Install adaptive chart
 helm install adaptive oci://ghcr.io/adaptive-ml/adaptive
 
 # Install monitoring chart
 helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring
-```
-
-**For private packages (authentication required):**
-```bash
-# Login to GitHub Container Registry
-echo $GITHUB_TOKEN | helm registry login ghcr.io -u <github-username> --password-stdin
-
-# Pull and install the chart
-helm install adaptive oci://ghcr.io/adaptive-ml/adaptive
 ```
 
 > For all of the previous helm commands you can specify the helm chart version by passing `--version` argument.
