@@ -10,6 +10,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -56,3 +57,22 @@ jobs:
           registry: ghcr.io
           registry_username: ${{ github.actor }}
           registry_password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Cosign
+        if: steps.changes.outputs.changed == 'true'
+        uses: sigstore/cosign-installer@v3.7.0
+
+      - name: Log in to GitHub Container Registry
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Sign Chart with Cosign (keyless through GitHub's OIDC)
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          cosign sign --yes ghcr.io/${{ github.repository_owner }}/${{ matrix.chart.name }}:${{ steps.chart_version.outputs.version }}
+
+      - name: Verify Chart with Cosign
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          cosign verify ghcr.io/${{ github.repository_owner }}/${{ matrix.chart.name }}:${{ steps.chart_version.outputs.version }} --certificate-identity-regexp='.*' --certificate-oidc-issuer=https://token.actions.githubusercontent.com   
