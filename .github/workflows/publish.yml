@@ -24,6 +24,8 @@ jobs:
 
       - name: Detect Changes
         id: changes
+        # The lint-test workflow running on Pull Request guarantees that the chart version is bumped when content changes.
+        # We don't need to check for changes in the chart version here.
         run: |
           if git diff --name-only HEAD^ HEAD | grep -q "^charts/${{ matrix.chart.name }}/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
