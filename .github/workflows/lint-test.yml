@@ -37,6 +37,16 @@ jobs:
           python-version: "3.x"
           check-latest: true
 
+      - name: Test Helm Package (dry run)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          for chart in ./charts/*/; do
+            chart_name=$(basename "$chart")
+            echo "::group::Packaging $chart_name chart"
+            helm package "$chart"
+            echo "::endgroup::"
+          done
+
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.7.0
 
