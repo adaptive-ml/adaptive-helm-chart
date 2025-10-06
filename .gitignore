@@ -7,6 +7,3 @@ Chart.lock
 .vscode
 
 data/
-
-# Helm charts packages
-*.tgz
