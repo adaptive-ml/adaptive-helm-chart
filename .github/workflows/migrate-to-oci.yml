@@ -9,6 +9,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write  # Required for cosign signing
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,13 +21,19 @@ jobs:
         with:
           version: v3.14.0
 
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.7.0
+
       - name: Run migration script
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_ORG: ${{ github.repository_owner }}
+          GITHUB_REPO: ${{ github.event.repository.name }}
+          OCI_REGISTRY: "ghcr.io"
         run: |
-          chmod +x ./migrate-to-oci.sh
-          ./migrate-to-oci.sh
+          chmod +x ./scripts/migrate-to-oci.sh
+          ./scripts/migrate-to-oci.sh
 
       - name: Summary
         run: |
@@ -35,7 +42,7 @@ jobs:
           echo "Charts have been migrated to ghcr.io/${{ github.repository_owner }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
-          echo "1. Make packages public at https://github.com/orgs/${{ github.repository_owner }}/packages" >> $GITHUB_STEP_SUMMARY
+          echo "1. Make packages public at https://github.com/orgs/${{ github.repository_owner }}?tab=packages" >> $GITHUB_STEP_SUMMARY
           echo "2. Update documentation with OCI registry URLs" >> $GITHUB_STEP_SUMMARY
           echo "3. Test installation: \`helm install adaptive oci://ghcr.io/${{ github.repository_owner }}/adaptive\`" >> $GITHUB_STEP_SUMMARY
 
