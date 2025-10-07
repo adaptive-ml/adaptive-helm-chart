@@ -559,7 +559,7 @@ redis:
 
   image:
     repository: redis
-    tag: "7-alpine"
+    tag: "7.2.11-alpine"
     pullPolicy: IfNotPresent
 
   port: 6379
