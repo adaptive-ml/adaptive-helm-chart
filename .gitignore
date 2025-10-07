@@ -7,3 +7,7 @@ Chart.lock
 .vscode
 
 data/
+
+# Helm chart packages
+adaptive-*.tgz
+monitoring-*.tgz
