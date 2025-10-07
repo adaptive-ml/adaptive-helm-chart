@@ -141,22 +141,13 @@ If you deploy the addon adaptive-monitoring chart, make sure to override the def
 
 ## Using external secrets
 
-This repository includes an example integration with [External Secrets Operator](https://external-secrets.io/latest/).
+This repository includes an example integration with [External Secrets Operator](https://external-secrets.io/latest/) (>=0.20 is the minimal supported version).
 
 If you are storing secrets in an external/cloud secrets manager, you can use them in your Adaptive Engine deployment by following these steps:
 
 1. Install External Secrets Operator (reference installation guide [here](https://external-secrets.io/latest/introduction/getting-started/))
 
-```
-helm repo add external-secrets https://charts.external-secrets.io
-
-helm install external-secrets \
-   external-secrets/external-secrets \
-    -n external-secrets \
-    --create-namespace
-```
-
-2. Customize the example values file `charts/adaptive/values_external_secret.yaml` to match your secrets provider and external secret configuration.
+2. Set the values overrides on the section`externalSecret`.
 
 3. Deploy the Helm chart using the updated values file
 
