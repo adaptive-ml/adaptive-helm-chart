@@ -40,7 +40,7 @@ helm install adaptive oci://ghcr.io/adaptive-ml/adaptive
 helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring
 ```
 
-> For all of the previous helm commands you can specify the helm chart version by passing `--version` argument.
+> **For all of the previous helm commands you can specify the helm chart version by passing** `--version` argument.
 
 ##### 2. Get the default values.yaml configuration file
 
@@ -132,8 +132,8 @@ See the full `charts/adaptive/values.yaml` file for further customization.
 ##### 4. Deploy the chart with
 
 ```bash
-helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 -f ./values.yaml
-helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring --version 0.1.5 -f ./values.monitoring.yaml
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f ./values.yaml
+helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring -f ./values.monitoring.yaml
 ```
 
 If you deploy the addon adaptive-monitoring chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file retrieved in step #2; it must match the value of your igress domain (`controlPlane.rootUrl`) for Adaptive Engine
@@ -152,7 +152,7 @@ If you are storing secrets in an external/cloud secrets manager, you can use the
 3. Deploy the Helm chart using the updated values file
 
 ```bash
-helm install adaptive oci://ghcr.io/adaptive-ml/adaptive --version 0.6.2 -f charts/adaptive/values_external_secret.yaml
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f charts/adaptive/values_external_secret.yaml
 ```
 
 ## Inference placements and autoscaling
