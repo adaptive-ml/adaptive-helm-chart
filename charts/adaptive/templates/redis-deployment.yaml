@@ -51,6 +51,7 @@ spec:
           ports:
             - containerPort: {{ .Values.redis.port }}
               name: redis
+          args: ["--aclfile", "/config/default.acl"]
           resources:
             {{- toYaml .Values.redis.resources | nindent 12 }}
           {{- if .Values.redis.extraEnvVars }}
@@ -60,4 +61,11 @@ spec:
             value: {{ $value | quote }}
           {{- end }}
           {{- end }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /config
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" $ }}
 {{- end }}
