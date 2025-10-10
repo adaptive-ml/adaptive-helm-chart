@@ -67,5 +67,5 @@ spec:
       volumes:
         - name: redis-config
           configMap:
-            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" $ }}
+            name: {{ include "adaptive.redis.configMap.fullname" $ }}
 {{- end }}
