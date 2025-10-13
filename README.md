@@ -259,6 +259,63 @@ Please note that the `autoscaling.enabled` is set to `false` by default. When di
 
 When `autoscaling.enabled=true`, the inference autoscaling is activated and the autoscaler can scale inference pool up to `maxReplicaCount` replicas for each.
 
+## Prometheus Monitoring
+
+This Helm chart includes Prometheus as a dependency for metrics collection and monitoring. Prometheus is used to:
+
+- Collect metrics from Adaptive Engine components (Control Plane and Harmony)
+- Power the autoscaling feature by providing TTFT (Time To First Token) timeout metrics to KEDA
+- Monitor system health and performance
+
+### Enabling/Disabling Prometheus
+
+By default, Prometheus is **enabled**. You can disable it by setting the override below on values:
+
+```yaml
+prometheus:
+  enabled: false  # Set to false to disable the embedded Prometheus subchart
+```
+
+**Important:** If you enable inference autoscaling (`autoscaling.enabled=true`), Prometheus **must** be enabled. The autoscaler relies on Prometheus metrics to make scaling decisions based on TTFT timeout rates.
+
+### Configuring Prometheus
+
+The chart uses the [Prometheus Community Helm Chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus) as a subchart. You can customize Prometheus settings under the `prometheus` key in your values file:
+
+```yaml
+prometheus:
+  enabled: true
+  
+  server:
+    # Prometheus data retention period
+    retention: "30d"
+    
+    # Number of Prometheus replicas for high availability
+    replicaCount: 2
+    
+    # Persistence configuration
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+      storageClass: "your-storage-class"
+```
+
+### Metrics Collection
+
+Adaptive Engine components expose metrics that are automatically scraped by Prometheus:
+
+- **Harmony pods**: Expose metrics on port `50053` at `/metrics`
+- **Control Plane**: Exposes metrics on port `9009` at `/metrics`
+
+Pods are discovered automatically using the annotation-based scraping configuration:
+
+```yaml
+podAnnotations:
+  prometheus.io/scrape: "adaptive"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "50053"  # or "9009" for Control Plane
+```
+
 ## About persistence and volumes
 
 - **monitoring** stack helm chart: by default Logs and Grafana data are not persisted. You should enable `grafana.enablePersistence=true` and set `grafana.storageClass` to an existing storage class name in target k8s cluster.

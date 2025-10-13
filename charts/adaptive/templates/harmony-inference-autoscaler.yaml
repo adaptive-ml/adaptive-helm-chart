@@ -1,4 +1,7 @@
 {{- if and .Values.harmony.computePool .Values.autoscaling.enabled }}
+{{- if not .Values.prometheus.enabled }}
+{{- fail "Prometheus must be enabled (prometheus.enabled: true) when autoscaling is enabled" }}
+{{- end }}
 {{- range $pool := .Values.harmony.computePool }}
 
 {{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}

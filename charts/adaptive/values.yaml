@@ -147,7 +147,7 @@ harmony:
     #   nodeSelector: {}
     #   gpusPerReplica: 4
 autoscaling:
-  enabled: false    # whether to enable autoscaling for inference
+  enabled: false    # whether to enable autoscaling for inference (requires prometheus.enabled: true)
   coolDownPeriodSeconds: 180  # duration to await before scaling down pods
   ttftTimeoutThreshold: 0.1   # propotion of timed out completion requests above which the autocaler decides to scale-out
 
@@ -188,6 +188,8 @@ controlPlane:
 
 # prometheus stack settings
 prometheus:
+  enabled: true  # Set to false to disable Prometheus subchart (required for autoscaling)
+  
   prometheus-node-exporter:
     enabled: false
 
