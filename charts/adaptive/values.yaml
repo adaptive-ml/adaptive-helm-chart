@@ -149,7 +149,7 @@ harmony:
 autoscaling:
   enabled: false    # whether to enable autoscaling for inference (requires prometheus.enabled: true)
   coolDownPeriodSeconds: 180  # duration to await before scaling down pods
-  ttftTimeoutThreshold: 0.1   # propotion of timed out completion requests above which the autocaler decides to scale-out
+  ttftTimeoutThreshold: 0.1   # proportion of timed out completion requests above which the autoscaler decides to scale-out
 
 controlPlane:
   sharedDirType: s3
