@@ -37,7 +37,7 @@ spec:
               service:
                 name: {{ include "adaptive.controlPlane.service.fullname" $ }}
                 port:
-                  number: {{ .Values.controlPlane.servicePort | default 80 | int}}
+                  number: {{ .Values.controlPlane.servicePort | default 80 | int }}
           {{- end }}
     {{- end }}
 {{- end }}
