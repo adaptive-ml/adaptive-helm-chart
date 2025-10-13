@@ -189,7 +189,6 @@ controlPlane:
 # prometheus stack settings
 prometheus:
   enabled: true  # Set to false to disable Prometheus subchart (required for autoscaling)
-  
   prometheus-node-exporter:
     enabled: false
 
