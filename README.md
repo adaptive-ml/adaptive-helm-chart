@@ -139,6 +139,94 @@ helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring -f ./value
 If you deploy the addon adaptive-monitoring chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file retrieved in step #2; it must match the value of your igress domain (`controlPlane.rootUrl`) for Adaptive Engine
 (as a fully qualified domain name, no scheme). Once deployed, you will be able to access the Grafana dashboard for logs monitoring at your ingress domain + `/monitoring/explore`.
 
+## Configuring Ingress
+
+The Adaptive Helm chart supports configuring a Kubernetes Ingress resource to expose the Control Plane service externally. By default, ingress is disabled.
+
+### Enabling Ingress
+
+To enable ingress, set `ingress.enabled=true` in your values file:
+
+```yaml
+ingress:
+  enabled: true
+  className: "nginx"  # Optional: specify your ingress class (e.g., nginx, traefik, alb)
+  hosts:
+    - host: adaptive.example.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+```
+
+### Configuration Options
+
+#### Ingress Class
+
+Specify the ingress controller class to use:
+
+```yaml
+ingress:
+  className: "nginx"  # or "traefik", "alb", etc.
+```
+
+#### Custom Annotations
+
+Add annotations for your specific ingress controller:
+
+```yaml
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+```
+
+#### TLS/SSL Configuration
+
+Enable HTTPS with TLS:
+
+```yaml
+ingress:
+  tls:
+    - secretName: adaptive-tls-secret
+      hosts:
+        - adaptive.example.com
+```
+
+**Note:** Make sure your `controlPlane.rootUrl` matches your ingress host configuration:
+
+```yaml
+controlPlane:
+  rootUrl: "https://adaptive.example.com"
+```
+
+### Complete Example
+
+Here's a complete example for an NGINX ingress controller with TLS:
+
+```yaml
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+  hosts:
+    - host: adaptive.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: adaptive-tls-secret
+      hosts:
+        - adaptive.example.com
+
+controlPlane:
+  rootUrl: "https://adaptive.example.com"
+  servicePort: 80
+```
+
 ## Using external secrets
 
 This repository includes an example integration with [External Secrets Operator](https://external-secrets.io/latest/) (>=0.20 is the minimal supported version).
