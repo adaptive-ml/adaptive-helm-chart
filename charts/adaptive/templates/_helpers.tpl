@@ -16,7 +16,7 @@ We truncate at 30 chars so we have characters left to append individual componen
 {{- end }}
 
 {{/*
-Control plane and harmony components full names 
+Control plane and harmony components full names
 */}}
 {{- define "adaptive.controlPlane.fullname" -}}
 {{- printf "%s-control-plane" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
@@ -44,7 +44,7 @@ Control plane and harmony components full names
 {{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
-# MLFlow names 
+# MLFlow names
 {{- define "adaptive.mlflow.fullname" -}}
 {{- printf "%s-mlflow" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
@@ -235,6 +235,10 @@ Redis related helpers
 {{- define "adaptive.redis.service.fullname" -}}
 {{- printf "%s-svc" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
+
+{{- define "adaptive.redis.configMap.fullname"}}
+{{- printf "%s-redis-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
 
 {{- define "adaptive.redis.selectorLabels" -}}
 app.kubernetes.io/component: redis
