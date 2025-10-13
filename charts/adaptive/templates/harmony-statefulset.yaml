@@ -87,7 +87,7 @@ spec:
               name: {{ $ports.torch.name }} 
           envFrom:
             - secretRef:
-                name: {{ include "adaptive.harmony.configSecret.fullname" . }}
+                name: {{ include "adaptive.harmony.secret.fullname" . }}
           env:
             - name: IMAGE_TAG
               value: {{ .Values.harmony.image.tag | quote }}

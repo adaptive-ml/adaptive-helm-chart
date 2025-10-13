@@ -63,17 +63,11 @@ Secret related fullnames
 {{- define "adaptive.externalSecretStore.fullname"}}
 {{- printf "%s-ext-secret-store" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
-{{- define "adaptive.controlPlane.configSecret.fullname"}}
-{{- printf "%s-config-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- define "adaptive.controlPlane.secret.fullname"}}
+{{- printf "%s-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
-{{- define "adaptive.harmony.configSecret.fullname"}}
-{{- printf "%s-config-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
-{{- define "adaptive.controlPlane.externalSecret.fullname"}}
-{{- printf "%s-ext-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
-{{- define "adaptive.harmony.externalSecret.fullname"}}
-{{- printf "%s-ext-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- define "adaptive.harmony.secret.fullname"}}
+{{- printf "%s-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
 
