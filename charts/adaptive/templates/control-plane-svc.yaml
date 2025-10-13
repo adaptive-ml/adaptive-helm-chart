@@ -12,7 +12,7 @@ spec:
   {{- $ports := include "adaptive.controlPlane.ports" . | fromJson }}
   ports:
     - name: {{ $ports.http.name }}
-      port: {{ .Values.controlPlane.servicePort | default 80 | int}}
+      port: {{ .Values.controlPlane.servicePort | default 80 | int }}
       targetPort: {{ $ports.http.containerPort }}
     - name: {{ $ports.internal.name }}
       port: {{ $ports.internal.containerPort }}
