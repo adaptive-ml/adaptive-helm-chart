@@ -36,7 +36,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 ### Required
 
-1. **Kubernetes version**: >= 1.26
+1. **Kubernetes version**: >= 1.28
 
 2. **NVIDIA GPU Operator**: Installed in the target Kubernetes cluster
    - Installation guide: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
