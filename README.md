@@ -16,7 +16,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 1. Nvidia operator installed in the target k8s cluster: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
 
-2. k8s version >=1.26.
+2. k8s version >=1.28.
 
 3. (optional) For inference autoscaling. Adaptive engine supports horizontal pods scaling for those pools. This is automatic based on Qos metrics (TTFT), and technical metrics (required gpus vs available gpus). For the target k8s cluster to support nodes austocaling. Those requirements should be met:
     - *Cluster Autoscaler* enabled and correctly configured.
