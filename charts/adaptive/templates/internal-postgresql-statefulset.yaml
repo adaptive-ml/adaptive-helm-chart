@@ -9,7 +9,7 @@ metadata:
     {{- include "adaptive.postgresql.selectorLabels" . | nindent 4 }}
 spec:
   replicas: 1
-  serviceName: {{ include "adaptive.postgresql.service.fullname" . }}
+  serviceName: {{ include "adaptive.postgresql.headless.service.fullname" . }}
   selector:
     matchLabels:
       {{- include "adaptive.postgresql.selectorLabels" . | nindent 6}}
