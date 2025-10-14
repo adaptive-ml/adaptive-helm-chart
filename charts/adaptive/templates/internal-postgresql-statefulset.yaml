@@ -1,0 +1,122 @@
+{{- if .Values.installPostgres.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "adaptive.postgresql.fullname" . }}
+  namespace: {{ .Release.Namespace}}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.postgresql.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "adaptive.postgresql.service.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.postgresql.selectorLabels" . | nindent 6}}
+  template:
+    metadata:
+      {{- with .Values.installPostgres.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.postgresql.selectorLabels" . | nindent 8 }}
+        {{- with .Values.installPostgres.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- if .Values.installPostgres.nodeSelector }}
+      nodeSelector:
+        {{- with .Values.installPostgres.nodeSelector }}
+        {{ toYaml . }}
+        {{- end}}
+      {{- end}}
+      {{- if .Values.installPostgres.tolerations }}
+      tolerations:
+      {{- with .Values.installPostgres.tolerations }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: postgresql
+          image: "{{ .Values.installPostgres.image.repository }}:{{ .Values.installPostgres.image.tag }}"
+          imagePullPolicy: {{ .Values.installPostgres.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.installPostgres.port }}
+              name: postgresql
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.installPostgres.database | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.installPostgres.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.postgresql.secret.fullname" . }}
+                  key: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            {{- if .Values.installPostgres.extraEnvVars }}
+            {{- range $key, $value := .Values.installPostgres.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.installPostgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U {{ .Values.installPostgres.username | quote }} -d {{ .Values.installPostgres.database | quote }} -h 127.0.0.1 -p {{ .Values.installPostgres.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U {{ .Values.installPostgres.username | quote }} -d {{ .Values.installPostgres.database | quote }} -h 127.0.0.1 -p {{ .Values.installPostgres.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+  {{- if .Values.installPostgres.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: postgresql-data
+        labels:
+          {{- include "adaptive.labels" . | nindent 10 }}
+          {{- include "adaptive.postgresql.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.installPostgres.persistence.accessModes | nindent 10 }}
+        {{- if .Values.installPostgres.persistence.storageClass }}
+        storageClassName: {{ .Values.installPostgres.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.installPostgres.persistence.size | quote }}
+  {{- else }}
+      volumes:
+        - name: postgresql-data
+          emptyDir: {}
+  {{- end }}
+{{- end }}
+

@@ -1,0 +1,19 @@
+{{- if .Values.installPostgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.postgresql.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.postgresql.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "adaptive.postgresql.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: postgresql
+      port: {{ .Values.installPostgres.port }}
+      targetPort: {{ .Values.installPostgres.port }}
+{{- end }}
+
