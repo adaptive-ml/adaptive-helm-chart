@@ -2,47 +2,78 @@
 
 A Helm Chart to deploy Adaptive Engine.
 
-## Installing the Chart
+## Table of Contents
 
-[Helm](https://helm.sh) must be installed to use the charts. Helm 3.8.0 or higher is required.
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+  - [Secrets Configuration](#secrets-configuration)
+  - [Container Images](#container-images)
+  - [GPU Resources](#gpu-resources)
+  - [Ingress Configuration](#ingress-configuration)
+  - [External Secrets](#external-secrets)
+- [Monitoring and Observability](#monitoring-and-observability)
+  - [Prometheus Monitoring](#prometheus-monitoring)
+  - [Tensorboard Support](#tensorboard-support)
+- [Inference and Autoscaling](#inference-and-autoscaling)
+  - [Compute Pools](#compute-pools)
+  - [Autoscaling Configuration](#autoscaling-configuration)
+  - [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
+- [Storage and Persistence](#storage-and-persistence)
+- [Azure Blob Storage Compatibility](#azure-blob-storage-compatibility)
 
 ---
 
 ## Compatibility
 
-- Helm chart versions < 0.5.0 are not compatible with adaptive version 0.5.0 or highter.
+- Helm chart versions < `0.5.0` are not compatible with adaptive version `0.5.0` or higher.
+- **We strongly recommend using the latest helm chart version**
+
 
 ## Prerequisites
 
-1. Nvidia operator installed in the target k8s cluster: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
+[Helm](https://helm.sh) must be installed to use the charts. Helm 3.8.0 or higher is required.
 
-2. k8s version >=1.28.
+### Required
 
-3. (optional) For inference autoscaling. Adaptive engine supports horizontal pods scaling for those pools. This is automatic based on Qos metrics (TTFT), and technical metrics (required gpus vs available gpus). For the target k8s cluster to support nodes austocaling. Those requirements should be met:
-    - *Cluster Autoscaler* enabled and correctly configured.
-    - Node pool (or equivalent in your cloud provider) should allow scaling GPU nodes.
-    - Your cloud provider must support on-demand provisioning of GPU instances.
+1. **Kubernetes version**: >= 1.28
 
-4. Storage classes: for logs and Prometheus timeseries persistence. for further details see section `About persistence and volumes`
+2. **NVIDIA GPU Operator**: Installed in the target Kubernetes cluster
+   - Installation guide: <https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html>
 
-##### 1. Install the charts from GitHub OCI Registry
+### Optional
+
+3. **For Inference Autoscaling**: Adaptive engine supports horizontal pod scaling for inference pools based on QoS metrics (TTFT) and technical metrics (required GPUs vs available GPUs). To support node autoscaling, these requirements must be met:
+   - **Cluster Autoscaler** enabled and correctly configured
+   - Node pool (or equivalent in your cloud provider) configured to allow scaling GPU nodes
+   - Your cloud provider must support on-demand provisioning of GPU instances
+
+4. **Storage Classes**: Required for logs and Prometheus timeseries persistence. See [Storage and Persistence](#storage-and-persistence) for details.
+
+---
+
+## Installation
 
 The charts are published to GitHub Container Registry (GHCR) as OCI artifacts. There are 2 charts available:
 
-- `adaptive`, the main chart to deploy Adaptive Engine
-- `monitoring`, an optional addon chart to monitor Adaptive Engine logs with Grafana
+- `adaptive` - the main chart to deploy Adaptive Engine
+- `monitoring` - an optional addon chart to monitor Adaptive Engine installing Grafana/Loki stack.
+
+### 1. Install the charts from GitHub OCI Registry
 
 ```bash
 # Install adaptive chart
 helm install adaptive oci://ghcr.io/adaptive-ml/adaptive
 
-# Install monitoring chart
+# Install monitoring chart (optional)
 helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring
 ```
 
-> **For all of the previous helm commands you can specify the helm chart version by passing** `--version` argument.
+> **Note:** You can specify the helm chart version by passing the `--version` argument.
+>
+> To view available chart versions, visit the [GitHub Packages page](https://github.com/orgs/adaptive-ml/packages) for this repository.
 
-##### 2. Get the default values.yaml configuration file
+### 2. Get the default values.yaml configuration file
 
 ```bash
 # Pull the chart to inspect values
@@ -54,11 +85,28 @@ helm show values oci://ghcr.io/adaptive-ml/adaptive > values.yaml
 helm show values oci://ghcr.io/adaptive-ml/monitoring > values.monitoring.yaml
 ```
 
-**Note:** To view available chart versions, visit the [GitHub Packages page](https://github.com/orgs/adaptive-ml/packages) for this repository.
+### 3. Edit the `values.yaml` file
 
-##### 3. Edit the `values.yaml` file to customize it for your environment. Here are the key sections
+Customize the values file for your environment. See the [Configuration](#configuration) section below for key settings.
 
-###### Secrets for model registry, database and auth
+### 4. Deploy the chart
+
+```bash
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f ./values.yaml
+helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring -f ./values.monitoring.yaml
+```
+
+If you deploy the addon `adaptive-monitoring` chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file; it must match the value of your ingress domain (`controlPlane.rootUrl`) for Adaptive Engine (as a fully qualified domain name, no scheme). Once deployed, you will be able to access the Grafana dashboard for logs monitoring at your ingress domain + `/monitoring/explore`.
+
+---
+
+## Configuration
+
+See the full `charts/adaptive/values.yaml` file for all available configuration options.
+
+### Secrets Configuration
+
+Configure secrets for model registry, database, and authentication:
 
 ```yaml
 secrets:
@@ -89,11 +137,14 @@ secrets:
           allow_sign_up: true
 ```
 
-###### Container images
+### Container Images
+
+Configure the Adaptive container registry and image tags:
 
 ```yaml
 # Adaptive Registry you have been granted access to
 containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com
+
 harmony:
   image:
     repository: adaptive-repository # Adaptive Repository you have been granted access to
@@ -105,7 +156,9 @@ controlPlane:
     tag: control-plane:latest # Control plane image tag
 ```
 
-###### GPU Resources
+### GPU Resources
+
+Configure GPU allocation for Harmony pods:
 
 ```yaml
 harmony:
@@ -113,37 +166,11 @@ harmony:
   gpusPerReplica: 8
 ```
 
-###### Tensorboard support
+### Ingress Configuration
 
-To track training job progress, you can enable tensorboard support.
-This will start a tensorboard server. By default the logs are not persisted and are saved in a temporary dir.
+The Adaptive Helm chart supports configuring a Kubernetes Ingress resource to expose the Control Plane API service and Adaptive UI externally. By default, ingress is disabled.
 
-```yaml
-tensorboard:
-  enabled: true # default to false
-  # Use the persistent volume config to enable log saving across restarts
-  persistentVolume:
-    enabled: true
-    storageClass: "..."
-```
-
-See the full `charts/adaptive/values.yaml` file for further customization.
-
-##### 4. Deploy the chart with
-
-```bash
-helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f ./values.yaml
-helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring -f ./values.monitoring.yaml
-```
-
-If you deploy the addon adaptive-monitoring chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file retrieved in step #2; it must match the value of your igress domain (`controlPlane.rootUrl`) for Adaptive Engine
-(as a fully qualified domain name, no scheme). Once deployed, you will be able to access the Grafana dashboard for logs monitoring at your ingress domain + `/monitoring/explore`.
-
-## Configuring Ingress
-
-The Adaptive Helm chart supports configuring a Kubernetes Ingress resource to expose the Control Plane service externally. By default, ingress is disabled.
-
-### Enabling Ingress
+#### Enabling Ingress
 
 To enable ingress, set `ingress.enabled=true` in your values file:
 
@@ -158,9 +185,9 @@ ingress:
           pathType: ImplementationSpecific
 ```
 
-### Configuration Options
+#### Configuration Options
 
-#### Ingress Class
+**Ingress Class**
 
 Specify the ingress controller class to use:
 
@@ -169,7 +196,7 @@ ingress:
   className: "nginx"  # or "traefik", "alb", etc.
 ```
 
-#### Custom Annotations
+**Custom Annotations**
 
 Add annotations for your specific ingress controller:
 
@@ -182,7 +209,7 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
 ```
 
-#### TLS/SSL Configuration
+**TLS/SSL Configuration**
 
 Enable HTTPS with TLS:
 
@@ -201,7 +228,7 @@ controlPlane:
   rootUrl: "https://adaptive.example.com"
 ```
 
-### Complete Example
+#### Complete Ingress Example
 
 Here's a complete example for an NGINX ingress controller with TLS:
 
@@ -227,7 +254,7 @@ controlPlane:
   servicePort: 80
 ```
 
-## Using external secrets
+### External Secrets
 
 This repository includes an example integration with [External Secrets Operator](https://external-secrets.io/latest/) (>=0.20 is the minimal supported version).
 
@@ -235,17 +262,169 @@ If you are storing secrets in an external/cloud secrets manager, you can use the
 
 1. Install External Secrets Operator (reference installation guide [here](https://external-secrets.io/latest/introduction/getting-started/))
 
-2. Set the values overrides on the section`externalSecret`.
+2. Set the values overrides in the `externalSecret` section.
 
-3. Deploy the Helm chart using the updated values file
+3. Deploy the Helm chart using the updated values file:
 
 ```bash
 helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f charts/adaptive/values_external_secret.yaml
 ```
 
-## Inference placements and autoscaling
+---
 
-It is possible to define harmony deployment groups dedicated to inference tasks. Below the example of the values override:
+## Monitoring and Observability
+
+### Prometheus Monitoring
+
+This Helm chart includes Prometheus as a dependency for metrics collection and monitoring. Prometheus is used to:
+
+- Collect metrics from Adaptive Engine components (Control Plane and Harmony)
+- Power the autoscaling feature by providing TTFT (Time To First Token) timeout metrics to KEDA
+- Monitor system health and performance
+
+#### Enabling/Disabling Prometheus
+
+By default, Prometheus is **enabled**. You can disable it by setting:
+
+```yaml
+prometheus:
+  enabled: false  # Set to false to disable the embedded Prometheus subchart
+```
+
+**Important:** If you enable inference autoscaling (`autoscaling.enabled=true`), Prometheus **must** be enabled (or an external Prometheus instance must be configured). The autoscaler relies on Prometheus metrics to make scaling decisions based on TTFT timeout rates.
+
+#### Configuring Prometheus
+
+The chart uses the [Prometheus Community Helm Chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus) as a subchart. You can customize Prometheus settings under the `prometheus` key in your values file:
+
+```yaml
+prometheus:
+  enabled: true
+  
+  server:
+    # Prometheus data retention period
+    retention: "30d"
+    
+    # Number of Prometheus replicas for high availability
+    replicaCount: 2
+    
+    # Persistence configuration
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+      storageClass: "your-storage-class"
+```
+
+#### Metrics Collection
+
+Adaptive Engine components expose metrics that are automatically scraped by Prometheus:
+
+- **Harmony pods**: Expose metrics on port `50053` at `/metrics`
+- **Control Plane**: Exposes metrics on port `9009` at `/metrics`
+
+Pods are discovered automatically using the annotation-based scraping configuration:
+
+```yaml
+podAnnotations:
+  prometheus.io/scrape: "adaptive"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "50053"  # or "9009" for Control Plane
+```
+
+### MLflow Experiment Tracking
+
+Adaptive Engine supports MLflow for experiment tracking and model versioning. When enabled, training jobs can log metrics, parameters, and artifacts to a dedicated MLflow tracking server.
+
+By default, MLflow is **enabled** and takes priority over Tensorboard if both are enabled.
+
+**Basic Configuration:**
+
+```yaml
+mlflow:
+  enabled: true  # default is true
+  imageUri: ghcr.io/mlflow/mlflow:v3.1.1
+  replicaCount: 1
+  workers: 4  # Recommended: 2-4 workers per CPU core
+```
+
+**Storage Configuration:**
+
+MLflow uses the `mlflow-artifacts:/` URI scheme, which means artifacts are sent via HTTP to the server and stored server-side. This allows multiple training partitions to upload artifacts without requiring shared storage.
+
+```yaml
+mlflow:
+  backendStoreUri: sqlite:///mlflow-storage/mlflow.db
+  defaultArtifactRoot: mlflow-artifacts:/
+  serveArtifacts: true
+  
+  # Storage for MLflow database and artifacts
+  volumes:
+    - name: mlflow-storage
+      emptyDir: {}  # Default: ephemeral storage
+```
+
+**Persistent Storage Example:**
+
+To persist MLflow data across restarts, configure a persistent volume:
+
+```yaml
+mlflow:
+  volumes:
+    - name: mlflow-storage
+      hostPath:
+        path: /mnt/nfs/mlflow
+        type: Directory
+  
+  volumeMounts:
+    - name: mlflow-storage
+      mountPath: /mlflow-storage
+```
+
+**Resource Configuration:**
+
+```yaml
+mlflow:
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+```
+
+### Tensorboard Support
+
+To track training job progress with Tensorboard, you can enable Tensorboard support. This will start a Tensorboard server as a sidecar container. By default, the logs are not persisted and are saved in a temporary directory.
+
+**Note:** MLflow takes priority over Tensorboard if both are enabled.
+
+```yaml
+tensorboard:
+  enabled: true  # default is false
+  imageUri: tensorflow/tensorflow:latest
+  
+  # Use the persistent volume config to enable log saving across restarts
+  persistentVolume:
+    enabled: true
+    storageClass: "your-storage-class"
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+```
+
+---
+
+## Inference and Autoscaling
+
+### Compute Pools
+
+You can define Harmony deployment groups dedicated to inference tasks:
 
 ```yaml
 harmony:
@@ -253,22 +432,94 @@ harmony:
      - name: "Pool-A"
        minReplicaCount: 1
        maxReplicaCount: 5
+     - name: "Pool-B"
+       minReplicaCount: 2
+       maxReplicaCount: 10
+       nodeSelector:
+         gpu-type: a100
 ```
 
-Please note that the `autoscaling.enabled` is set to `false` by default. When disabled, the `maxReplicaCount` is ignored and the the pool has a fixed number of replicas equal to `minReplicaCount`.
+Each compute pool can have its own configuration. Any values not specified will be inherited from the main `harmony` section.
 
-When `autoscaling.enabled=true`, the inference autoscaling is activated and the autoscaler can scale inference pool up to `maxReplicaCount` replicas for each.
+### Autoscaling Configuration
 
-## About persistence and volumes
+By default, `autoscaling.enabled` is set to `false`. When disabled, the `maxReplicaCount` is ignored and each pool has a fixed number of replicas equal to `minReplicaCount`.
 
-- **monitoring** stack helm chart: by default Logs and Grafana data are not persisted. You should enable `grafana.enablePersistence=true` and set `grafana.storageClass` to an existing storage class name in target k8s cluster.
-- **adaptive** helm chart: it installs Prometheus which may require metrics data being persisted. By default `prometheus.server.persistentVolume.enabled=false`. When enabling peristence, you will have to specify the used storage class name: `prometheus.server.storageClass`.
+When `autoscaling.enabled=true`, the inference autoscaling is activated using **KEDA** (Kubernetes Event-Driven Autoscaling). The autoscaler can scale each inference pool up to its configured `maxReplicaCount` based on metrics collected from Prometheus.
 
-## Compatibility with Azure blob storage
+**Basic Configuration:**
 
-The Adaptive Helm chart supports any S3-compliant storage service, and Azure Blob Storage out-of-the box via [s3proxy](https://github.com/gaul/s3proxy). The default is S3.
+```yaml
+autoscaling:
+  enabled: true
+  coolDownPeriodSeconds: 180  # Duration to wait before scaling down pods
+  ttftTimeoutThreshold: 0.1   # Proportion of timed-out requests that triggers scale-out
+```
 
-To enable Azure Blob Storage, please set this override in the helm values:
+**How it works:**
+- KEDA monitors TTFT (Time To First Token) timeout metrics from Prometheus
+- When the timeout rate exceeds `ttftTimeoutThreshold`, the autoscaler triggers scale-out
+- After scaling, the autoscaler waits `coolDownPeriodSeconds` before considering scale-down
+
+### External Prometheus for Autoscaling
+
+By default, the autoscaler uses the embedded Prometheus instance (`http://adaptive-prometheus`). If you have an external Prometheus instance that collects metrics from Adaptive Engine, you can configure the autoscaler to use it instead:
+
+```yaml
+autoscaling:
+  enabled: true
+  externalPrometheusEndpoint: "your-external-prometheus-http(s)-endpoint"
+```
+
+**Example with external Prometheus:**
+
+```yaml
+autoscaling:
+  enabled: true
+  externalPrometheusEndpoint: "http://prometheus-server.monitoring.svc.cluster.local"
+  coolDownPeriodSeconds: 180
+  ttftTimeoutThreshold: 0.1
+```
+
+This is useful when:
+- You have an external Prometheus instance for your cluster
+- You want to disable the embedded Prometheus (`prometheus.enabled=false`) and use your own
+- You need to query metrics from a Prometheus instance in a different namespace
+
+---
+
+## Storage and Persistence
+
+### Monitoring Stack
+
+For the **monitoring** stack helm chart: by default, logs and Grafana data are not persisted. You should enable persistence by setting:
+
+```yaml
+grafana:
+  enablePersistence: true
+  storageClass: "your-storage-class-name"
+```
+
+### Adaptive Chart (Prometheus)
+
+For the **adaptive** helm chart: Prometheus may require metrics data to be persisted. By default, `prometheus.server.persistentVolume.enabled=false`. When enabling persistence, you must specify the storage class name:
+
+```yaml
+prometheus:
+  server:
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+      storageClass: "your-storage-class-name"
+```
+
+---
+
+## Azure Blob Storage Compatibility
+
+The Adaptive Helm chart supports any S3-compliant storage service, and Azure Blob Storage out-of-the-box via [s3proxy](https://github.com/gaul/s3proxy). The default is S3.
+
+To enable Azure Blob Storage, set this override in the helm values:
 
 ```yaml
 s3proxy:
