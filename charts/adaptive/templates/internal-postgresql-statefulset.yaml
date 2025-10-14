@@ -36,7 +36,7 @@ spec:
       {{- if .Values.installPostgres.nodeSelector }}
       nodeSelector:
         {{- with .Values.installPostgres.nodeSelector }}
-        {{ toYaml . }}
+        {{ toYaml . | nindent 8 }}
         {{- end}}
       {{- end}}
       {{- if .Values.installPostgres.tolerations }}
