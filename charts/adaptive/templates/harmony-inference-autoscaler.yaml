@@ -1,4 +1,7 @@
 {{- if and .Values.harmony.computePool .Values.autoscaling.enabled }}
+{{- if not .Values.prometheus.enabled }}
+{{- fail "Prometheus must be enabled (prometheus.enabled: true) when autoscaling is enabled" }}
+{{- end }}
 {{- range $pool := .Values.harmony.computePool }}
 
 {{- $poolMerged := mergeOverwrite $.Values.harmony $pool }}
@@ -24,8 +27,8 @@ spec:
   triggers:
   - type: prometheus
     metadata:
-      # prometheus endpoint
-      serverAddress: http://adaptive-prometheus
+      # prometheus endpoint (can be overridden via autoscaling.externalPrometheusEndpoint)
+      serverAddress: {{ $.Values.autoscaling.externalPrometheusEndpoint | default "http://adaptive-prometheus" }}
       #  get the percent of timed-out requests
       query: clamp_max(sum(rate(harmony_ttft_timeout_count{pool="{{ $pool.name }}"}[5m])) / clamp_min(sum(rate(harmony_generation_requests_count{pool="{{ $pool.name }}"}[5m])), 0.00001), 1)
       threshold: '{{ $.Values.autoscaling.ttftTimeoutThreshold }}'
