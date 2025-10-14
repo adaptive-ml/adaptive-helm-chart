@@ -445,7 +445,7 @@ Each compute pool can have its own configuration. Any values not specified will 
 
 By default, `autoscaling.enabled` is set to `false`. When disabled, the `maxReplicaCount` is ignored and each pool has a fixed number of replicas equal to `minReplicaCount`.
 
-When `autoscaling.enabled=true`, the inference autoscaling is activated using **KEDA** (Kubernetes Event Driven Autoscaling). The autoscaler can scale each inference pool up to its configured `maxReplicaCount` based on metrics collected from Prometheus.
+When `autoscaling.enabled=true`, the inference autoscaling is activated using **KEDA** (Kubernetes Event-Driven Autoscaling). The autoscaler can scale each inference pool up to its configured `maxReplicaCount` based on metrics collected from Prometheus.
 
 **Basic Configuration:**
 
