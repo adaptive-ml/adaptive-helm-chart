@@ -19,14 +19,14 @@ We truncate at 30 chars so we have characters left to append individual componen
 Control plane and harmony components full names
 */}}
 {{- define "adaptive.controlPlane.fullname" -}}
-{{- printf "%s" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- printf "%s-controlplane" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.controlPlane.service.fullname"}}
 {{- printf "%s" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
 {{- define "adaptive.harmony.fullname" -}}
-{{- printf "%s" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- printf "%s-harmony" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.service.fullname"}}
 {{- printf "%s" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
