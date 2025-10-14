@@ -583,6 +583,47 @@ redis:
   nodeSelector: {}
   tolerations: []
 
+installPostgres:
+  # OPTIONAL: Set to true to deploy an internal PostgreSQL database in the cluster
+  # DEFAULT BEHAVIOR: Use external PostgreSQL (configured via secrets.dbUrl above)
+  # When enabled=true, the internal PostgreSQL service will be used instead of external database
+  # We strongly recommend using an external managed database for production
+  enabled: false
+
+  image:
+    repository: postgres
+    tag: "17-alpine"
+    pullPolicy: IfNotPresent
+
+  port: 5432
+
+  # Database configuration
+  database: adaptive
+  username: adaptive
+  password: ""  # Leave empty to auto-generate, or set a custom password
+
+  # PostgreSQL persistence
+  persistence:
+    enabled: false
+    storageClass: ""  # Use default storage class if empty
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  podAnnotations: {}
+  podLabels: {}
+  extraEnvVars: {}
+  nodeSelector: {}
+  tolerations: []
+
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry

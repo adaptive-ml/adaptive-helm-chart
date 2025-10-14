@@ -260,3 +260,51 @@ app.kubernetes.io/component: redis
 {{- printf "redis://%s:%d" $host $port -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+PostgreSQL related helpers
+*/}}
+{{- define "adaptive.postgresql.fullname" -}}
+{{- printf "%s-postgresql" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.pvc.fullname" -}}
+{{- printf "%s-pvc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.secret.fullname" -}}
+{{- printf "%s-secret" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.selectorLabels" -}}
+app.kubernetes.io/component: postgresql
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.postgresql.password" -}}
+{{- if .Values.installPostgres.password -}}
+{{- .Values.installPostgres.password -}}
+{{- else -}}
+{{- randAlphaNum 32 -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Generate the database URL - uses internal PostgreSQL if enabled, otherwise uses external URL from secrets
+*/}}
+{{- define "adaptive.db.url" -}}
+{{- if .Values.installPostgres.enabled -}}
+{{- $host := include "adaptive.postgresql.service.fullname" . -}}
+{{- $port := .Values.installPostgres.port | int -}}
+{{- $database := .Values.installPostgres.database -}}
+{{- $username := .Values.installPostgres.username -}}
+{{- $password := include "adaptive.postgresql.password" . -}}
+{{- printf "postgres://%s:%s@%s:%d/%s" $username $password $host $port $database -}}
+{{- else -}}
+{{- required "A db url is required!" .Values.secrets.dbUrl -}}
+{{- end -}}
+{{- end }}
