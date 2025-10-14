@@ -168,7 +168,7 @@ harmony:
 
 ### Ingress Configuration
 
-The Adaptive Helm chart supports configuring a Kubernetes Ingress resource to expose the Control Plane API service and Adaptive ui externally. By default, ingress is disabled.
+The Adaptive Helm chart supports configuring a Kubernetes Ingress resource to expose the Control Plane API service and Adaptive UI externally. By default, ingress is disabled.
 
 #### Enabling Ingress
 
