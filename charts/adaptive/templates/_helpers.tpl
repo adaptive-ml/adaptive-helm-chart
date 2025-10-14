@@ -19,29 +19,29 @@ We truncate at 30 chars so we have characters left to append individual componen
 Control plane and harmony components full names
 */}}
 {{- define "adaptive.controlPlane.fullname" -}}
-{{- printf "%s-controlplane" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- printf "%s-control-plane" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.controlPlane.service.fullname"}}
-{{- printf "%s" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-svc" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
 {{- define "adaptive.harmony.fullname" -}}
 {{- printf "%s-harmony" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.service.fullname"}}
-{{- printf "%s" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-svc" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.headlessService.fullname"}}
-{{- printf "%s-hdls" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-hdls-svc" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
-{{- printf "%s-settings" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.alloyConfigMap.fullname"}}
-{{- printf "%s-alloy" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-alloy-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.deployment.fullname"}}
-{{- printf "%s" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
 # MLFlow names
@@ -63,11 +63,17 @@ Secret related fullnames
 {{- define "adaptive.externalSecretStore.fullname"}}
 {{- printf "%s-ext-secret-store" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
-{{- define "adaptive.controlPlane.secret.fullname"}}
-{{- printf "%s-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- define "adaptive.controlPlane.configSecret.fullname"}}
+{{- printf "%s-config-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
-{{- define "adaptive.harmony.secret.fullname"}}
-{{- printf "%s-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- define "adaptive.harmony.configSecret.fullname"}}
+{{- printf "%s-config-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.controlPlane.externalSecret.fullname"}}
+{{- printf "%s-ext-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.harmony.externalSecret.fullname"}}
+{{- printf "%s-ext-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
 

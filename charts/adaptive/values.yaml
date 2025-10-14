@@ -147,10 +147,9 @@ harmony:
     #   nodeSelector: {}
     #   gpusPerReplica: 4
 autoscaling:
-  enabled: false    # whether to enable autoscaling for inference (requires prometheus.enabled: true)
+  enabled: false    # whether to enable autoscaling for inference
   coolDownPeriodSeconds: 180  # duration to await before scaling down pods
-  ttftTimeoutThreshold: 0.1   # proportion of timed out completion requests above which the autoscaler decides to scale-out
-  # externalPrometheusEndpoint: http://prometheus-server # (Optional) Override the Prometheus endpoint URL if using an external Prometheus instance instead of the built-in one
+  ttftTimeoutThreshold: 0.1   # propotion of timed out completion requests above which the autocaler decides to scale-out
 
 controlPlane:
   sharedDirType: s3
@@ -189,7 +188,6 @@ controlPlane:
 
 # prometheus stack settings
 prometheus:
-  enabled: true  # Set to false to disable Prometheus subchart (required for autoscaling)
   prometheus-node-exporter:
     enabled: false
 

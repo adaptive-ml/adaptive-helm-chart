@@ -56,12 +56,12 @@ spec:
           {{- end }}
           envFrom:
             - secretRef:
-                name: {{ include "adaptive.harmony.secret.fullname" . }}
+                name: {{ include "adaptive.harmony.configSecret.fullname" . }}
           env:
             - name: ADAPTIVE_APP__SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
+                  name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: cookiesSecret
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
               value: {{ .Values.controlPlane.sharedDirType | quote }}
@@ -76,7 +76,7 @@ spec:
             - name: ADAPTIVE_DB__URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
+                  name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: dbUrl
             - name: ADAPTIVE_SERVER__BIND
               value: "0.0.0.0:{{ $ports.http.containerPort }}"
@@ -85,7 +85,7 @@ spec:
             - name: ADAPTIVE_AUTH__OIDC__PROVIDERS
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
+                  name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: oidc_providers
             - name: IMAGE_TAG
               value: {{ .Values.controlPlane.image.tag | quote }}
@@ -102,7 +102,7 @@ spec:
             - name: ADAPTIVE_REDIS__URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
+                  name: {{ include "adaptive.controlPlane.configSecret.fullname" . }}
                   key: redisUrl
             {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
             {{- if .Values.tensorboard.enabled }}
