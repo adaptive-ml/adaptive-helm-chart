@@ -357,7 +357,7 @@ Generate the database URL - uses internal PostgreSQL if enabled, otherwise uses 
 {{- $database := .Values.installPostgres.database -}}
 {{- $username := .Values.installPostgres.username -}}
 {{- $password := include "adaptive.postgresql.password" . -}}
-{{- printf "postgres://%s:%s@%s:%d/%s" $username $password $host $port $database -}}
+{{- printf "postgres://%s:%s@%s:%d/%s" ($username | urlquery) ($password | urlquery) $host $port $database -}}
 {{- else -}}
 {{- required "A db url is required!" .Values.secrets.dbUrl -}}
 {{- end -}}
