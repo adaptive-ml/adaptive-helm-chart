@@ -1,4 +1,25 @@
 {{- if .Values.installPostgres.enabled }}
+---
+# Headless Service for StatefulSet stable network identities
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.postgresql.headless.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.postgresql.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "adaptive.postgresql.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: postgresql
+      port: {{ .Values.installPostgres.port }}
+      targetPort: {{ .Values.installPostgres.port }}
+---
+# ClusterIP Service for client access
 apiVersion: v1
 kind: Service
 metadata:

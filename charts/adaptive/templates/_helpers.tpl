@@ -326,6 +326,10 @@ PostgreSQL related helpers
 {{- printf "%s-svc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "adaptive.postgresql.headless.service.fullname" -}}
+{{- printf "%s-headless" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{- define "adaptive.postgresql.pvc.fullname" -}}
 {{- printf "%s-pvc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
