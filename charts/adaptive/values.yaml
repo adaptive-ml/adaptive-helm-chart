@@ -150,6 +150,7 @@ autoscaling:
   enabled: false    # whether to enable autoscaling for inference (requires prometheus.enabled: true)
   coolDownPeriodSeconds: 180  # duration to await before scaling down pods
   ttftTimeoutThreshold: 0.1   # proportion of timed out completion requests above which the autoscaler decides to scale-out
+  # externalPrometheusEndpoint: http://prometheus-server # (Optional) Override the Prometheus endpoint URL if using an external Prometheus instance instead of the built-in one
 
 controlPlane:
   sharedDirType: s3
