@@ -60,14 +60,19 @@ Control plane and harmony components full names
 {{/*
 Secret related fullnames
 */}}
-{{- define "adaptive.externalSecretStore.fullname"}}
-{{- printf "%s-ext-secret-store" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
 {{- define "adaptive.controlPlane.secret.fullname"}}
+{{- if .Values.secrets.existingControlPlaneSecret }}
+{{- .Values.secrets.existingControlPlaneSecret }}
+{{- else }}
 {{- printf "%s-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end}}
 {{- define "adaptive.harmony.secret.fullname"}}
+{{- if .Values.secrets.existingHarmonySecret }}
+{{- .Values.secrets.existingHarmonySecret }}
+{{- else }}
 {{- printf "%s-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end}}
 
 
@@ -153,7 +158,7 @@ Harmony service HTTP endpoint
 {{- end }}
 
 
-{{- define "adaptive.oidc_providers" -}}
+{{- define "adaptive.oidcProviders" -}}
 [
   {{- range .Values.secrets.auth.oidc.providers -}}
   {
@@ -240,7 +245,11 @@ app.kubernetes.io/component: redis
 {{- end }}
 
 {{- define "adaptive.redis.secret.fullname" -}}
+{{- if .Values.secrets.existingRedisSecret }}
+{{- .Values.secrets.existingRedisSecret }}
+{{- else }}
 {{- printf "%s-secret" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end }}
 
 {{- define "adaptive.redis.url" -}}
@@ -254,3 +263,44 @@ app.kubernetes.io/component: redis
 {{- printf "redis://%s:%d" $host $port -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Helper to generate Harmony secret environment variables
+Usage: {{ include "adaptive.harmony.secretEnvVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.harmony.secretEnvVars" -}}
+- name: ADAPTIVE_MODEL_REGISTRY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.harmony.secret.fullname" . }}
+      key: modelRegistryUrl
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.harmony.secret.fullname" . }}
+      key: sharedDirectoryUrl
+- name: HARMONY_SETTING_MODEL_REGISTRY_ROOT
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.harmony.secret.fullname" . }}
+      key: modelRegistryUrl
+{{- end }}
+
+{{/*
+Helper to generate Redis secret environment variables
+Usage: {{ include "adaptive.redis.secretEnvVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.redis.secretEnvVars" -}}
+- name: ADAPTIVE_REDIS__URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.redis.secret.fullname" . }}
+      key: redisUrl
+- name: REDIS_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.redis.secret.fullname" . }}
+      key: redisUrl
+{{- end }}
+
+

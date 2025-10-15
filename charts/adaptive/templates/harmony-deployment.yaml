@@ -98,11 +98,10 @@ spec:
             - containerPort: {{ $ports.queue.containerPort }}
               name: {{ $ports.queue.name }}
             - containerPort: {{ $ports.torch.containerPort }}
-              name: {{ $ports.torch.name }} 
-          envFrom:
-            - secretRef:
-                name: {{ include "adaptive.harmony.secret.fullname" $ }}
+              name: {{ $ports.torch.name }}
           env:
+            {{- include "adaptive.harmony.secretEnvVars" $ | nindent 12 }}
+            {{- include "adaptive.redis.secretEnvVars" $ | nindent 12 }}
             - name: MY_POD_NAME
               valueFrom:
                 fieldRef:
