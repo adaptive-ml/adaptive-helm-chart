@@ -25,7 +25,7 @@ secrets:
   # Use same bucket as above and can use a different prefix
   sharedDirectoryUrl: s3://bucket-name/shared
   # Postgres database connection string
-  dbUrl: postgres://username:password@db_adress:5432/db_name
+  dbUrl: postgres://username:password@db_address:5432/db_name
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315   # Must be >= 64 chars
 
