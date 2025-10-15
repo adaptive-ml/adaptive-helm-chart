@@ -522,9 +522,7 @@ alloy:
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 
-redis:
-  enabled: true  # Set to false to disable Redis deployment
-
+redis:  # Redis is required and cannot be disabled
   image:
     repository: redis
     tag: "7.2.11-alpine"
