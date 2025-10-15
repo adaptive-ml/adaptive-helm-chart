@@ -174,15 +174,15 @@ The `existingControlPlaneSecret` must contain these keys:
 - `auth.oidc.providers` - OIDC configuration in TOML array format (example below):
   ```toml
   [{
-    key=google,
-    name=Google,
+    key="google",
+    name="Google",
     issuer_url="https://accounts.google.com",
     client_id="your_client_id",
     client_secret="your_client_secret",
     scopes=["email","profile"],
     pkce=true,
     allow_sign_up=true
-  },]
+  }]
   ```
 
 The `existingHarmonySecret` must contain these keys:

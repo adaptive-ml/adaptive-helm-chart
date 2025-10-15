@@ -296,7 +296,7 @@ Usage: {{ include "adaptive.redis.secretEnvVars" . | nindent 12 }}
     secretKeyRef:
       name: {{ include "adaptive.redis.secret.fullname" . }}
       key: redisUrl
-- name: REDIS__URL
+- name: REDIS_URL
   valueFrom:
     secretKeyRef:
       name: {{ include "adaptive.redis.secret.fullname" . }}

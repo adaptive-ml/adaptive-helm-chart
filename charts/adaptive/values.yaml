@@ -18,7 +18,7 @@ secrets:
   existingControlPlaneSecret: ""
   # Harmony existing secret (must contain keys: modelRegistryUrl, sharedDirectoryUrl)
   existingHarmonySecret: ""
-  # Redis existing secret (must contain key: REDIS_URL)
+  # Redis existing secret (must contain key: redisUrl)
   existingRedisSecret: ""
   
   # S3 bucket for model registry
