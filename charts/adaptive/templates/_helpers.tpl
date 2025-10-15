@@ -60,14 +60,19 @@ Control plane and harmony components full names
 {{/*
 Secret related fullnames
 */}}
-{{- define "adaptive.externalSecretStore.fullname"}}
-{{- printf "%s-ext-secret-store" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
 {{- define "adaptive.controlPlane.secret.fullname"}}
+{{- if .Values.secrets.existingControlPlaneSecret }}
+{{- .Values.secrets.existingControlPlaneSecret }}
+{{- else }}
 {{- printf "%s-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end}}
 {{- define "adaptive.harmony.secret.fullname"}}
+{{- if .Values.secrets.existingHarmonySecret }}
+{{- .Values.secrets.existingHarmonySecret }}
+{{- else }}
 {{- printf "%s-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end}}
 
 
