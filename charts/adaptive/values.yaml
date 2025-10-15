@@ -557,8 +557,6 @@ alloy:
 imagePullSecrets: []
 
 redis:
-  enabled: true  # Set to false to disable Redis deployment
-
   image:
     repository: redis
     tag: "7.2.11-alpine"
