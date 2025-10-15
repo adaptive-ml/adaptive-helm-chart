@@ -147,24 +147,50 @@ If you manage secrets externally (using External Secrets Operator, Sealed Secret
 
 ```yaml
 secrets:
-  # Reference existing Kubernetes secrets ids
+  # Reference existing Kubernetes secrets
   existingControlPlaneSecret: "my-control-plane-secret"
   existingHarmonySecret: "my-harmony-secret"
+  existingRedisSecret: "my-redis-secret"
+  
+  # IMPORTANT: Clear inline values to avoid validation errors
+  dbUrl: ""
+  cookiesSecret: ""
+  modelRegistryUrl: ""
+  sharedDirectoryUrl: ""
+  auth:
+    oidc:
+      providers: []
 ```
+
+> **Note:** The chart validates that you don't accidentally provide both an `existingSecret` reference and inline values. If both are detected, Helm will fail with a clear error message to prevent configuration surprises. Make sure to clear/remove inline secret values when using external secrets.
 
 **Required keys for existing secrets:**
 
-The `existingControlPlaneSecret` must contain:
+> **Note:** Secret keys use the same names as the values.yaml field names for simplicity. The chart handles mapping them to the appropriate environment variables internally.
+
+The `existingControlPlaneSecret` must contain these keys:
 - `dbUrl` - Database connection string
 - `cookiesSecret` - Cookie signing secret (>= 64 chars)
-- `oidc_providers` - OIDC configuration (see format in values.yaml)
-- `redisUrl` - Redis connection URL (auto-generated if using built-in Redis)
+- `auth.oidc.providers` - OIDC configuration in TOML array format (example below):
+  ```toml
+  [{
+    key=google,
+    name=Google,
+    issuer_url="https://accounts.google.com",
+    client_id="your_client_id",
+    client_secret="your_client_secret",
+    scopes=["email","profile"],
+    pkce=true,
+    allow_sign_up=true
+  },]
+  ```
 
-The `existingHarmonySecret` must contain:
-- `ADAPTIVE_MODEL_REGISTRY` - S3 bucket URL for model registry
-- `ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL` - S3 bucket URL for shared directory
-- `REDIS_URL` - Redis connection URL (auto-generated if using built-in Redis)
-- `HARMONY_SETTING_MODEL_REGISTRY_ROOT` - Same as ADAPTIVE_MODEL_REGISTRY
+The `existingHarmonySecret` must contain these keys:
+- `modelRegistryUrl` - S3 bucket URL for model registry
+- `sharedDirectoryUrl` - S3 bucket URL for shared directory
+
+The `existingRedisSecret` must contain this key:
+- `redisUrl` - Redis connection URL (auto-generated from `redis.auth.*` if using built-in Redis)
 
 For detailed examples of using external secret management tools, see the [Using External Secret Management](#using-external-secret-management) section below.
 
@@ -312,7 +338,9 @@ spec:
         # Configure authentication to your secret backend
 ```
 
-**3. Create ExternalSecret resources** for Control Plane and Harmony:
+**3. Create ExternalSecret resources** for Control Plane, Harmony, and Redis:
+
+> **Note:** Secret keys match the values.yaml field names for simplicity (e.g., `dbUrl`, `cookiesSecret`). The chart handles environment variable mapping internally.
 
 ```yaml
 ---
@@ -335,12 +363,9 @@ spec:
     - secretKey: cookiesSecret
       remoteRef:
         key: adaptive/cookies-secret
-    - secretKey: oidc_providers
+    - secretKey: auth.oidc.providers  # Value must be in TOML array format
       remoteRef:
-        key: adaptive/oidc-providers
-    - secretKey: redisUrl
-      remoteRef:
-        key: adaptive/redis-url
+        key: adaptive/oidc-providers  # Store the TOML array in your secret backend
 ---
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
@@ -355,18 +380,29 @@ spec:
     name: adaptive-harmony-secret
     creationPolicy: Owner
   data:
-    - secretKey: ADAPTIVE_MODEL_REGISTRY
+    - secretKey: modelRegistryUrl
       remoteRef:
         key: adaptive/model-registry-url
-    - secretKey: ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL
+    - secretKey: sharedDirectoryUrl
       remoteRef:
         key: adaptive/shared-directory-url
-    - secretKey: REDIS_URL
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: adaptive-redis-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: SecretStore
+  target:
+    name: adaptive-redis-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: redisUrl
       remoteRef:
         key: adaptive/redis-url
-    - secretKey: HARMONY_SETTING_MODEL_REGISTRY_ROOT
-      remoteRef:
-        key: adaptive/model-registry-url
 ```
 
 **4. Reference the secrets** in your Helm values:
@@ -375,6 +411,16 @@ spec:
 secrets:
   existingControlPlaneSecret: "adaptive-control-plane-secret"
   existingHarmonySecret: "adaptive-harmony-secret"
+  existingRedisSecret: "adaptive-redis-secret"
+  
+  # Clear inline values to use external secrets
+  dbUrl: ""
+  cookiesSecret: ""
+  modelRegistryUrl: ""
+  sharedDirectoryUrl: ""
+  auth:
+    oidc:
+      providers: []
 ```
 
 **5. Deploy the Helm chart:**
@@ -389,17 +435,32 @@ If you're using [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets)
 
 **1. Create your secrets** and seal them:
 
+> **Note:** Secret keys match the values.yaml field names (e.g., `dbUrl`, `cookiesSecret`) for simplicity.
+
 ```bash
-# Create a secret with your values
+# Create control plane secret
+# Note: auth.oidc.providers must be in TOML array format
 kubectl create secret generic adaptive-control-plane-secret \
   --from-literal=dbUrl="postgres://..." \
   --from-literal=cookiesSecret="..." \
-  --from-literal=oidc_providers="..." \
-  --from-literal=redisUrl="redis://..." \
+  --from-literal=auth.oidc.providers='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="...",client_secret="...",scopes=["email","profile"],pkce=true,allow_sign_up=true},]' \
   --dry-run=client -o yaml | kubeseal -o yaml > sealed-control-plane-secret.yaml
 
-# Apply the sealed secret
+# Create harmony secret
+kubectl create secret generic adaptive-harmony-secret \
+  --from-literal=modelRegistryUrl="s3://..." \
+  --from-literal=sharedDirectoryUrl="s3://..." \
+  --dry-run=client -o yaml | kubeseal -o yaml > sealed-harmony-secret.yaml
+
+# Create redis secret
+kubectl create secret generic adaptive-redis-secret \
+  --from-literal=redisUrl="redis://..." \
+  --dry-run=client -o yaml | kubeseal -o yaml > sealed-redis-secret.yaml
+
+# Apply the sealed secrets
 kubectl apply -f sealed-control-plane-secret.yaml
+kubectl apply -f sealed-harmony-secret.yaml
+kubectl apply -f sealed-redis-secret.yaml
 ```
 
 **2. Reference the secrets** in your Helm values as shown above.
@@ -408,15 +469,27 @@ kubectl apply -f sealed-control-plane-secret.yaml
 
 You can also create secrets manually:
 
+> **Note:** Secret keys match the values.yaml field names (e.g., `dbUrl`, `cookiesSecret`) for simplicity.
+
 ```bash
+# Control plane secret
+# Note: auth.oidc.providers must be in TOML array format
 kubectl create secret generic adaptive-control-plane-secret \
   --from-literal=dbUrl="postgres://username:password@host:5432/db" \
   --from-literal=cookiesSecret="your-64-char-secret" \
-  --from-literal=oidc_providers='[{...}]' \
+  --from-literal=auth.oidc.providers='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true},]'
+
+# Harmony secret
+kubectl create secret generic adaptive-harmony-secret \
+  --from-literal=modelRegistryUrl="s3://bucket/models" \
+  --from-literal=sharedDirectoryUrl="s3://bucket/shared"
+
+# Redis secret
+kubectl create secret generic adaptive-redis-secret \
   --from-literal=redisUrl="redis://redis-host:6379"
 ```
 
-Then reference it in your values file as shown above
+Then reference these secrets in your values file as shown above
 
 ---
 

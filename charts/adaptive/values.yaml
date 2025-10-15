@@ -14,10 +14,13 @@ serviceAccount:
 # or reference existing secrets that you provision yourself
 secrets:
   # Optional: Reference existing secrets instead of creating new ones
-  # Control Plane existing secret (must contain keys: dbUrl, cookiesSecret, oidc_providers, redisUrl)
+  # Control Plane existing secret (must contain keys: dbUrl, cookiesSecret, auth.oidc.providers)
   existingControlPlaneSecret: ""
-  # Harmony existing secret (must contain keys: ADAPTIVE_MODEL_REGISTRY, ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL, REDIS_URL, HARMONY_SETTING_MODEL_REGISTRY_ROOT)
+  # Harmony existing secret (must contain keys: modelRegistryUrl, sharedDirectoryUrl)
   existingHarmonySecret: ""
+  # Redis existing secret (must contain key: REDIS_URL)
+  existingRedisSecret: ""
+  
   # S3 bucket for model registry
   modelRegistryUrl: s3://bucket-name/model_registry
   # Use same bucket as above and can use a different prefix
