@@ -158,7 +158,7 @@ Harmony service HTTP endpoint
 {{- end }}
 
 
-{{- define "adaptive.oidc_providers" -}}
+{{- define "adaptive.oidcProviders" -}}
 [
   {{- range .Values.secrets.auth.oidc.providers -}}
   {

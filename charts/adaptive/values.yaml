@@ -14,7 +14,7 @@ serviceAccount:
 # or reference existing secrets that you provision yourself
 secrets:
   # Optional: Reference existing secrets instead of creating new ones
-  # Control Plane existing secret (must contain keys: dbUrl, cookiesSecret, auth.oidc.providers)
+  # Control Plane existing secret (must contain keys: dbUrl, cookiesSecret, oidcProviders)
   existingControlPlaneSecret: ""
   # Harmony existing secret (must contain keys: modelRegistryUrl, sharedDirectoryUrl)
   existingHarmonySecret: ""

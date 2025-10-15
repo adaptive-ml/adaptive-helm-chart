@@ -171,7 +171,7 @@ secrets:
 The `existingControlPlaneSecret` must contain these keys:
 - `dbUrl` - Database connection string
 - `cookiesSecret` - Cookie signing secret (>= 64 chars)
-- `auth.oidc.providers` - OIDC configuration in TOML array format (example below):
+- `oidcProviders` - OIDC configuration in TOML array format (example below):
   ```toml
   [{
     key="google",
@@ -363,7 +363,7 @@ spec:
     - secretKey: cookiesSecret
       remoteRef:
         key: adaptive/cookies-secret
-    - secretKey: auth.oidc.providers  # Value must be in TOML array format
+    - secretKey: oidcProviders  # Value must be in TOML array format
       remoteRef:
         key: adaptive/oidc-providers  # Store the TOML array in your secret backend
 ---
@@ -439,11 +439,11 @@ If you're using [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets)
 
 ```bash
 # Create control plane secret
-# Note: auth.oidc.providers must be in TOML array format
+# Note: oidcProviders must be in TOML array format
 kubectl create secret generic adaptive-control-plane-secret \
   --from-literal=dbUrl="postgres://..." \
   --from-literal=cookiesSecret="..." \
-  --from-literal=auth.oidc.providers='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="...",client_secret="...",scopes=["email","profile"],pkce=true,allow_sign_up=true},]' \
+  --from-literal=oidcProviders='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="...",client_secret="...",scopes=["email","profile"],pkce=true,allow_sign_up=true},]' \
   --dry-run=client -o yaml | kubeseal -o yaml > sealed-control-plane-secret.yaml
 
 # Create harmony secret
@@ -473,11 +473,11 @@ You can also create secrets manually:
 
 ```bash
 # Control plane secret
-# Note: auth.oidc.providers must be in TOML array format
+# Note: oidcProviders must be in TOML array format
 kubectl create secret generic adaptive-control-plane-secret \
   --from-literal=dbUrl="postgres://username:password@host:5432/db" \
   --from-literal=cookiesSecret="your-64-char-secret" \
-  --from-literal=auth.oidc.providers='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true},]'
+  --from-literal=oidcProviders='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true},]'
 
 # Harmony secret
 kubectl create secret generic adaptive-harmony-secret \

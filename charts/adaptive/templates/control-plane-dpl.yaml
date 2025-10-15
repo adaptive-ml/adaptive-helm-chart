@@ -71,7 +71,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.secret.fullname" . }}
-                  key: auth.oidc.providers
+                  key: oidcProviders
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
               value: {{ .Values.controlPlane.sharedDirType | quote }}
             {{- if .Values.s3proxy.enabled }}
