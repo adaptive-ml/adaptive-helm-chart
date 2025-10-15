@@ -477,7 +477,7 @@ You can also create secrets manually:
 kubectl create secret generic adaptive-control-plane-secret \
   --from-literal=dbUrl="postgres://username:password@host:5432/db" \
   --from-literal=cookiesSecret="your-64-char-secret" \
-  --from-literal=auth.oidc.providers='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true},]'
+  --from-literal=auth.oidc.providers='[{key="google",name="Google",issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true}]'
 
 # Harmony secret
 kubectl create secret generic adaptive-harmony-secret \
