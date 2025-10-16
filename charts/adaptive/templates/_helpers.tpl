@@ -229,7 +229,7 @@ Get MLflow tracking URL - returns external URL if configured, otherwise internal
 */}}
 {{- define "adaptive.mlflow.trackingUrl" -}}
 {{- if and .Values.mlflow.enabled .Values.mlflow.external.enabled -}}
-{{- .Values.mlflow.external.url }}
+{{- required "MLflow external URL must be set when mlflow.external.enabled is true" .Values.mlflow.external.url }}
 {{- else -}}
 {{- printf "http://%s:%d" (include "adaptive.mlflow.service.fullname" .) (int (include "adaptive.mlflow.ports" . | fromJson).http.port) }}
 {{- end }}
