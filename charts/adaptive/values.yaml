@@ -67,7 +67,6 @@ containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com   # Add the A
 harmony:
   # Set to false to disable the harmony statefulset deployment (advanced mode only)
   enabled: true
-  
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: harmony:latest   # Add the harmony image tag
