@@ -1,4 +1,4 @@
-{{- if .Values.mlflow.enabled }}
+{{- if and .Values.mlflow.enabled (not .Values.mlflow.external.enabled) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -65,7 +65,7 @@ spec:
             - name: MLFLOW_SERVE_ARTIFACTS
               value: "true"
             - name: MLFLOW_ARTIFACTS_DESTINATION
-              value: "{{ .Values.mlflow.mountPath }}/artifacts"
+              value: "{{ .Values.mlflow.volumeMounts[0].mountPath }}/artifacts"
             {{- else }}
             - name: MLFLOW_SERVE_ARTIFACTS
               value: "false"

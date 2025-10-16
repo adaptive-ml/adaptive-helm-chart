@@ -109,9 +109,9 @@ spec:
             - name: ADAPTIVE_MLFLOW__ENABLED
               value: "true"
             - name: ADAPTIVE_MLFLOW__URL
-              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+              value: "{{ include "adaptive.mlflow.trackingUrl" . }}"
             - name: MLFLOW_TRACKING_URI
-              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+              value: "{{ include "adaptive.mlflow.trackingUrl" . }}"
             {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}

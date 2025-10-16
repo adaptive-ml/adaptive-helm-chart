@@ -1,4 +1,4 @@
-{{- if .Values.mlflow.enabled }}
+{{- if and .Values.mlflow.enabled (not .Values.mlflow.external.enabled) }}
 apiVersion: v1
 kind: Service
 metadata:
