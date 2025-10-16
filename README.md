@@ -14,6 +14,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [Using External Secret Management](#using-external-secret-management)
 - [Monitoring and Observability](#monitoring-and-observability)
   - [Prometheus Monitoring](#prometheus-monitoring)
+  - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
   - [Tensorboard Support](#tensorboard-support)
 - [Inference and Autoscaling](#inference-and-autoscaling)
   - [Compute Pools](#compute-pools)
@@ -558,11 +559,22 @@ Adaptive Engine supports MLflow for experiment tracking and model versioning. Wh
 
 By default, MLflow is **enabled** and takes priority over Tensorboard if both are enabled.
 
-**Basic Configuration:**
+The chart supports three MLflow configurations:
+
+1. **Internal MLflow** (default) - Deploys an MLflow server within the cluster
+2. **External MLflow** - Uses an existing external MLflow server
+3. **Disabled** - No MLflow tracking
+
+#### Option 1: Internal MLflow (Default)
+
+Deploy an MLflow server within your Kubernetes cluster:
 
 ```yaml
 mlflow:
-  enabled: true  # default is true
+  enabled: true
+  external:
+    enabled: false  # Use internal deployment
+  
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   replicaCount: 1
   workers: 4  # Recommended: 2-4 workers per CPU core
@@ -601,18 +613,32 @@ mlflow:
       mountPath: /mlflow-storage
 ```
 
-**Resource Configuration:**
+#### Option 2: External MLflow
+
+This is useful when:
+
+- You have a centralized MLflow server shared across multiple teams or projects
+- You want to use a managed MLflow service
+- You prefer to manage MLflow separately from the Adaptive deployment
 
 ```yaml
 mlflow:
-  resources:
-    limits:
-      cpu: 1000m
-      memory: 2Gi
-    requests:
-      cpu: 500m
-      memory: 1Gi
+  enabled: true
+  external:
+    enabled: true
+    url: "http://mlflow.example.com:5000"  # URL of your external MLflow server
 ```
+
+#### Option 3: Disable MLflow
+
+To disable MLflow tracking entirely:
+
+```yaml
+mlflow:
+  enabled: false
+```
+
+When MLflow is disabled, you can optionally enable Tensorboard for logging (see [Tensorboard Support](#tensorboard-support)).
 
 ### Tensorboard Support
 

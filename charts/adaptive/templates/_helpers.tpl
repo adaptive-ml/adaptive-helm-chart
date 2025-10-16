@@ -225,6 +225,17 @@ Build the image URIs from registry, repository, name, and tag
 {{- end }}
 
 {{/*
+Get MLflow tracking URL - returns external URL if configured, otherwise internal service URL
+*/}}
+{{- define "adaptive.mlflow.trackingUrl" -}}
+{{- if and .Values.mlflow.enabled .Values.mlflow.external.enabled -}}
+{{- required "MLflow external URL must be set when mlflow.external.enabled is true" .Values.mlflow.external.url }}
+{{- else -}}
+{{- printf "http://%s:%d" (include "adaptive.mlflow.service.fullname" .) (int (include "adaptive.mlflow.ports" . | fromJson).http.port) }}
+{{- end }}
+{{- end }}
+
+{{/*
 Redis related helpers
 */}}
 {{- define "adaptive.redis.fullname" -}}

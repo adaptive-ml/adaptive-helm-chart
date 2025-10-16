@@ -1,4 +1,4 @@
-{{- if .Values.mlflow.enabled }}
+{{- if and .Values.mlflow.enabled (not .Values.mlflow.external.enabled) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
