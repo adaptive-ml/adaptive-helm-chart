@@ -1,3 +1,4 @@
+{{- if .Values.harmony.enabled }}
 {{- $harmonySettings := include "adaptive.harmony.settings" . | fromJson }}
 apiVersion: apps/v1
 kind: StatefulSet
@@ -253,5 +254,6 @@ spec:
           {{- else }}
             {}
           {{- end -}}
+{{- end }}
 {{- end }}
 {{- end }}
