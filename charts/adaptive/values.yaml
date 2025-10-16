@@ -460,7 +460,6 @@ mlflow:
   # A separate MLflow tracking server will be deployed
   # Takes priority over tensorboard if both are enabled
   enabled: true
-  
   # External MLflow configuration
   # Set external.enabled to true to use an existing external MLflow server
   # instead of deploying one within the cluster
@@ -468,7 +467,6 @@ mlflow:
     enabled: false
     # URL of the external MLflow tracking server (e.g., "http://mlflow.example.com:5000")
     url: ""
-  
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   image:
     pullPolicy: IfNotPresent
