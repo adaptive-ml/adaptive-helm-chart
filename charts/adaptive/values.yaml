@@ -492,7 +492,8 @@ mlflow:
     #     path: /mnt/nfs/mlflow
     #     type: Directory
 
-  # Ensure mountPath matches the backenStoreUri
+  mountPath: ""
+  # Ensure mountPath matches the backendStoreUri
   volumeMounts:
     - name: mlflow-storage
       mountPath: /mlflow-storage
