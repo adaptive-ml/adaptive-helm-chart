@@ -42,7 +42,7 @@ spec:
       {{- if .Values.harmony.tolerations}}
       tolerations:
         {{- toYaml .Values.harmony.tolerations | nindent 8 }}
-      {{- end}} 
+      {{- end}}
       initContainers:
       - name: init-permissions
         image: busybox
@@ -84,7 +84,7 @@ spec:
             - containerPort: {{ $ports.queue.containerPort }}
               name: {{ $ports.queue.name }}
             - containerPort: {{ $ports.torch.containerPort }}
-              name: {{ $ports.torch.name }} 
+              name: {{ $ports.torch.name }}
           envFrom:
             - secretRef:
                 name: {{ include "adaptive.harmony.configSecret.fullname" . }}
@@ -127,10 +127,10 @@ spec:
               value: PROD
             - name: JOB_LOG_DIR
               value: "{{ $harmonySettings.working_dir }}/job_logs"
-            {{- if .Values.mlflow.enabled }}
+            {{- if $.Values.mlflow.enabled }}
             - name: MLFLOW_TRACKING_URI
-              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
-            {{- else if .Values.tensorboard.enabled }}
+              value: "http://{{ include "adaptive.mlflow.service.fullname" $ }}:{{ (include "adaptive.mlflow.ports" $ | fromJson).http.port }}"
+            {{- else if $.Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
               value: "/logdir"
             {{- end }}
