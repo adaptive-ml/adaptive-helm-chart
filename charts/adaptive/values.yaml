@@ -9,55 +9,23 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: serviceaccount.adaptive-ml.com
 
-# External Secrets configuration (optional)
-# Enable this to use External Secrets Operator instead of hardcoded secrets below
-# https://github.com/external-secrets/external-secrets
-# You must pre-install the operator as a prerequisite
-externalSecret:
-  enabled: false
-  spec:
-    provider:
-      aws:
-        service: SecretsManager
-        region: us-west-2  # Optional: Replace with your secret region
-  data:
-    # Postgres database connection url (ex: "postgres://username:password@db_adress:5432/db_name")
-    dbUrl:
-      remoteRef:
-        key: path/to/dbUrl  # Name of external secret
-        property: dbUrl  # External secret key; remove if secret is plain text
-    # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
-    cookiesSecret:
-      remoteRef:
-        key: path/to/cookiesSecret
-        property: cookiesSecret  # External secret key for cookie signing; remove if secret is plain text
-    # S3 bucket for model registry (ex. "s3://bucket-name/folder")
-    modelRegistryUrl:
-      remoteRef:
-        key: path/to/modelRegistryUrl
-        property: modelRegistryUrl  # External secret key for model registry URL; remove if secret is plain text
-    # Use same bucket as above and can use a different prefix (ex. "s3://bucket-name/shared")
-    sharedDirectoryUrl:
-      remoteRef:
-        key: path/to/sharedDirectoryUrl
-        property: sharedDirectoryUrl  # External secret key for shared directory URL; remove if secret is plain text
-    # OIDC provider details for auth; see chart README for details on required secret structure
-    oidcProviders:
-      remoteRef:
-        key: path/to/oidcProviders
-        property: oidcProviders   # External secret key for OIDC provider config; remove if secret is plain text
-
-# Hardcoded secrets (used when externalSecret.enabled is false)
+# Secrets configuration
+# You can either provide values directly (and the chart will create secrets)
+# or reference existing secrets that you provision yourself
 secrets:
+  # Optional: Reference existing secrets instead of creating new ones
+  # Control Plane existing secret (must contain keys: dbUrl, cookiesSecret, oidcProviders)
+  existingControlPlaneSecret: ""
+  # Harmony existing secret (must contain keys: modelRegistryUrl, sharedDirectoryUrl)
+  existingHarmonySecret: ""
+  # Redis existing secret (must contain key: redisUrl)
+  existingRedisSecret: ""
   # S3 bucket for model registry
   modelRegistryUrl: s3://bucket-name/model_registry
-
   # Use same bucket as above and can use a different prefix
   sharedDirectoryUrl: s3://bucket-name/shared
-
   # Postgres database connection string
-  dbUrl: postgres://username:password@db_adress:5432/db_name
-
+  dbUrl: postgres://username:password@db_address:5432/db_name
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315   # Must be >= 64 chars
 
@@ -97,6 +65,8 @@ auth:
 containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com   # Add the Adaptive Registry you have been granted access to
 
 harmony:
+  # Set to false to disable the harmony statefulset deployment (advanced mode only)
+  enabled: true
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: harmony:latest   # Add the harmony image tag
@@ -490,6 +460,13 @@ mlflow:
   # A separate MLflow tracking server will be deployed
   # Takes priority over tensorboard if both are enabled
   enabled: true
+  # External MLflow configuration
+  # Set external.enabled to true to use an existing external MLflow server
+  # instead of deploying one within the cluster
+  external:
+    enabled: false
+    # URL of the external MLflow tracking server (e.g., "http://mlflow.example.com:5000")
+    url: ""
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   image:
     pullPolicy: IfNotPresent
@@ -515,7 +492,8 @@ mlflow:
     #     path: /mnt/nfs/mlflow
     #     type: Directory
 
-  # Ensure mountPath matches the backenStoreUri
+  mountPath: ""
+  # Ensure mountPath matches the backendStoreUri
   volumeMounts:
     - name: mlflow-storage
       mountPath: /mlflow-storage
@@ -556,9 +534,7 @@ alloy:
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 
-redis:
-  enabled: true  # Set to false to disable Redis deployment
-
+redis:  # Redis is required and cannot be disabled
   image:
     repository: redis
     tag: "7.2.11-alpine"

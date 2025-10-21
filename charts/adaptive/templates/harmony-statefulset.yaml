@@ -1,3 +1,4 @@
+{{- if .Values.harmony.enabled }}
 {{- $harmonySettings := include "adaptive.harmony.settings" . | fromJson }}
 apiVersion: apps/v1
 kind: StatefulSet
@@ -85,11 +86,10 @@ spec:
             - containerPort: {{ $ports.queue.containerPort }}
               name: {{ $ports.queue.name }}
             - containerPort: {{ $ports.torch.containerPort }}
-              name: {{ $ports.torch.name }} 
-          envFrom:
-            - secretRef:
-                name: {{ include "adaptive.harmony.secret.fullname" . }}
+              name: {{ $ports.torch.name }}
           env:
+            {{- include "adaptive.harmony.secretEnvVars" . | nindent 12 }}
+            {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
             - name: IMAGE_TAG
               value: {{ .Values.harmony.image.tag | quote }}
             - name: ORDINAL
@@ -130,7 +130,7 @@ spec:
               value: "{{ $harmonySettings.working_dir }}/job_logs"
             {{- if .Values.mlflow.enabled }}
             - name: MLFLOW_TRACKING_URI
-              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+              value: "{{ include "adaptive.mlflow.trackingUrl" . }}"
             {{- else if .Values.tensorboard.enabled }}
             - name: TENSORBOARD_LOGGING_DIR
               value: "/logdir"
@@ -254,5 +254,6 @@ spec:
           {{- else }}
             {}
           {{- end -}}
+{{- end }}
 {{- end }}
 {{- end }}

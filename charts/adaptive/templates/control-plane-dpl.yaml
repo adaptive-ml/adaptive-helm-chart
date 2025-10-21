@@ -54,15 +54,24 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          envFrom:
-            - secretRef:
-                name: {{ include "adaptive.harmony.secret.fullname" . }}
           env:
+            {{- include "adaptive.harmony.secretEnvVars" . | nindent 12 }}
+            {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
+            - name: ADAPTIVE_DB__URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
+                  key: dbUrl
             - name: ADAPTIVE_APP__SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "adaptive.controlPlane.secret.fullname" . }}
                   key: cookiesSecret
+            - name: ADAPTIVE_AUTH__OIDC__PROVIDERS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
+                  key: oidcProviders
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
               value: {{ .Values.controlPlane.sharedDirType | quote }}
             {{- if .Values.s3proxy.enabled }}
@@ -73,20 +82,10 @@ spec:
             {{- end }}
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
-            - name: ADAPTIVE_DB__URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
-                  key: dbUrl
             - name: ADAPTIVE_SERVER__BIND
               value: "0.0.0.0:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
               value: {{ .Values.controlPlane.rootUrl }}
-            - name: ADAPTIVE_AUTH__OIDC__PROVIDERS
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
-                  key: oidc_providers
             - name: IMAGE_TAG
               value: {{ .Values.controlPlane.image.tag | quote }}
             - name: ADAPTIVE_AUTH__SESSION__SECURE
@@ -99,11 +98,6 @@ spec:
               value: {{ .Values.auth.default_role | default "admin" | quote }}
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
-            - name: ADAPTIVE_REDIS__URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "adaptive.controlPlane.secret.fullname" . }}
-                  key: redisUrl
             {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
             {{- if .Values.tensorboard.enabled }}
             - name: ADAPTIVE_TENSORBOARD__ENABLED
@@ -115,9 +109,9 @@ spec:
             - name: ADAPTIVE_MLFLOW__ENABLED
               value: "true"
             - name: ADAPTIVE_MLFLOW__URL
-              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+              value: "{{ include "adaptive.mlflow.trackingUrl" . }}"
             - name: MLFLOW_TRACKING_URI
-              value: "http://{{ include "adaptive.mlflow.service.fullname" . }}:{{ (include "adaptive.mlflow.ports" . | fromJson).http.port }}"
+              value: "{{ include "adaptive.mlflow.trackingUrl" . }}"
             {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}

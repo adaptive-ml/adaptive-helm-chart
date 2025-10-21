@@ -11,9 +11,10 @@ A Helm Chart to deploy Adaptive Engine.
   - [Container Images](#container-images)
   - [GPU Resources](#gpu-resources)
   - [Ingress Configuration](#ingress-configuration)
-  - [External Secrets](#external-secrets)
+  - [Using External Secret Management](#using-external-secret-management)
 - [Monitoring and Observability](#monitoring-and-observability)
   - [Prometheus Monitoring](#prometheus-monitoring)
+  - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
   - [Tensorboard Support](#tensorboard-support)
 - [Inference and Autoscaling](#inference-and-autoscaling)
   - [Compute Pools](#compute-pools)
@@ -106,7 +107,11 @@ See the full `charts/adaptive/values.yaml` file for all available configuration 
 
 ### Secrets Configuration
 
-Configure secrets for model registry, database, and authentication:
+The chart supports two approaches for managing secrets:
+
+#### Option 1: Inline Secrets (Default)
+
+Provide secret values directly in your values file, and the chart will create Kubernetes secrets:
 
 ```yaml
 secrets:
@@ -136,6 +141,59 @@ secrets:
           # if true, user account will be created if it does not exist
           allow_sign_up: true
 ```
+
+#### Option 2: Reference Existing Secrets
+
+If you manage secrets externally (using External Secrets Operator, Sealed Secrets, manual provisioning, etc.), you can reference existing secrets instead:
+
+```yaml
+secrets:
+  # Reference existing Kubernetes secrets
+  existingControlPlaneSecret: "my-control-plane-secret"
+  existingHarmonySecret: "my-harmony-secret"
+  existingRedisSecret: "my-redis-secret"
+  
+  # IMPORTANT: Clear inline values to avoid validation errors
+  dbUrl: ""
+  cookiesSecret: ""
+  modelRegistryUrl: ""
+  sharedDirectoryUrl: ""
+  auth:
+    oidc:
+      providers: []
+```
+
+> **Note:** The chart validates that you don't accidentally provide both an `existingSecret` reference and inline values. If both are detected, Helm will fail with a clear error message to prevent configuration surprises. Make sure to clear/remove inline secret values when using external secrets.
+
+**Required keys for existing secrets:**
+
+> **Note:** Secret keys use the same names as the values.yaml field names for simplicity. The chart handles mapping them to the appropriate environment variables internally.
+
+The `existingControlPlaneSecret` must contain these keys:
+- `dbUrl` - Database connection string
+- `cookiesSecret` - Cookie signing secret (>= 64 chars)
+- `oidcProviders` - OIDC configuration in TOML array format (example below):
+  ```toml
+  [{
+    key="google",
+    name="Google",
+    issuer_url="https://accounts.google.com",
+    client_id="your_client_id",
+    client_secret="your_client_secret",
+    scopes=["email","profile"],
+    pkce=true,
+    allow_sign_up=true
+  }]
+  ```
+
+The `existingHarmonySecret` must contain these keys:
+- `modelRegistryUrl` - S3 bucket URL for model registry
+- `sharedDirectoryUrl` - S3 bucket URL for shared directory
+
+The `existingRedisSecret` must contain this key:
+- `redisUrl` - Redis connection URL (auto-generated from `redis.auth.*` if using built-in Redis)
+
+For detailed examples of using external secret management tools, see the [Using External Secret Management](#using-external-secret-management) section below.
 
 ### Container Images
 
@@ -254,21 +312,185 @@ controlPlane:
   servicePort: 80
 ```
 
-### External Secrets
+### Using External Secret Management
 
-This repository includes an example integration with [External Secrets Operator](https://external-secrets.io/latest/) (>=0.20 is the minimal supported version).
+The chart does not include any opinionated secret management integration. You can use any secret management solution you prefer (External Secrets Operator, Sealed Secrets, etc.) and reference those secrets in your Helm values.
 
-If you are storing secrets in an external/cloud secrets manager, you can use them in your Adaptive Engine deployment by following these steps:
+#### Example: Using External Secrets Operator
 
-1. Install External Secrets Operator (reference installation guide [here](https://external-secrets.io/latest/introduction/getting-started/))
+If you're using [External Secrets Operator](https://external-secrets.io/latest/), follow these steps:
 
-2. Set the values overrides in the `externalSecret` section.
+**1. Install External Secrets Operator** in your cluster ([installation guide](https://external-secrets.io/latest/introduction/getting-started/))
 
-3. Deploy the Helm chart using the updated values file:
+**2. Create a SecretStore** for your secret backend:
+
+```yaml
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: aws-secrets-manager
+  namespace: default
+spec:
+  provider:
+    aws:
+      service: SecretsManager
+      region: us-west-2
+      auth:
+        # Configure authentication to your secret backend
+```
+
+**3. Create ExternalSecret resources** for Control Plane, Harmony, and Redis:
+
+> **Note:** Secret keys match the values.yaml field names for simplicity (e.g., `dbUrl`, `cookiesSecret`). The chart handles environment variable mapping internally.
+
+```yaml
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: adaptive-control-plane-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: SecretStore
+  target:
+    name: adaptive-control-plane-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: dbUrl
+      remoteRef:
+        key: adaptive/db-url
+    - secretKey: cookiesSecret
+      remoteRef:
+        key: adaptive/cookies-secret
+    - secretKey: oidcProviders  # Value must be in TOML array format
+      remoteRef:
+        key: adaptive/oidc-providers  # Store the TOML array in your secret backend
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: adaptive-harmony-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: SecretStore
+  target:
+    name: adaptive-harmony-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: modelRegistryUrl
+      remoteRef:
+        key: adaptive/model-registry-url
+    - secretKey: sharedDirectoryUrl
+      remoteRef:
+        key: adaptive/shared-directory-url
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: adaptive-redis-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: SecretStore
+  target:
+    name: adaptive-redis-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: redisUrl
+      remoteRef:
+        key: adaptive/redis-url
+```
+
+**4. Reference the secrets** in your Helm values:
+
+```yaml
+secrets:
+  existingControlPlaneSecret: "adaptive-control-plane-secret"
+  existingHarmonySecret: "adaptive-harmony-secret"
+  existingRedisSecret: "adaptive-redis-secret"
+  
+  # Clear inline values to use external secrets
+  dbUrl: ""
+  cookiesSecret: ""
+  modelRegistryUrl: ""
+  sharedDirectoryUrl: ""
+  auth:
+    oidc:
+      providers: []
+```
+
+**5. Deploy the Helm chart:**
 
 ```bash
-helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f charts/adaptive/values_external_secret.yaml
+helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f values.yaml
 ```
+
+#### Example: Using Sealed Secrets
+
+If you're using [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets):
+
+**1. Create your secrets** and seal them:
+
+> **Note:** Secret keys match the values.yaml field names (e.g., `dbUrl`, `cookiesSecret`) for simplicity.
+
+```bash
+# Create control plane secret
+# Note: oidcProviders must be in TOML array format
+kubectl create secret generic adaptive-control-plane-secret \
+  --from-literal=dbUrl="postgres://..." \
+  --from-literal=cookiesSecret="..." \
+  --from-literal=oidcProviders='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="...",client_secret="...",scopes=["email","profile"],pkce=true,allow_sign_up=true},]' \
+  --dry-run=client -o yaml | kubeseal -o yaml > sealed-control-plane-secret.yaml
+
+# Create harmony secret
+kubectl create secret generic adaptive-harmony-secret \
+  --from-literal=modelRegistryUrl="s3://..." \
+  --from-literal=sharedDirectoryUrl="s3://..." \
+  --dry-run=client -o yaml | kubeseal -o yaml > sealed-harmony-secret.yaml
+
+# Create redis secret
+kubectl create secret generic adaptive-redis-secret \
+  --from-literal=redisUrl="redis://..." \
+  --dry-run=client -o yaml | kubeseal -o yaml > sealed-redis-secret.yaml
+
+# Apply the sealed secrets
+kubectl apply -f sealed-control-plane-secret.yaml
+kubectl apply -f sealed-harmony-secret.yaml
+kubectl apply -f sealed-redis-secret.yaml
+```
+
+**2. Reference the secrets** in your Helm values as shown above.
+
+#### Example: Manual Secret Creation
+
+You can also create secrets manually:
+
+> **Note:** Secret keys match the values.yaml field names (e.g., `dbUrl`, `cookiesSecret`) for simplicity.
+
+```bash
+# Control plane secret
+# Note: oidcProviders must be in TOML array format
+kubectl create secret generic adaptive-control-plane-secret \
+  --from-literal=dbUrl="postgres://username:password@host:5432/db" \
+  --from-literal=cookiesSecret="your-64-char-secret" \
+  --from-literal=oidcProviders='[{key="google",name="Google",issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true}]'
+
+# Harmony secret
+kubectl create secret generic adaptive-harmony-secret \
+  --from-literal=modelRegistryUrl="s3://bucket/models" \
+  --from-literal=sharedDirectoryUrl="s3://bucket/shared"
+
+# Redis secret
+kubectl create secret generic adaptive-redis-secret \
+  --from-literal=redisUrl="redis://redis-host:6379"
+```
+
+Then reference these secrets in your values file as shown above
 
 ---
 
@@ -337,11 +559,22 @@ Adaptive Engine supports MLflow for experiment tracking and model versioning. Wh
 
 By default, MLflow is **enabled** and takes priority over Tensorboard if both are enabled.
 
-**Basic Configuration:**
+The chart supports three MLflow configurations:
+
+1. **Internal MLflow** (default) - Deploys an MLflow server within the cluster
+2. **External MLflow** - Uses an existing external MLflow server
+3. **Disabled** - No MLflow tracking
+
+#### Option 1: Internal MLflow (Default)
+
+Deploy an MLflow server within your Kubernetes cluster:
 
 ```yaml
 mlflow:
-  enabled: true  # default is true
+  enabled: true
+  external:
+    enabled: false  # Use internal deployment
+  
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   replicaCount: 1
   workers: 4  # Recommended: 2-4 workers per CPU core
@@ -380,18 +613,32 @@ mlflow:
       mountPath: /mlflow-storage
 ```
 
-**Resource Configuration:**
+#### Option 2: External MLflow
+
+This is useful when:
+
+- You have a centralized MLflow server shared across multiple teams or projects
+- You want to use a managed MLflow service
+- You prefer to manage MLflow separately from the Adaptive deployment
 
 ```yaml
 mlflow:
-  resources:
-    limits:
-      cpu: 1000m
-      memory: 2Gi
-    requests:
-      cpu: 500m
-      memory: 1Gi
+  enabled: true
+  external:
+    enabled: true
+    url: "http://mlflow.example.com:5000"  # URL of your external MLflow server
 ```
+
+#### Option 3: Disable MLflow
+
+To disable MLflow tracking entirely:
+
+```yaml
+mlflow:
+  enabled: false
+```
+
+When MLflow is disabled, you can optionally enable Tensorboard for logging (see [Tensorboard Support](#tensorboard-support)).
 
 ### Tensorboard Support
 
