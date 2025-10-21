@@ -47,7 +47,12 @@ app.kubernetes.io/component: postgresql
 {{- if .Values.installPostgres.password -}}
 {{- .Values.installPostgres.password -}}
 {{- else -}}
+{{- $secret := (lookup "v1" "Secret" .Release.Namespace (include "adaptive.postgresql.secret.fullname" .)) -}}
+{{- if $secret -}}
+{{- index $secret.data "password" | b64dec -}}
+{{- else -}}
 {{- randAlphaNum 32 -}}
+{{- end -}}
 {{- end -}}
 {{- end }}
 
