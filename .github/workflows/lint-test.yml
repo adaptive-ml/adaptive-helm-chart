@@ -83,6 +83,10 @@ jobs:
           helm install --dry-run --debug adaptive-stack-mlflow ./charts/adaptive --set mlflow.enabled=true
           echo "::endgroup::"
 
+          echo "::group::Testing adaptive with postgres installed option enabled"
+          helm install --dry-run --debug adaptive-stack-postgres ./charts/adaptive --set installPostgres.enabled=true
+          echo "::endgroup::"
+
           echo "::group::Testing monitoring stack"
           helm install --dry-run --debug adaptive-monitoring ./charts/monitoring
           echo "::endgroup::"

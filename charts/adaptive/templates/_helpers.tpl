@@ -16,6 +16,47 @@ We truncate at 30 chars so we have characters left to append individual componen
 {{- end }}
 
 {{/*
+Internal PostgreSQL related helpers
+*/}}
+{{- define "adaptive.postgresql.fullname" -}}
+{{- printf "%s-postgresql" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.headless.service.fullname" -}}
+{{- printf "%s-headless" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.pvc.fullname" -}}
+{{- printf "%s-pvc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.secret.fullname" -}}
+{{- printf "%s-secret" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.selectorLabels" -}}
+app.kubernetes.io/component: postgresql
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.postgresql.password" -}}
+{{- if .Values.installPostgres.password -}}
+{{- .Values.installPostgres.password -}}
+{{- else -}}
+{{- $secret := (lookup "v1" "Secret" .Release.Namespace (include "adaptive.postgresql.secret.fullname" .)) -}}
+{{- if $secret -}}
+{{- index $secret.data "password" | b64dec -}}
+{{- else -}}
+{{- randAlphaNum 32 -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Control plane and harmony components full names
 */}}
 {{- define "adaptive.controlPlane.fullname" -}}
@@ -314,4 +355,18 @@ Usage: {{ include "adaptive.redis.secretEnvVars" . | nindent 12 }}
       key: redisUrl
 {{- end }}
 
-
+{{/*
+Generate the database URL - uses internal PostgreSQL if enabled, otherwise uses external URL from secrets
+*/}}
+{{- define "adaptive.db.url" -}}
+{{- if .Values.installPostgres.enabled -}}
+{{- $host := include "adaptive.postgresql.service.fullname" . -}}
+{{- $port := .Values.installPostgres.port | int -}}
+{{- $database := .Values.installPostgres.database -}}
+{{- $username := .Values.installPostgres.username -}}
+{{- $password := include "adaptive.postgresql.password" . -}}
+{{- printf "postgres://%s:%s@%s:%d/%s" ($username | urlquery) ($password | urlquery) $host $port $database -}}
+{{- else -}}
+{{- required "A db url is required!" .Values.secrets.dbUrl -}}
+{{- end -}}
+{{- end }}
