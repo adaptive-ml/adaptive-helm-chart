@@ -261,7 +261,7 @@ Control plane HTTP private endpoint
 sandkasten HTTP private endpoint
 */}}
 {{- define "adaptive.sandkasten.privateHttpEndpoint" -}}
-{{- printf "http://%s:%d" (include "adaptive.sandkasten.service.fullname" .) (int .Values.sandkasten.servicePort)}}
+{{- printf "http://%s:%d" (include "adaptive.sandkasten.service.fullname" .) (int .Values.sandkasten.servicePort) }}
 {{- end }}
 
 {{/*
