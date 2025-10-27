@@ -290,8 +290,7 @@ Build the image URIs from registry, repository, name, and tag
 {{- printf "%s" .Values.tensorboard.imageUri }}
 {{- end }}
 {{- define "adaptive.sandkasten.imageUri" -}}
-{{- $tag := (split ":" .Values.sandkasten.image.tag | last) -}}
-{{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository $tag | trimSuffix "/" }}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository .Values.sandkasten.image.tag | trimSuffix "/" }}
 {{- end }}
 {{- define "adaptive.mlflow.imageUri" -}}
 {{- printf "%s" .Values.mlflow.imageUri }}
