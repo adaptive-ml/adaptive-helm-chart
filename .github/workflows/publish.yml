@@ -1,6 +1,5 @@
-
-## Reference: https://github.com/helm/chart-releaser-action
-name: Release the helm chart
+## Reference: https://helm.sh/docs/topics/registries/
+name: Publish Helm Charts to OCI Registry
 on:
   push:
     branches:
@@ -9,26 +8,71 @@ on:
 jobs:
   publish:
     permissions:
-      contents: write  # for helm/chart-releaser-action to push chart release and create a release
+      contents: read
+      packages: write
+      id-token: write
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chart:
+          - name: adaptive
+          - name: monitoring
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.10.1
-
-      - name: Configure Git
+      - name: Detect Changes
+        id: changes
+        # The lint-test workflow running on Pull Request guarantees that the chart version is bumped when content changes.
+        # We don't need to check for changes in the chart version here.
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          if git diff --name-only HEAD^ HEAD | grep -q "^charts/${{ matrix.chart.name }}/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Chart ${{ matrix.chart.name }} has changes"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Chart ${{ matrix.chart.name }} has no changes, no publishing needed"
+          fi
 
-      # Step 5: Package and upload Helm chart
-      - name: Upload Helm chart to GitHub release
-        uses: helm/chart-releaser-action@v1.7.0
-        env:
-          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install yq
+        if: steps.changes.outputs.changed == 'true'
+        uses: mikefarah/yq@v4.44.1
+
+      - name: Read Chart Version
+        if: steps.changes.outputs.changed == 'true'
+        id: chart_version
+        run: |
+          VERSION=$(yq eval '.version' charts/${{ matrix.chart.name }}/Chart.yaml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Publish Chart
+        if: steps.changes.outputs.changed == 'true'
+        uses: appany/helm-oci-chart-releaser@v0.5.0
+        with:
+          name: ${{ matrix.chart.name }}
+          repository: ${{ github.repository_owner }}
+          tag: ${{ steps.chart_version.outputs.version }}
+          registry: ghcr.io
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Cosign
+        if: steps.changes.outputs.changed == 'true'
+        uses: sigstore/cosign-installer@v3.7.0
+
+      - name: Log in to GitHub Container Registry
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | cosign login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Sign Chart with Cosign (keyless through GitHub's OIDC)
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          cosign sign --yes ghcr.io/${{ github.repository_owner }}/${{ matrix.chart.name }}:${{ steps.chart_version.outputs.version }}
+
+      - name: Verify Chart with Cosign
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          cosign verify ghcr.io/${{ github.repository_owner }}/${{ matrix.chart.name }}:${{ steps.chart_version.outputs.version }} --certificate-identity-regexp='^https://github\.com/${{ github.repository_owner }}/.*$' --certificate-oidc-issuer=https://token.actions.githubusercontent.com   

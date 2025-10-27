@@ -16,13 +16,54 @@ We truncate at 30 chars so we have characters left to append individual componen
 {{- end }}
 
 {{/*
-Control plane and harmony components full names 
+Internal PostgreSQL related helpers
+*/}}
+{{- define "adaptive.postgresql.fullname" -}}
+{{- printf "%s-postgresql" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.headless.service.fullname" -}}
+{{- printf "%s-headless" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.pvc.fullname" -}}
+{{- printf "%s-pvc" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.secret.fullname" -}}
+{{- printf "%s-secret" (include "adaptive.postgresql.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.postgresql.selectorLabels" -}}
+app.kubernetes.io/component: postgresql
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.postgresql.password" -}}
+{{- if .Values.installPostgres.password -}}
+{{- .Values.installPostgres.password -}}
+{{- else -}}
+{{- $secret := (lookup "v1" "Secret" .Release.Namespace (include "adaptive.postgresql.secret.fullname" .)) -}}
+{{- if $secret -}}
+{{- index $secret.data "password" | b64dec -}}
+{{- else -}}
+{{- randAlphaNum 32 -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Control plane and harmony components full names
 */}}
 {{- define "adaptive.controlPlane.fullname" -}}
-{{- printf "%s-control-plane" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- printf "%s-controlplane" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.controlPlane.service.fullname"}}
-{{- printf "%s-svc" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
 {{- define "adaptive.sandkasten.fullname" -}}
@@ -36,22 +77,22 @@ Control plane and harmony components full names
 {{- printf "%s-harmony" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.service.fullname"}}
-{{- printf "%s-svc" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.headlessService.fullname"}}
-{{- printf "%s-hdls-svc" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-hdls" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
-{{- printf "%s-settings-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-settings" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.alloyConfigMap.fullname"}}
-{{- printf "%s-alloy-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-alloy" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.harmony.deployment.fullname"}}
-{{- printf "%s-dpl" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 
-# MLFlow names 
+# MLFlow names
 {{- define "adaptive.mlflow.fullname" -}}
 {{- printf "%s-mlflow" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
 {{- end}}
@@ -67,20 +108,19 @@ Control plane and harmony components full names
 {{/*
 Secret related fullnames
 */}}
-{{- define "adaptive.externalSecretStore.fullname"}}
-{{- printf "%s-ext-secret-store" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- define "adaptive.controlPlane.secret.fullname"}}
+{{- if .Values.secrets.existingControlPlaneSecret }}
+{{- .Values.secrets.existingControlPlaneSecret }}
+{{- else }}
+{{- printf "%s-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end}}
-{{- define "adaptive.controlPlane.configSecret.fullname"}}
-{{- printf "%s-config-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
-{{- define "adaptive.harmony.configSecret.fullname"}}
-{{- printf "%s-config-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
-{{- define "adaptive.controlPlane.externalSecret.fullname"}}
-{{- printf "%s-ext-secret" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
-{{- define "adaptive.harmony.externalSecret.fullname"}}
-{{- printf "%s-ext-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- define "adaptive.harmony.secret.fullname"}}
+{{- if .Values.secrets.existingHarmonySecret }}
+{{- .Values.secrets.existingHarmonySecret }}
+{{- else }}
+{{- printf "%s-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end}}
 
 
@@ -179,7 +219,7 @@ Harmony service ws endpoint
 {{- printf "ws://%s:%d" (include "adaptive.harmony.service.fullname" .) (int $ports.http.port) }}
 {{- end }}
 
-{{- define "adaptive.oidc_providers" -}}
+{{- define "adaptive.oidcProviders" -}}
 [
   {{- range .Values.secrets.auth.oidc.providers -}}
   {
@@ -254,4 +294,110 @@ Build the image URIs from registry, repository, name, and tag
 {{- end }}
 {{- define "adaptive.mlflow.imageUri" -}}
 {{- printf "%s" .Values.mlflow.imageUri }}
+{{- end }}
+
+{{/*
+Get MLflow tracking URL - returns external URL if configured, otherwise internal service URL
+*/}}
+{{- define "adaptive.mlflow.trackingUrl" -}}
+{{- if and .Values.mlflow.enabled .Values.mlflow.external.enabled -}}
+{{- required "MLflow external URL must be set when mlflow.external.enabled is true" .Values.mlflow.external.url }}
+{{- else -}}
+{{- printf "http://%s:%d" (include "adaptive.mlflow.service.fullname" .) (int (include "adaptive.mlflow.ports" . | fromJson).http.port) }}
+{{- end }}
+{{- end }}
+
+{{/*
+Redis related helpers
+*/}}
+{{- define "adaptive.redis.fullname" -}}
+{{- printf "%s-redis" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.redis.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.redis.configMap.fullname"}}
+{{- printf "%s-redis-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+
+{{- define "adaptive.redis.selectorLabels" -}}
+app.kubernetes.io/component: redis
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.redis.secret.fullname" -}}
+{{- if .Values.secrets.existingRedisSecret }}
+{{- .Values.secrets.existingRedisSecret }}
+{{- else }}
+{{- printf "%s-secret" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{- define "adaptive.redis.url" -}}
+{{- $host := include "adaptive.redis.service.fullname" . -}}
+{{- $port := .Values.redis.port | int -}}
+{{- if and .Values.redis.auth.username .Values.redis.auth.password -}}
+{{- printf "redis://%s:%s@%s:%d" .Values.redis.auth.username .Values.redis.auth.password $host $port -}}
+{{- else if .Values.redis.auth.password -}}
+{{- printf "redis://:%s@%s:%d" .Values.redis.auth.password $host $port -}}
+{{- else -}}
+{{- printf "redis://%s:%d" $host $port -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Helper to generate Harmony secret environment variables
+Usage: {{ include "adaptive.harmony.secretEnvVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.harmony.secretEnvVars" -}}
+- name: ADAPTIVE_MODEL_REGISTRY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.harmony.secret.fullname" . }}
+      key: modelRegistryUrl
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.harmony.secret.fullname" . }}
+      key: sharedDirectoryUrl
+- name: HARMONY_SETTING_MODEL_REGISTRY_ROOT
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.harmony.secret.fullname" . }}
+      key: modelRegistryUrl
+{{- end }}
+
+{{/*
+Helper to generate Redis secret environment variables
+Usage: {{ include "adaptive.redis.secretEnvVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.redis.secretEnvVars" -}}
+- name: ADAPTIVE_REDIS__URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.redis.secret.fullname" . }}
+      key: redisUrl
+- name: REDIS_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.redis.secret.fullname" . }}
+      key: redisUrl
+{{- end }}
+
+{{/*
+Generate the database URL - uses internal PostgreSQL if enabled, otherwise uses external URL from secrets
+*/}}
+{{- define "adaptive.db.url" -}}
+{{- if .Values.installPostgres.enabled -}}
+{{- $host := include "adaptive.postgresql.service.fullname" . -}}
+{{- $port := .Values.installPostgres.port | int -}}
+{{- $database := .Values.installPostgres.database -}}
+{{- $username := .Values.installPostgres.username -}}
+{{- $password := include "adaptive.postgresql.password" . -}}
+{{- printf "postgres://%s:%s@%s:%d/%s" ($username | urlquery) ($password | urlquery) $host $port $database -}}
+{{- else -}}
+{{- required "A db url is required!" .Values.secrets.dbUrl -}}
+{{- end -}}
 {{- end }}

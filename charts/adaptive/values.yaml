@@ -9,16 +9,23 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: serviceaccount.adaptive-ml.com
 
+# Secrets configuration
+# You can either provide values directly (and the chart will create secrets)
+# or reference existing secrets that you provision yourself
 secrets:
+  # Optional: Reference existing secrets instead of creating new ones
+  # Control Plane existing secret (must contain keys: dbUrl, cookiesSecret, oidcProviders)
+  existingControlPlaneSecret: ""
+  # Harmony existing secret (must contain keys: modelRegistryUrl, sharedDirectoryUrl)
+  existingHarmonySecret: ""
+  # Redis existing secret (must contain key: redisUrl)
+  existingRedisSecret: ""
   # S3 bucket for model registry
   modelRegistryUrl: s3://bucket-name/model_registry
-
   # Use same bucket as above and can use a different prefix
   sharedDirectoryUrl: s3://bucket-name/shared
-
   # Postgres database connection string
-  dbUrl: postgres://username:password@db_adress:5432/db_name
-
+  dbUrl: postgres://username:password@db_address:5432/db_name
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315   # Must be >= 64 chars
 
@@ -58,6 +65,8 @@ auth:
 containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com   # Add the Adaptive Registry you have been granted access to
 
 harmony:
+  # Set to false to disable the harmony statefulset deployment (advanced mode only)
+  enabled: true
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: harmony:latest   # Add the harmony image tag
@@ -111,9 +120,10 @@ harmony:
     #   nodeSelector: {}
     #   gpusPerReplica: 4
 autoscaling:
-  enabled: false    # whether to enable autoscaling for inference
+  enabled: false    # whether to enable autoscaling for inference (requires prometheus.enabled: true)
   coolDownPeriodSeconds: 180  # duration to await before scaling down pods
-  ttftTimeoutThreshold: 0.1   # propotion of timed out completion requests above which the autocaler decides to scale-out
+  ttftTimeoutThreshold: 0.1   # proportion of timed out completion requests above which the autoscaler decides to scale-out
+  # externalPrometheusEndpoint: http://prometheus-server # (Optional) Override the Prometheus endpoint URL if using an external Prometheus instance instead of the built-in one
 
 controlPlane:
   sharedDirType: s3
@@ -173,6 +183,7 @@ sandkasten:
 
 # prometheus stack settings
 prometheus:
+  enabled: true  # Set to false to disable Prometheus subchart (required for autoscaling)
   prometheus-node-exporter:
     enabled: false
 
@@ -472,7 +483,14 @@ mlflow:
   # If set to true, jobs will use MLflow for experiment tracking
   # A separate MLflow tracking server will be deployed
   # Takes priority over tensorboard if both are enabled
-  enabled: false
+  enabled: true
+  # External MLflow configuration
+  # Set external.enabled to true to use an existing external MLflow server
+  # instead of deploying one within the cluster
+  external:
+    enabled: false
+    # URL of the external MLflow tracking server (e.g., "http://mlflow.example.com:5000")
+    url: ""
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   image:
     pullPolicy: IfNotPresent
@@ -488,8 +506,21 @@ mlflow:
   defaultArtifactRoot: mlflow-artifacts:/
   serveArtifacts: true
 
-  # Storage configuration - ensure mountPath aligns with backendStoreUri and defaultArtifactRoot paths
-  mountPath: /mlflow-storage
+  # Storage configuration for mlflow database and artifacts
+  volumes:
+    - name: mlflow-storage
+      emptyDir: {}
+    # Example for NFS hostPath:
+    # - name: mlflow-storage
+    #   hostPath:
+    #     path: /mnt/nfs/mlflow
+    #     type: Directory
+
+  mountPath: ""
+  # Ensure mountPath matches the backendStoreUri
+  volumeMounts:
+    - name: mlflow-storage
+      mountPath: /mlflow-storage
 
   # Resources for MLflow server
   resources:
@@ -499,18 +530,6 @@ mlflow:
     requests:
       cpu: 500m
       memory: 1Gi
-
-  # Configure persistence for MLflow data
-  persistentVolume:
-    enabled: false
-    size: 10Gi
-    accessModes:
-      - ReadWriteOnce
-    annotations: {}
-    labels: {}
-    storageClass: ""
-  emptyDir:
-    sizeLimit: null
 
   # Node selection and tolerations
   nodeSelector: {}
@@ -539,6 +558,74 @@ alloy:
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 
+redis:  # Redis is required and cannot be disabled
+  image:
+    repository: redis
+    tag: "7.2.11-alpine"
+    pullPolicy: IfNotPresent
+
+  port: 6379
+
+  # Redis authentication (optional)
+  auth:
+    username: ""  # Leave empty for no username
+    password: ""  # Leave empty for no password
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  podAnnotations: {}
+  podLabels: {}
+  extraEnvVars: {}
+  nodeSelector: {}
+  tolerations: []
+
+installPostgres:
+  # OPTIONAL: Set to true to deploy an internal PostgreSQL database in the cluster
+  # DEFAULT BEHAVIOR: Use external PostgreSQL (configured via secrets.dbUrl above)
+  # When enabled=true, the internal PostgreSQL service will be used instead of external database
+  # We strongly recommend using an external managed database for production
+  enabled: false
+
+  image:
+    repository: postgres
+    tag: "17-alpine"
+    pullPolicy: IfNotPresent
+
+  port: 5432
+
+  # Database configuration
+  database: adaptive
+  username: adaptive
+  password: ""  # Leave empty to auto-generate, or set a custom password
+
+  # PostgreSQL persistence
+  persistence:
+    enabled: false
+    storageClass: ""  # Use default storage class if empty
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  podAnnotations: {}
+  podLabels: {}
+  extraEnvVars: {}
+  nodeSelector: {}
+  tolerations: []
+
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry
@@ -548,3 +635,20 @@ volumes: []
 volumeMounts: []
     # - name: model-registry
     #   mountPath: /model-registry
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local

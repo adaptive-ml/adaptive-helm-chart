@@ -32,10 +32,15 @@ jobs:
         with:
           version: v3.17.0
 
-      - uses: actions/setup-python@v5.3.0
-        with:
-          python-version: "3.x"
-          check-latest: true
+      - name: Test Helm Package (dry run)
+        if: steps.list-changed.outputs.changed == 'true'
+        run: |
+          for chart in ./charts/*/; do
+            chart_name=$(basename "$chart")
+            echo "::group::Packaging $chart_name chart"
+            helm package "$chart"
+            echo "::endgroup::"
+          done
 
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.7.0
@@ -48,7 +53,7 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run chart-testing (lint)
+      - name: Run chart-testing (lint + enforce chart version bumping when content changes)
         if: steps.list-changed.outputs.changed == 'true'
         run: ct lint --target-branch ${{ github.event.repository.default_branch }}
 
@@ -76,6 +81,10 @@ jobs:
 
           echo "::group::Testing adaptive with mlflow enabled"
           helm install --dry-run --debug adaptive-stack-mlflow ./charts/adaptive --set mlflow.enabled=true
+          echo "::endgroup::"
+
+          echo "::group::Testing adaptive with postgres installed option enabled"
+          helm install --dry-run --debug adaptive-stack-postgres ./charts/adaptive --set installPostgres.enabled=true
           echo "::endgroup::"
 
           echo "::group::Testing monitoring stack"

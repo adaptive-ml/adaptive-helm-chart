@@ -1,4 +1,4 @@
-{{- if .Values.mlflow.enabled }}
+{{- if and .Values.mlflow.enabled (not .Values.mlflow.external.enabled) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -81,22 +81,13 @@ spec:
             {{- toYaml .Values.mlflow.resources | nindent 12 }}
           {{- end }}
           volumeMounts:
-            - name: mlflow-storage
-              mountPath: {{ .Values.mlflow.mountPath }}
+            {{- with .Values.mlflow.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
 
       volumes:
-        {{- if .Values.mlflow.persistentVolume.enabled }}
-        - name: mlflow-storage
-          persistentVolumeClaim:
-            claimName: {{ include "adaptive.mlflow.pvc.fullname" . }}
-        {{- else }}
-        - name: mlflow-storage
-          emptyDir:
-          {{- if .Values.mlflow.emptyDir.sizeLimit }}
-            sizeLimit: {{ .Values.mlflow.emptyDir.sizeLimit }}
-          {{- else }}
-            {}
-          {{- end -}}
+        {{- with .Values.mlflow.volumes }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
 
 {{- end }} 
