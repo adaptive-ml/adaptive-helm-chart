@@ -261,7 +261,7 @@ Control plane HTTP private endpoint
 sandkasten HTTP private endpoint
 */}}
 {{- define "adaptive.sandkasten.privateHttpEndpoint" -}}
-{{- printf "http://%s:%d" (include "adaptive.sandkasten.service.fullname" .) (int .Values.sandkasten.servicePort)}}
+{{- printf "http://%s:%d" (include "adaptive.sandkasten.service.fullname" .) (int .Values.sandkasten.servicePort) }}
 {{- end }}
 
 {{/*
@@ -290,7 +290,8 @@ Build the image URIs from registry, repository, name, and tag
 {{- printf "%s" .Values.tensorboard.imageUri }}
 {{- end }}
 {{- define "adaptive.sandkasten.imageUri" -}}
-{{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository .Values.sandkasten.image.tag | trimSuffix "/" }}
+{{- $tag := (split ":" .Values.sandkasten.image.tag | last) -}}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository $tag | trimSuffix "/" }}
 {{- end }}
 {{- define "adaptive.mlflow.imageUri" -}}
 {{- printf "%s" .Values.mlflow.imageUri }}

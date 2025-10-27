@@ -168,7 +168,7 @@ sandkasten:
   replicaCount: 1
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
-    tag: sandkasten:latest   # Add the sandkasten image tag
+    tag: latest   # Add the sandkasten image tag
     pullPolicy: Always
   resources:
     limits:
