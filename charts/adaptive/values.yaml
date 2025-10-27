@@ -173,7 +173,7 @@ sandkasten:
   resources:
     limits:
       cpu: 2000m
-      memory: 2Gi
+      memory: 16Gi
     requests:
       cpu: 2000m
       memory: 2Gi
