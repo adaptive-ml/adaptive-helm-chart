@@ -108,12 +108,10 @@ spec:
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
               value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" . }}"
-            {{- if .Values.harmony.enableSandbox }}
             - name: ENABLE_SANDBOX
               value: "1"
             - name: SANDBOX_SERVICE_URL
               value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" . }}"
-            {{- end }}
             - name: GROUP
               value: {{ .Values.harmony.group }}
             - name: GROUP_CAPABILITIES
