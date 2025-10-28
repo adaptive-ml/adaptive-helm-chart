@@ -165,18 +165,11 @@ sandkasten:
   nodeSelector: {}
   tolerations: {}
   extraEnvVars: {}
-  replicaCount: 1
+  replicaCount: 2
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: latest   # Add the sandkasten image tag
     pullPolicy: Always
-  resources:
-    limits:
-      cpu: 2000m
-      memory: 16Gi
-    requests:
-      cpu: 2000m
-      memory: 2Gi
 
 # prometheus stack settings
 prometheus:

@@ -16,6 +16,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [Prometheus Monitoring](#prometheus-monitoring)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
   - [Tensorboard Support](#tensorboard-support)
+- [Sandboxing service](#custom-recipes-with-sandkasten)
 - [Inference and Autoscaling](#inference-and-autoscaling)
   - [Compute Pools](#compute-pools)
   - [Autoscaling Configuration](#autoscaling-configuration)
@@ -664,6 +665,40 @@ tensorboard:
       cpu: 500m
       memory: 1Gi
 ```
+
+---
+
+## Custom Recipes with Sandkasten
+
+> **Added in:** Helm chart version `0.12.0`
+
+Sandkasten is a service for executing custom recipes in your Adaptive Engine deployment. It provides a secure environment to run user-defined workflows and custom processing tasks that integrate with the Harmony compute backend.
+
+By default, Sandkasten is deployed with the chart. You can customize its configuration:
+
+```yaml
+sandkasten:
+  replicaCount: 1
+  servicePort: 3005
+  
+  image:
+    repository: adaptive-repository
+    tag: latest
+    pullPolicy: Always
+  
+  # Optional: Add custom environment variables
+  extraEnvVars:
+    CUSTOM_VAR: "value"
+  
+  # Optional: Node selector for placement
+  nodeSelector:
+    node-type: compute
+  
+  # Optional: Tolerations for tainted nodes
+  tolerations: []
+```
+
+**Note:** Sandkasten requires access to the Harmony service and artifacts storage, it uses the same service account as other Adaptive components for authentication.
 
 ---
 
