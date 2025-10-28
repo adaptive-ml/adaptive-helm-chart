@@ -668,7 +668,7 @@ tensorboard:
 
 ---
 
-## Custom Recipes with Sandkasten
+## Sandboxing service
 
 > **Added in:** Helm chart version `0.12.0`
 
