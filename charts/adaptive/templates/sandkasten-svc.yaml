@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.sandkasten.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.sandkasten.servicePort | default 3005 | int}}
+      targetPort: {{ .Values.sandkasten.servicePort | default 3005 | int }}

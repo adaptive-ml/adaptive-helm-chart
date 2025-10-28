@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "adaptive.sandkasten.fullname" . }}
+  namespace: {{ .Release.Namespace}}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.sandkasten.replicaCount | default 1 | int }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.sandkasten.selectorLabels" . | nindent 6}}
+  template:
+    metadata:
+      {{- with .Values.sandkasten.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.sandkasten.selectorLabels" . | nindent 8 }}
+        {{- with .Values.sandkasten.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      volumes:
+        - name: working-dir
+          emptyDir: {}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      nodeSelector:
+        {{- with .Values.sandkasten.nodeSelector}}
+        {{ toYaml . }}
+        {{- end}}
+      {{- if .Values.sandkasten.tolerations}}
+      tolerations:
+        {{- toYaml .Values.sandkasten.tolerations | nindent 8 }}
+      {{- end }} 
+      containers:
+        - name: sandkasten
+          image: "{{ include "adaptive.sandkasten.imageUri" . }}"
+          imagePullPolicy: {{ .Values.sandkasten.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: true
+            privileged: true
+          ports:
+            - containerPort: {{ .Values.sandkasten.servicePort }}
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 16Gi
+            requests:
+              cpu: 2000m
+              memory: 16Gi
+          volumeMounts:
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            - name: working-dir
+              mountPath: /working_dir
+          env:
+            - name: HARMONY_WS_ENDPOINT
+              value: "{{ include "adaptive.harmony.wsEndpoint" . }}"
+            {{- if .Values.sandkasten.extraEnvVars }}
+            {{- range $key, $value := .Values.sandkasten.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
