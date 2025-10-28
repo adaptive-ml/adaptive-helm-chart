@@ -174,7 +174,6 @@ app.kubernetes.io/component: sandkasten
 {{ include "adaptive.sharedSelectorLabels" . }}
 {{- end }}
 
-
 # MLFlow selector labels
 {{- define "adaptive.mlflow.selectorLabels" -}}
 app.kubernetes.io/component: mlflow
