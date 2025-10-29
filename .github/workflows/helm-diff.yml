@@ -1,0 +1,119 @@
+name: Helm Chart Diff
+
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  helm-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4.2.2
+        with:
+          path: pr
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+        with:
+          version: v3.17.0
+
+      - name: Update Helm dependencies (PR)
+        run: |
+          for chart in ./pr/charts/*/; do
+            chart_name=$(basename "$chart")
+            echo "Updating dependencies for $chart_name (PR branch)"
+            helm dependency update "$chart"
+          done
+
+      - name: Update Helm dependencies (base)
+        run: |
+          for chart in ./base/charts/*/; do
+            chart_name=$(basename "$chart")
+            echo "Updating dependencies for $chart_name (base branch)"
+            helm dependency update "$chart"
+          done
+
+      - name: Render Helm charts (PR)
+        run: |
+          mkdir -p /tmp/helm-renders/pr
+          for chart in ./pr/charts/*/; do
+            chart_name=$(basename "$chart")
+            echo "Rendering $chart_name chart (PR branch)"
+            helm template "$chart_name" "$chart" > "/tmp/helm-renders/pr/$chart_name.yaml" 2>&1 || echo "Failed to render $chart_name"
+          done
+
+      - name: Render Helm charts (base)
+        run: |
+          mkdir -p /tmp/helm-renders/base
+          for chart in ./base/charts/*/; do
+            chart_name=$(basename "$chart")
+            echo "Rendering $chart_name chart (base branch)"
+            helm template "$chart_name" "$chart" > "/tmp/helm-renders/base/$chart_name.yaml" 2>&1 || echo "Failed to render $chart_name"
+          done
+
+      - name: Generate diffs
+        id: diff
+        run: |
+          mkdir -p /tmp/diffs
+          DIFF_OUTPUT=""
+          HAS_CHANGES=false
+
+          # Add header to comment
+          echo "# Helm Chart Diff Report" > /tmp/diffs/comment.md
+          echo "" >> /tmp/diffs/comment.md
+          echo "Comparing rendered Helm charts between \`${{ github.base_ref }}\` (base) and this PR." >> /tmp/diffs/comment.md
+          echo "" >> /tmp/diffs/comment.md
+          echo "---" >> /tmp/diffs/comment.md
+          echo "" >> /tmp/diffs/comment.md
+
+          for chart_file in /tmp/helm-renders/pr/*.yaml; do
+            chart_name=$(basename "$chart_file" .yaml)
+            base_file="/tmp/helm-renders/base/$chart_name.yaml"
+
+            if [ -f "$base_file" ]; then
+              echo "Generating diff for $chart_name"
+              CHART_DIFF=$(diff -u "$base_file" "$chart_file" || true)
+
+              if [ -n "$CHART_DIFF" ]; then
+                HAS_CHANGES=true
+                echo "## Helm Chart: \`$chart_name\`" >> /tmp/diffs/comment.md
+                echo "" >> /tmp/diffs/comment.md
+                echo "<details>" >> /tmp/diffs/comment.md
+                echo "<summary>View diff</summary>" >> /tmp/diffs/comment.md
+                echo "" >> /tmp/diffs/comment.md
+                echo '```diff' >> /tmp/diffs/comment.md
+                echo "$CHART_DIFF" >> /tmp/diffs/comment.md
+                echo '```' >> /tmp/diffs/comment.md
+                echo "" >> /tmp/diffs/comment.md
+                echo "</details>" >> /tmp/diffs/comment.md
+                echo "" >> /tmp/diffs/comment.md
+              else
+                echo "## Helm Chart: \`$chart_name\`" >> /tmp/diffs/comment.md
+                echo "" >> /tmp/diffs/comment.md
+                echo "No changes detected." >> /tmp/diffs/comment.md
+                echo "" >> /tmp/diffs/comment.md
+              fi
+            fi
+          done
+
+          if [ "$HAS_CHANGES" = "false" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post comment with diff
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: /tmp/diffs/comment.md
+          edit-mode: replace
