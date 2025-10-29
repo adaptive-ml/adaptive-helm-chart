@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/jb/work/old/adaptive-helm-chart/.github/workflows/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
