@@ -174,6 +174,14 @@ app.kubernetes.io/component: sandkasten
 {{ include "adaptive.sharedSelectorLabels" . }}
 {{- end }}
 
+{{- define "adaptive.sandkasten.serviceAccount.name" -}}
+{{- if .Values.sandkasten.serviceAccount.name }}
+{{- .Values.sandkasten.serviceAccount.name }}
+{{- else }}
+{{- printf "%s-sa" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
 # MLFlow selector labels
 {{- define "adaptive.mlflow.selectorLabels" -}}
 app.kubernetes.io/component: mlflow

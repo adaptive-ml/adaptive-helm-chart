@@ -16,7 +16,8 @@ A Helm Chart to deploy Adaptive Engine.
   - [Prometheus Monitoring](#prometheus-monitoring)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
   - [Tensorboard Support](#tensorboard-support)
-- [Sandboxing service](#custom-recipes-with-sandkasten)
+- [Sandboxing service](#sandboxing-service)
+  - [Sandkasten Network Policy (Security)](#sandkasten-network-policy-security)
 - [Inference and Autoscaling](#inference-and-autoscaling)
   - [Compute Pools](#compute-pools)
   - [Autoscaling Configuration](#autoscaling-configuration)
@@ -668,37 +669,69 @@ tensorboard:
 
 ---
 
-## Sandboxing service
+## Sandboxing Service (Sandkasten)
 
 > **Added in:** Helm chart version `0.12.0`
 
-Sandkasten is a service for executing custom recipes in your Adaptive Engine deployment. It provides a secure environment to run user-defined workflows and custom processing tasks that integrate with the Harmony compute backend.
+Sandkasten executes custom recipes and arbitrary code. **Security is enforced by default** and cannot be disabled.
 
-By default, Sandkasten is deployed with the chart. You can customize its configuration:
+### Built-in Security (Always Active)
+
+✅ **Network Policy**: Always deployed (requires cluster NetworkPolicy support); it protects against *reverse shells, metadata service exploitation, data exfiltration, lateral movement*
+
+### Network Policy Requirements
+
+**Production/Enterprise:** All major platforms support Network Policies (EKS, AKS, GKE, OpenShift, Rancher, kubeadm with Calico/Cilium)
+
+**Local Dev:** Docker Desktop and basic Minikube don't support Network Policies. Use: `minikube start --cni=calico`
+
+**Check support:** `kubectl api-resources | grep networkpolicies`
+
+### Configuration
+
+**Default (secure, no changes needed):**
 
 ```yaml
 sandkasten:
-  replicaCount: 1
+  replicaCount: 2
   servicePort: 3005
   
-  image:
-    repository: adaptive-repository
-    tag: latest
-    pullPolicy: Always
+  serviceAccount:
+    create: true       # Dedicated SA
+    automount: false   # No K8s API access
   
-  # Optional: Add custom environment variables
-  extraEnvVars:
-    CUSTOM_VAR: "value"
-  
-  # Optional: Node selector for placement
-  nodeSelector:
-    node-type: compute
-  
-  # Optional: Tolerations for tainted nodes
-  tolerations: []
+  networkPolicy:
+    # Network policy always enabled (cannot be disabled)
+    # Blocks: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.169.254
+    additionalBlockedCIDRs: []  # Optional: block additional networks
 ```
 
-**Note:** Sandkasten requires access to the Harmony service and artifacts storage, it uses the same service account as other Adaptive components for authentication.
+**Only if Sandkasten needs internal service access (rare):**
+
+> To allow access to a specific internal network (e.g., `10.50.0.0/16`), you must customize the NetworkPolicy resource.
+> This can be done by forking the chart and editing `sandkasten-netpol.yaml`, or by applying your own NetworkPolicy resource.
+> Example (custom NetworkPolicy egress rule):
+
+```yaml
+egress:
+  - to:
+      - ipBlock:
+          cidr: 10.50.0.0/16
+    ports:
+      - protocol: TCP
+        port: <your-port>
+### Testing Network Policy
+
+```bash
+# Should work: External internet
+kubectl exec -n <ns> deploy/<sandkasten> -- curl https://google.com
+
+# Should fail: Metadata service
+kubectl exec -n <ns> deploy/<sandkasten> -- curl http://169.254.169.254 --max-time 5
+
+# Should work: Harmony service
+kubectl exec -n <ns> deploy/<sandkasten> -- curl http://<harmony-svc>:80
+```
 
 ---
 
