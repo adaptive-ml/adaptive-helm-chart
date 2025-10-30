@@ -40,24 +40,24 @@ spec:
     
     # Allow external internet access but block private networks and metadata
     - to:
-          - ipBlock:
-              cidr: 0.0.0.0/0
-              except:
-                # Block cloud metadata services
-                - 169.254.169.254/32  # AWS, Azure, GCP metadata
-                - 169.254.0.0/16      # Link-local addresses
-                
-                # Block common private networks used by K8s platforms (preventing reverse shells)
-                - 10.0.0.0/8          # Private Class A (EKS, AKS, GKE, Rancher pods/services)
-                - 172.16.0.0/12       # Private Class B (EKS VPC default, AKS VNet)
-                - 192.168.0.0/16      # Private Class C (Common for on-prem K8s)
-                
-                {{- if .Values.sandkasten.networkPolicy.additionalBlockedCIDRs }}
-                # Additional custom blocked CIDRs
-                {{- range .Values.sandkasten.networkPolicy.additionalBlockedCIDRs }}
-                - {{ . }}
-                {{- end }}
-                {{- end }}
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              # Block cloud metadata services
+              - 169.254.169.254/32  # AWS, Azure, GCP metadata
+              - 169.254.0.0/16      # Link-local addresses
+              
+              # Block common private networks used by K8s platforms (preventing reverse shells)
+              - 10.0.0.0/8          # Private Class A (EKS, AKS, GKE, Rancher pods/services)
+              - 172.16.0.0/12       # Private Class B (EKS VPC default, AKS VNet)
+              - 192.168.0.0/16      # Private Class C (Common for on-prem K8s)
+              
+              {{- if .Values.sandkasten.networkPolicy.additionalBlockedCIDRs }}
+              # Additional custom blocked CIDRs
+              {{- range .Values.sandkasten.networkPolicy.additionalBlockedCIDRs }}
+              - {{ . }}
+              {{- end }}
+              {{- end }}
       ports:
         # Common HTTP/HTTPS ports for external APIs
         - protocol: TCP
