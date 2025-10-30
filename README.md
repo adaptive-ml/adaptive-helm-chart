@@ -708,16 +708,18 @@ sandkasten:
 
 **Only if Sandkasten needs internal service access (rare):**
 
-```yaml
-sandkasten:
-  networkPolicy:
-    # To allow access to a specific internal network (e.g., 10.50.0.0/16),
-    # add an explicit egress rule in your NetworkPolicy configuration:
-    allowedInternalCIDRs:
-      - "10.50.0.0/16"  # Allow specific internal network
-    # Note: All RFC1918 is blocked by default unless explicitly allowed above
-```
+> To allow access to a specific internal network (e.g., `10.50.0.0/16`), you must customize the NetworkPolicy resource.
+> This can be done by forking the chart and editing `sandkasten-netpol.yaml`, or by applying your own NetworkPolicy resource.
+> Example (custom NetworkPolicy egress rule):
 
+```yaml
+egress:
+  - to:
+      - ipBlock:
+          cidr: 10.50.0.0/16
+    ports:
+      - protocol: TCP
+        port: <your-port>
 ### Testing Network Policy
 
 ```bash
