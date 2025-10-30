@@ -170,6 +170,17 @@ sandkasten:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: latest   # Add the sandkasten image tag
     pullPolicy: Always
+  
+  # Service Account (dedicated, no K8s API access)
+  serviceAccount:
+    create: true
+    name: ""  # Auto-generated if empty
+    annotations: {}
+    automount: false  # Disabled for security
+  
+  # Network Policy (always enabled, blocks RFC1918 + metadata service)
+  networkPolicy:
+    additionalBlockedCIDRs: []  # Optional: block additional CIDRs
 
 # prometheus stack settings
 prometheus:

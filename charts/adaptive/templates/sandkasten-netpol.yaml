@@ -1,0 +1,79 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "adaptive.sandkasten.fullname" . }}-netpol
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "adaptive.sandkasten.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  
+  # Egress: Controlled external access and internal services
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    
+    # Allow to Harmony services (HTTP and WebSocket)
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.harmony.deployment.selectorLabels" . | nindent 14 }}
+      ports:
+        {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+        - protocol: TCP
+          port: {{ $ports.http.containerPort }}
+    
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
+      ports:
+        {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+        - protocol: TCP
+          port: {{ $ports.http.containerPort }}
+    
+    # Allow external internet access but block private networks and metadata
+    - to:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+              except:
+                # Block cloud metadata services
+                - 169.254.169.254/32  # AWS, Azure, GCP metadata
+                - 169.254.0.0/16      # Link-local addresses
+                
+                # Block common private networks used by K8s platforms (preventing reverse shells)
+                - 10.0.0.0/8          # Private Class A (EKS, AKS, GKE, Rancher pods/services)
+                - 172.16.0.0/12       # Private Class B (EKS VPC default, AKS VNet)
+                - 192.168.0.0/16      # Private Class C (Common for on-prem K8s)
+                
+                {{- if .Values.sandkasten.networkPolicy.additionalBlockedCIDRs }}
+                # Additional custom blocked CIDRs
+                {{- range .Values.sandkasten.networkPolicy.additionalBlockedCIDRs }}
+                - {{ . }}
+                {{- end }}
+                {{- end }}
+      ports:
+        # Common HTTP/HTTPS ports for external APIs
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8443
