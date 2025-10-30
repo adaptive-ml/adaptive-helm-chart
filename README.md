@@ -711,9 +711,11 @@ sandkasten:
 ```yaml
 sandkasten:
   networkPolicy:
-    additionalBlockedCIDRs:
-      - "!10.50.0.0/16"  # Allow specific internal network
-      # Note: All RFC1918 is blocked by default
+    # To allow access to a specific internal network (e.g., 10.50.0.0/16),
+    # add an explicit egress rule in your NetworkPolicy configuration:
+    allowedInternalCIDRs:
+      - "10.50.0.0/16"  # Allow specific internal network
+    # Note: All RFC1918 is blocked by default unless explicitly allowed above
 ```
 
 ### Testing Network Policy
