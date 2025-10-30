@@ -677,7 +677,7 @@ Sandkasten executes custom recipes and arbitrary code. **Security is enforced by
 
 ### Built-in Security (Always Active)
 
-✅ **Network Policy**: Always enabled, it protects against *reverse shells, metadata service exploitation, data exfiltration, lateral movement*
+✅ **Network Policy**: Always deployed (requires cluster NetworkPolicy support); it protects against *reverse shells, metadata service exploitation, data exfiltration, lateral movement*
 
 ### Network Policy Requirements
 
