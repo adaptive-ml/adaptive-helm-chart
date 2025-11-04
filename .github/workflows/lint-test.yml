@@ -123,6 +123,6 @@ jobs:
           for chart in ./charts/*/; do
             chart_name=$(basename "$chart")
             echo "::group::Validating $chart_name with default values"
-            helm template "$chart_name" "$chart" -f "$chart/values.yaml" | kubeconform -strict -schema-location default -summary
+            helm template "$chart_name" "$chart" | kubeconform -strict -schema-location default -summary
             echo "::endgroup::"
           done
