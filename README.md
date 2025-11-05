@@ -16,13 +16,13 @@ A Helm Chart to deploy Adaptive Engine.
   - [Prometheus Monitoring](#prometheus-monitoring)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
   - [Tensorboard Support](#tensorboard-support)
-- [Sandboxing service](#custom-recipes-with-sandkasten)
+- [Sandboxing service](#sandboxing-service)
 - [Inference and Autoscaling](#inference-and-autoscaling)
   - [Compute Pools](#compute-pools)
   - [Autoscaling Configuration](#autoscaling-configuration)
   - [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
 - [Storage and Persistence](#storage-and-persistence)
-- [Cloud Specific Information](#cloud-specific-inforamation)
+- [Cloud Specific Information](#cloud-specific-information)
   - [Azure](#azure)
 
 ---
@@ -123,7 +123,7 @@ secrets:
   sharedDirectoryUrl: "s3://bucket-name/shared"
 
   # Postgres database connection string
-  dbUrl: "postgres://username:password@db_adress:5432/db_name"
+  dbUrl: "postgres://username:password@db_address:5432/db_name"
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: "change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315" # Must be >= 64 chars
 
@@ -807,7 +807,7 @@ This section is to provide specific information relevant to a specific cloud
 
 #### Storage
 
-The recommendation for Azure is to use PVC backed by [Azure Files](azure.microsoft.com/en-us/products/storage/files) in order to store the model registry and working directory.
+The recommendation for Azure is to use PVC backed by [Azure Files](https://azure.microsoft.com/en-us/products/storage/files) in order to store the model registry and working directory.
 
 This is done for the following reasons:
 * Native integration with Azure. The lifecycle of Azure Files are fully managed on Azure side without having to pass credentials.
