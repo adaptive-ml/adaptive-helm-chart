@@ -432,6 +432,8 @@ keda:
     # -- Defines whether the KEDA CRDs have to be installed or not.
     install: true
 
+# DEPRECATED
+# Use of S3proxy is not recommended, for more information on Azure integration please follow the readme.
 s3proxy:  # set s3proxy.enabled=true for deployments using azure blob storage instead of s3
   enabled: false
   fullnameOverride: "adaptive-s3proxy"
@@ -441,6 +443,7 @@ s3proxy:  # set s3proxy.enabled=true for deployments using azure blob storage in
       name: your_azure_account_name
       #  -- Azure access key
       accessKey: your_azure_access_key
+# DEPRECATED
 
 
 tensorboard:

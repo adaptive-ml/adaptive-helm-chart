@@ -22,7 +22,8 @@ A Helm Chart to deploy Adaptive Engine.
   - [Autoscaling Configuration](#autoscaling-configuration)
   - [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
 - [Storage and Persistence](#storage-and-persistence)
-- [Azure Blob Storage Compatibility](#azure-blob-storage-compatibility)
+- [Cloud Specific Information](#cloud-specific-inforamation)
+  - [Azure](#azure)
 
 ---
 
@@ -153,7 +154,7 @@ secrets:
   existingControlPlaneSecret: "my-control-plane-secret"
   existingHarmonySecret: "my-harmony-secret"
   existingRedisSecret: "my-redis-secret"
-  
+
   # IMPORTANT: Clear inline values to avoid validation errors
   dbUrl: ""
   cookiesSecret: ""
@@ -414,7 +415,7 @@ secrets:
   existingControlPlaneSecret: "adaptive-control-plane-secret"
   existingHarmonySecret: "adaptive-harmony-secret"
   existingRedisSecret: "adaptive-redis-secret"
-  
+
   # Clear inline values to use external secrets
   dbUrl: ""
   cookiesSecret: ""
@@ -523,14 +524,14 @@ The chart uses the [Prometheus Community Helm Chart](https://github.com/promethe
 ```yaml
 prometheus:
   enabled: true
-  
+
   server:
     # Prometheus data retention period
     retention: "30d"
-    
+
     # Number of Prometheus replicas for high availability
     replicaCount: 2
-    
+
     # Persistence configuration
     persistentVolume:
       enabled: true
@@ -575,7 +576,7 @@ mlflow:
   enabled: true
   external:
     enabled: false  # Use internal deployment
-  
+
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   replicaCount: 1
   workers: 4  # Recommended: 2-4 workers per CPU core
@@ -590,7 +591,7 @@ mlflow:
   backendStoreUri: sqlite:///mlflow-storage/mlflow.db
   defaultArtifactRoot: mlflow-artifacts:/
   serveArtifacts: true
-  
+
   # Storage for MLflow database and artifacts
   volumes:
     - name: mlflow-storage
@@ -608,7 +609,7 @@ mlflow:
       hostPath:
         path: /mnt/nfs/mlflow
         type: Directory
-  
+
   volumeMounts:
     - name: mlflow-storage
       mountPath: /mlflow-storage
@@ -651,12 +652,12 @@ To track training job progress with Tensorboard, you can enable Tensorboard supp
 tensorboard:
   enabled: true  # default is false
   imageUri: tensorflow/tensorflow:latest
-  
+
   # Use the persistent volume config to enable log saving across restarts
   persistentVolume:
     enabled: true
     storageClass: "your-storage-class"
-  
+
   resources:
     limits:
       cpu: 1000m
@@ -680,20 +681,20 @@ By default, Sandkasten is deployed with the chart. You can customize its configu
 sandkasten:
   replicaCount: 1
   servicePort: 3005
-  
+
   image:
     repository: adaptive-repository
     tag: latest
     pullPolicy: Always
-  
+
   # Optional: Add custom environment variables
   extraEnvVars:
     CUSTOM_VAR: "value"
-  
+
   # Optional: Node selector for placement
   nodeSelector:
     node-type: compute
-  
+
   # Optional: Tolerations for tainted nodes
   tolerations: []
 ```
@@ -797,17 +798,101 @@ prometheus:
 
 ---
 
-## Azure Blob Storage Compatibility
+## Cloud Specific information
 
-The Adaptive Helm chart supports any S3-compliant storage service, and Azure Blob Storage out-of-the-box via [s3proxy](https://github.com/gaul/s3proxy). The default is S3.
+This section is to provide specific information relevant to a specific cloud
 
-To enable Azure Blob Storage, set this override in the helm values:
+
+### Azure
+
+#### Storage
+
+The recommendation for Azure is to use PVC backed by [Azure Files](azure.microsoft.com/en-us/products/storage/files) in order to store the model registry and working directory.
+
+This is done for the following reasons:
+* Native integration with Azure. The lifecycle of Azure Files are fully managed on Azure side without having to pass credentials.
+* Easy resize. By just changing the PVC you can increase the amount of storage available.
+* Shared State. Since this storage class is ReadWriteMany all of the pods of adaptive can share state
+
+In order to do that you will need to create an adaptive specific Storage Class and the 2 PVCs that will store the data
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  labels:
+    kubernetes.io/cluster-service: "true"
+  name: azurefile-csi-premium-adaptive
+allowVolumeExpansion: true
+mountOptions:
+- mfsymlinks
+- actimeo=30
+- nosharesock
+- uid=1002
+- gid=1002
+parameters:
+  skuName: Premium_LRS
+provisioner: file.csi.azure.com
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+```
 
 ```yaml
-s3proxy:
-  enabled: true
-  azure:
-    storageAccount:
-      name: your_azure_account_name
-      accessKey: your_azure_access_key
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adaptive-model-registry
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: azurefile-csi-premium-adaptive
+  resources:
+    requests:
+      storage: 500Gi
 ```
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adaptive-workdir
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: azurefile-csi-premium-adaptive
+  resources:
+    requests:
+      storage: 500Gi
+```
+
+Then you will need to make sure that you have the following values for the helm chart
+```yaml
+secrets:
+  modelRegistryUrl: /model_registry
+  sharedDirectoryUrl: /workdir
+controlPlane:
+  sharedDirType: local
+volumeMounts:
+  - name: model-registry
+    mountPath: /model_registry
+  - name: working-directory
+    mountPath: /workdir
+volumes:
+  - name: model-registry
+    persistentVolumeClaim:
+      claimName: adaptive-model-registry
+  - name: working-directory
+    persistentVolumeClaim:
+      claimName: adaptive-workdir-premium
+```
+
+> [!NOTE]
+> There is still a deprecated S3Proxy available in the helm chart. S3proxy integration is not optimal for recent versions of Adaptive and we recommend instead using the simpler route of k8s PVC.
+
+
+#### Compute
+
+Adaptive recommendation is to use at least 2 different compute pools
+- A GPU nodepool that will host the `harmony` pods.
+- A CPU nodepool that will host the other non-gpu pods (control-plane, redis, ...)
+
+This is done in order to guarantee that the compute plane has access to all the gpus resources and that the control plane is scheduled on cheaper nodes.
