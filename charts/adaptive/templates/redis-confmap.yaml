@@ -7,8 +7,9 @@ metadata:
     {{- include "adaptive.labels" . | nindent 4 }}
     {{- include "adaptive.redis.selectorLabels" . | nindent 4 }}
 data:
-  # Allow access to all keys, channel and scripting but block
+  # Allow access to all keys and channel but block
   # -@SHUTDOWN
   # -@admin: CONFIG, SAVE, BGSAVE, REPLICAOF, MODULE
+  # -@scripting: EVAL, EVALSHA, SCRIPT, FUNCTION, FCALL
   default.acl: |
-    user default on nopass sanitize-payload ~* &* +@all -@admin -SHUTDOWN
+    user default on nopass sanitize-payload ~* &* +@all -@admin -@scripting -SHUTDOWN
