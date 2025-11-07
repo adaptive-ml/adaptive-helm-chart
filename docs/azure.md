@@ -1,6 +1,6 @@
 # Azure Specific Information
 
-This page lists information for a deployment on Azure platform with [AKS](https://learn.microsoft.com/en-us/azure/aks/) as kubernetes cluster
+This page lists information for a deployment on Azure platform with [AKS](https://learn.microsoft.com/en-us/azure/aks/) as a kubernetes cluster
 
 ## Table of contents
 
