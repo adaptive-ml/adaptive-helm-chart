@@ -1,3 +1,11 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [s3proxy](#s3proxy)
+  - [Performance monitoring](#performance-monitoring)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # s3proxy
 
 This Helm chart is an s3 adapter for object storage providers which don't provide an s3-interoperable API. It uses [s3proxy](https://github.com/gaul/s3proxy).

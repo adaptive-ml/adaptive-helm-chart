@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Adaptive monitoring stack](#adaptive-monitoring-stack)
+  - [Grafana](#grafana)
+  - [Promtail](#promtail)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Adaptive monitoring stack
 
 **Components**: Grafana, Loki,Promtail

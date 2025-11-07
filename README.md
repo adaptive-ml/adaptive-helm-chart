@@ -4,54 +4,40 @@ A Helm Chart to deploy Adaptive Engine.
 
 ## Table of Contents
 
-<!-- toc -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Compatibility](#compatibility)
 - [Prerequisites](#prerequisites)
-- [Required](#required)
-- [Optional](#optional)
+  - [Required](#required)
+  - [Optional](#optional)
 - [Installation](#installation)
-- [1. Install the charts from GitHub OCI Registry](#1-install-the-charts-from-github-oci-registry)
-- [2. Get the default values.yaml configuration file](#2-get-the-default-valuesyaml-configuration-file)
-- [3. Edit the `values.yaml` file](#3-edit-the-valuesyaml-file)
-- [4. Deploy the chart](#4-deploy-the-chart)
+  - [1. Install the charts from GitHub OCI Registry](#1-install-the-charts-from-github-oci-registry)
+  - [2. Get the default values.yaml configuration file](#2-get-the-default-valuesyaml-configuration-file)
+  - [3. Edit the `values.yaml` file](#3-edit-the-valuesyaml-file)
+  - [4. Deploy the chart](#4-deploy-the-chart)
 - [Configuration](#configuration)
-- [Secrets Configuration](#secrets-configuration)
-  - [Option 1: Inline Secrets (Default)](#option-1-inline-secrets-default)
-  - [Option 2: Reference Existing Secrets](#option-2-reference-existing-secrets)
-- [Container Images](#container-images)
-- [GPU Resources](#gpu-resources)
-- [Ingress Configuration](#ingress-configuration)
-  - [Enabling Ingress](#enabling-ingress)
-  - [Configuration Options](#configuration-options)
-  - [Complete Ingress Example](#complete-ingress-example)
-- [Using External Secret Management](#using-external-secret-management)
-  - [Example: Using External Secrets Operator](#example-using-external-secrets-operator)
-  - [Example: Using Sealed Secrets](#example-using-sealed-secrets)
-  - [Example: Manual Secret Creation](#example-manual-secret-creation)
+  - [Secrets Configuration](#secrets-configuration)
+  - [Container Images](#container-images)
+  - [GPU Resources](#gpu-resources)
+  - [Ingress Configuration](#ingress-configuration)
+  - [Using External Secret Management](#using-external-secret-management)
 - [Monitoring and Observability](#monitoring-and-observability)
-- [Prometheus Monitoring](#prometheus-monitoring)
-  - [Enabling/Disabling Prometheus](#enablingdisabling-prometheus)
-  - [Configuring Prometheus](#configuring-prometheus)
-  - [Metrics Collection](#metrics-collection)
-- [MLflow Experiment Tracking](#mlflow-experiment-tracking)
-  - [Option 1: Internal MLflow (Default)](#option-1-internal-mlflow-default)
-  - [Option 2: External MLflow](#option-2-external-mlflow)
-  - [Option 3: Disable MLflow](#option-3-disable-mlflow)
-- [Tensorboard Support](#tensorboard-support)
+  - [Prometheus Monitoring](#prometheus-monitoring)
+  - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
+  - [Tensorboard Support](#tensorboard-support)
 - [Sandboxing service](#sandboxing-service)
 - [Inference and Autoscaling](#inference-and-autoscaling)
-- [Compute Pools](#compute-pools)
-- [Autoscaling Configuration](#autoscaling-configuration)
-- [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
+  - [Compute Pools](#compute-pools)
+  - [Autoscaling Configuration](#autoscaling-configuration)
+  - [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
 - [Storage and Persistence](#storage-and-persistence)
-- [Monitoring Stack](#monitoring-stack)
-- [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
+  - [Monitoring Stack](#monitoring-stack)
+  - [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
 - [Cloud Specific information](#cloud-specific-information)
-- [Azure](#azure)
+  - [Azure](#azure)
 
-<!-- tocstop -->
-
----
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Compatibility
 

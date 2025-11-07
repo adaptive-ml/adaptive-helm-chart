@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Azure Specific Information](#azure-specific-information)
+  - [Storage](#storage)
+  - [Compute](#compute)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Azure Specific Information
 
 <!-- toc -->
