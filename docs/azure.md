@@ -168,7 +168,7 @@ The default ingress add-on creates a public load-balancer exposed directly to th
 
 
 1. Create an `internal` ingressClass
-```
+```yaml
 apiVersion: approuting.kubernetes.azure.com/v1alpha1
 kind: NginxIngressController
 metadata:
