@@ -118,7 +118,7 @@ volumes:
 
 ### CNI
 
-Adaptive recommends to use [Azure CNI Overlay](https://learn.microsoft.com/en-us/azure/aks/concepts-network-azure-cni-overlay) as a CNI for the cluster. This ensure best scalability and reliability. While other CNI may work they are not as extensively tested with Adaptive.
+Adaptive recommends to use [Azure CNI Overlay](https://learn.microsoft.com/en-us/azure/aks/concepts-network-azure-cni-overlay) as a CNI for the cluster. This ensures best scalability and reliability. While other CNI may work they are not as extensively tested with Adaptive.
 
 ### Ingress
 
