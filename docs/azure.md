@@ -180,7 +180,7 @@ spec:
     service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 ```
 
-2. Use `internal` as in ingress class in your values.yaml
+2. Use `internal` as an ingress class in your values.yaml
 ```yaml
 ingress:
   className: internal
