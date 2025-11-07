@@ -106,8 +106,6 @@ spec:
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
               value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" . }}"
-            - name: ENABLE_SANDBOX
-              value: "1"
             - name: SANDBOX_SERVICE_URL
               value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" . }}"
             - name: GROUP

@@ -105,7 +105,8 @@ harmony:
     prometheus.io/path: /metrics
     prometheus.io/port: "50053"
   podLabels: {}
-  extraEnvVars: {}
+  extraEnvVars:
+    ENABLE_SANDBOX: "1"
   tolerations:
     - key: "nvidia.com/gpu"
       operator: "Exists"
