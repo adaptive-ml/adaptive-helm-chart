@@ -122,7 +122,7 @@ Adaptive recommends to use [Azure CNI Overlay](https://learn.microsoft.com/en-us
 
 ### Ingress
 
-Ingress are a way to expose services running inside k8s cluster to the outside.
+An Ingress is a way to expose services running inside a k8s cluster to the outside.
 
 Adaptive recommends to use [Application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing) as an ingress controller.
 
