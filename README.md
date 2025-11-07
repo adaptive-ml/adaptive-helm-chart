@@ -4,8 +4,18 @@ A Helm Chart to deploy Adaptive Engine.
 
 ## Table of Contents
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Compatibility](#compatibility)
 - [Prerequisites](#prerequisites)
+  - [Required](#required)
+  - [Optional](#optional)
 - [Installation](#installation)
+  - [1. Install the charts from GitHub OCI Registry](#1-install-the-charts-from-github-oci-registry)
+  - [2. Get the default values.yaml configuration file](#2-get-the-default-valuesyaml-configuration-file)
+  - [3. Edit the `values.yaml` file](#3-edit-the-valuesyaml-file)
+  - [4. Deploy the chart](#4-deploy-the-chart)
 - [Configuration](#configuration)
   - [Secrets Configuration](#secrets-configuration)
   - [Container Images](#container-images)
@@ -16,15 +26,17 @@ A Helm Chart to deploy Adaptive Engine.
   - [Prometheus Monitoring](#prometheus-monitoring)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
   - [Tensorboard Support](#tensorboard-support)
-- [Sandboxing service](#custom-recipes-with-sandkasten)
+- [Sandboxing service](#sandboxing-service)
 - [Inference and Autoscaling](#inference-and-autoscaling)
   - [Compute Pools](#compute-pools)
   - [Autoscaling Configuration](#autoscaling-configuration)
   - [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
 - [Storage and Persistence](#storage-and-persistence)
+  - [Monitoring Stack](#monitoring-stack)
+  - [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
 - [Azure Blob Storage Compatibility](#azure-blob-storage-compatibility)
 
----
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Compatibility
 
@@ -122,7 +134,7 @@ secrets:
   sharedDirectoryUrl: "s3://bucket-name/shared"
 
   # Postgres database connection string
-  dbUrl: "postgres://username:password@db_adress:5432/db_name"
+  dbUrl: "postgres://username:password@db_address:5432/db_name"
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: "change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315" # Must be >= 64 chars
 
@@ -153,7 +165,7 @@ secrets:
   existingControlPlaneSecret: "my-control-plane-secret"
   existingHarmonySecret: "my-harmony-secret"
   existingRedisSecret: "my-redis-secret"
-  
+
   # IMPORTANT: Clear inline values to avoid validation errors
   dbUrl: ""
   cookiesSecret: ""
@@ -414,7 +426,7 @@ secrets:
   existingControlPlaneSecret: "adaptive-control-plane-secret"
   existingHarmonySecret: "adaptive-harmony-secret"
   existingRedisSecret: "adaptive-redis-secret"
-  
+
   # Clear inline values to use external secrets
   dbUrl: ""
   cookiesSecret: ""
@@ -523,14 +535,14 @@ The chart uses the [Prometheus Community Helm Chart](https://github.com/promethe
 ```yaml
 prometheus:
   enabled: true
-  
+
   server:
     # Prometheus data retention period
     retention: "30d"
-    
+
     # Number of Prometheus replicas for high availability
     replicaCount: 2
-    
+
     # Persistence configuration
     persistentVolume:
       enabled: true
@@ -575,7 +587,7 @@ mlflow:
   enabled: true
   external:
     enabled: false  # Use internal deployment
-  
+
   imageUri: ghcr.io/mlflow/mlflow:v3.1.1
   replicaCount: 1
   workers: 4  # Recommended: 2-4 workers per CPU core
@@ -590,7 +602,7 @@ mlflow:
   backendStoreUri: sqlite:///mlflow-storage/mlflow.db
   defaultArtifactRoot: mlflow-artifacts:/
   serveArtifacts: true
-  
+
   # Storage for MLflow database and artifacts
   volumes:
     - name: mlflow-storage
@@ -608,7 +620,7 @@ mlflow:
       hostPath:
         path: /mnt/nfs/mlflow
         type: Directory
-  
+
   volumeMounts:
     - name: mlflow-storage
       mountPath: /mlflow-storage
@@ -651,12 +663,12 @@ To track training job progress with Tensorboard, you can enable Tensorboard supp
 tensorboard:
   enabled: true  # default is false
   imageUri: tensorflow/tensorflow:latest
-  
+
   # Use the persistent volume config to enable log saving across restarts
   persistentVolume:
     enabled: true
     storageClass: "your-storage-class"
-  
+
   resources:
     limits:
       cpu: 1000m
@@ -680,20 +692,20 @@ By default, Sandkasten is deployed with the chart. You can customize its configu
 sandkasten:
   replicaCount: 1
   servicePort: 3005
-  
+
   image:
     repository: adaptive-repository
     tag: latest
     pullPolicy: Always
-  
+
   # Optional: Add custom environment variables
   extraEnvVars:
     CUSTOM_VAR: "value"
-  
+
   # Optional: Node selector for placement
   nodeSelector:
     node-type: compute
-  
+
   # Optional: Tolerations for tainted nodes
   tolerations: []
 ```

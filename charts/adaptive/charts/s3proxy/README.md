@@ -1,7 +1,13 @@
-
-## s3proxy
+# s3proxy
 
 This Helm chart is an s3 adapter for object storage providers which don't provide an s3-interoperable API. It uses [s3proxy](https://github.com/gaul/s3proxy).
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Performance monitoring](#performance-monitoring)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 To run locally:
 
@@ -35,13 +41,13 @@ CPU: 0.5 core is totally ok
 Monitor with cadvisor:
 
 
-````
-sudo docker run --volume=/:/rootfs:ro \ 
+```
+sudo docker run --volume=/:/rootfs:ro \
 --volume=/var/run:/var/run:rw \
- --volume=/sys:/sys:ro \ 
- --volume=/var/lib/docker/:/var/lib/docker:ro \ 
+ --volume=/sys:/sys:ro \
+ --volume=/var/lib/docker/:/var/lib/docker:ro \
  --publish=8080:8080 \
  --detach=true \
- --name=cadvisor \ 
+ --name=cadvisor \
 gcr.io/cadvisor/cadvisor
 ```
