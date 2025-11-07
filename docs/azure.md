@@ -36,7 +36,7 @@ This is done in order to guarantee that the compute plane has access to all the 
 The recommendation for Azure is to use PVC backed by [Azure Files](https://azure.microsoft.com/en-us/products/storage/files) in order to store the model registry and working directory.
 
 This is done for the following reasons:
-* Native integration with Azure. The lifecycle of Azure Files are fully managed on Azure side without having to pass credentials.
+* Native integration with Azure. The lifecycle of Azure Files is fully managed on Azure side without having to pass credentials.
 * Easy resize. By just changing the PVC you can increase the amount of storage available.
 * Shared State. Since this storage class is ReadWriteMany all of the pods of adaptive can share state
 
