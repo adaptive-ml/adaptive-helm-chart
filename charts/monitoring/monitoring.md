@@ -2,6 +2,12 @@
 
 **Components**: Grafana, Loki,Promtail
 
+<!-- toc -->
+
+- [Promtail](#promtail)
+
+<!-- tocstop -->
+
 ## Grafana
 
 - `datasource.yml`: preconfigured datasources

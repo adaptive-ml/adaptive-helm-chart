@@ -4,26 +4,52 @@ A Helm Chart to deploy Adaptive Engine.
 
 ## Table of Contents
 
+<!-- toc -->
+
 - [Prerequisites](#prerequisites)
+- [Required](#required)
+- [Optional](#optional)
 - [Installation](#installation)
+- [1. Install the charts from GitHub OCI Registry](#1-install-the-charts-from-github-oci-registry)
+- [2. Get the default values.yaml configuration file](#2-get-the-default-valuesyaml-configuration-file)
+- [3. Edit the `values.yaml` file](#3-edit-the-valuesyaml-file)
+- [4. Deploy the chart](#4-deploy-the-chart)
 - [Configuration](#configuration)
-  - [Secrets Configuration](#secrets-configuration)
-  - [Container Images](#container-images)
-  - [GPU Resources](#gpu-resources)
-  - [Ingress Configuration](#ingress-configuration)
-  - [Using External Secret Management](#using-external-secret-management)
+- [Secrets Configuration](#secrets-configuration)
+  - [Option 1: Inline Secrets (Default)](#option-1-inline-secrets-default)
+  - [Option 2: Reference Existing Secrets](#option-2-reference-existing-secrets)
+- [Container Images](#container-images)
+- [GPU Resources](#gpu-resources)
+- [Ingress Configuration](#ingress-configuration)
+  - [Enabling Ingress](#enabling-ingress)
+  - [Configuration Options](#configuration-options)
+  - [Complete Ingress Example](#complete-ingress-example)
+- [Using External Secret Management](#using-external-secret-management)
+  - [Example: Using External Secrets Operator](#example-using-external-secrets-operator)
+  - [Example: Using Sealed Secrets](#example-using-sealed-secrets)
+  - [Example: Manual Secret Creation](#example-manual-secret-creation)
 - [Monitoring and Observability](#monitoring-and-observability)
-  - [Prometheus Monitoring](#prometheus-monitoring)
-  - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
-  - [Tensorboard Support](#tensorboard-support)
+- [Prometheus Monitoring](#prometheus-monitoring)
+  - [Enabling/Disabling Prometheus](#enablingdisabling-prometheus)
+  - [Configuring Prometheus](#configuring-prometheus)
+  - [Metrics Collection](#metrics-collection)
+- [MLflow Experiment Tracking](#mlflow-experiment-tracking)
+  - [Option 1: Internal MLflow (Default)](#option-1-internal-mlflow-default)
+  - [Option 2: External MLflow](#option-2-external-mlflow)
+  - [Option 3: Disable MLflow](#option-3-disable-mlflow)
+- [Tensorboard Support](#tensorboard-support)
 - [Sandboxing service](#sandboxing-service)
 - [Inference and Autoscaling](#inference-and-autoscaling)
-  - [Compute Pools](#compute-pools)
-  - [Autoscaling Configuration](#autoscaling-configuration)
-  - [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
+- [Compute Pools](#compute-pools)
+- [Autoscaling Configuration](#autoscaling-configuration)
+- [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
 - [Storage and Persistence](#storage-and-persistence)
-- [Cloud Specific Information](#cloud-specific-information)
-  - [Azure](#azure)
+- [Monitoring Stack](#monitoring-stack)
+- [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
+- [Cloud Specific information](#cloud-specific-information)
+- [Azure](#azure)
+
+<!-- tocstop -->
 
 ---
 
@@ -804,95 +830,3 @@ This section is to provide specific information relevant to a specific cloud
 
 
 ### Azure
-
-#### Storage
-
-The recommendation for Azure is to use PVC backed by [Azure Files](https://azure.microsoft.com/en-us/products/storage/files) in order to store the model registry and working directory.
-
-This is done for the following reasons:
-* Native integration with Azure. The lifecycle of Azure Files are fully managed on Azure side without having to pass credentials.
-* Easy resize. By just changing the PVC you can increase the amount of storage available.
-* Shared State. Since this storage class is ReadWriteMany all of the pods of adaptive can share state
-
-In order to do that you will need to create an adaptive specific Storage Class and the 2 PVCs that will store the data
-```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  labels:
-    kubernetes.io/cluster-service: "true"
-  name: azurefile-csi-premium-adaptive
-allowVolumeExpansion: true
-mountOptions:
-- mfsymlinks
-- actimeo=30
-- nosharesock
-- uid=1002
-- gid=1002
-parameters:
-  skuName: Premium_LRS
-provisioner: file.csi.azure.com
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
-```
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: adaptive-model-registry
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: azurefile-csi-premium-adaptive
-  resources:
-    requests:
-      storage: 500Gi
-```
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: adaptive-workdir
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: azurefile-csi-premium-adaptive
-  resources:
-    requests:
-      storage: 500Gi
-```
-
-Then you will need to make sure that you have the following values for the helm chart
-```yaml
-secrets:
-  modelRegistryUrl: /model_registry
-  sharedDirectoryUrl: /workdir
-controlPlane:
-  sharedDirType: local
-volumeMounts:
-  - name: model-registry
-    mountPath: /model_registry
-  - name: working-directory
-    mountPath: /workdir
-volumes:
-  - name: model-registry
-    persistentVolumeClaim:
-      claimName: adaptive-model-registry
-  - name: working-directory
-    persistentVolumeClaim:
-      claimName: adaptive-workdir-premium
-```
-
-> [!NOTE]
-> There is still a deprecated S3Proxy available in the helm chart. S3proxy integration is not optimal for recent versions of Adaptive and we recommend instead using the simpler route of k8s PVC.
-
-
-#### Compute
-
-Adaptive recommendation is to use at least 2 different compute pools
-- A GPU nodepool that will host the `harmony` pods.
-- A CPU nodepool that will host the other non-gpu pods (control-plane, redis, ...)
-
-This is done in order to guarantee that the compute plane has access to all the gpus resources and that the control plane is scheduled on cheaper nodes.

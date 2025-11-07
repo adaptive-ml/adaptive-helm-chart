@@ -1,7 +1,12 @@
-
-## s3proxy
+# s3proxy
 
 This Helm chart is an s3 adapter for object storage providers which don't provide an s3-interoperable API. It uses [s3proxy](https://github.com/gaul/s3proxy).
+
+<!-- toc -->
+
+
+
+<!-- tocstop -->
 
 To run locally:
 
