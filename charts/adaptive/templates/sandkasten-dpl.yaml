@@ -54,13 +54,10 @@ spec:
             privileged: true
           ports:
             - containerPort: {{ .Values.sandkasten.servicePort }}
+          {{- if .Values.sandkasten.resources }}
           resources:
-            limits:
-              cpu: 2000m
-              memory: 16Gi
-            requests:
-              cpu: 2000m
-              memory: 16Gi
+            {{- toYaml .Values.sandkasten.resources | nindent 12 }}
+          {{- end }}
           volumeMounts:
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
