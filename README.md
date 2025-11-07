@@ -34,7 +34,7 @@ A Helm Chart to deploy Adaptive Engine.
 - [Storage and Persistence](#storage-and-persistence)
   - [Monitoring Stack](#monitoring-stack)
   - [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
-- [Azure Blob Storage Compatibility](#azure-blob-storage-compatibility)
+- [Cloud specific information](#cloud-specific-information)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -809,17 +809,8 @@ prometheus:
 
 ---
 
-## Azure Blob Storage Compatibility
+## Cloud specific information
 
-The Adaptive Helm chart supports any S3-compliant storage service, and Azure Blob Storage out-of-the-box via [s3proxy](https://github.com/gaul/s3proxy). The default is S3.
+We have cloud specific information in their own docs
 
-To enable Azure Blob Storage, set this override in the helm values:
-
-```yaml
-s3proxy:
-  enabled: true
-  azure:
-    storageAccount:
-      name: your_azure_account_name
-      accessKey: your_azure_access_key
-```
+* [Azure](./docs/azure.md)
