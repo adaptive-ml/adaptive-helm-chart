@@ -87,6 +87,46 @@ jobs:
           helm install --dry-run --debug adaptive-stack-postgres ./charts/adaptive --set installPostgres.enabled=true
           echo "::endgroup::"
 
+          echo "::group::Testing OIDC require_email_verified functionality"
+          # Test 1: Default (not set) - should default to true
+          echo "Testing default value (should be true)..."
+          OUTPUT_DEFAULT=$(helm template adaptive-test ./charts/adaptive -f .github/test-values-oidc-default.yaml 2>&1)
+          OIDC_DEFAULT=$(echo "$OUTPUT_DEFAULT" | grep -A 2 "oidcProviders:" | tail -1 | awk '{print $2}' | base64 -d)
+          if echo "$OIDC_DEFAULT" | grep -q "require_email_verified=true"; then
+            echo "✓ Default value correctly set to true"
+          else
+            echo "✗ Default value test failed"
+            echo "Output: $OIDC_DEFAULT"
+            exit 1
+          fi
+
+          # Test 2: Explicitly set to false
+          echo "Testing explicit false value..."
+          OUTPUT_FALSE=$(helm template adaptive-test ./charts/adaptive -f .github/test-values-oidc-false.yaml 2>&1)
+          OIDC_FALSE=$(echo "$OUTPUT_FALSE" | grep -A 2 "oidcProviders:" | tail -1 | awk '{print $2}' | base64 -d)
+          if echo "$OIDC_FALSE" | grep -q "require_email_verified=false"; then
+            echo "✓ False value correctly set"
+          else
+            echo "✗ False value test failed"
+            echo "Output: $OIDC_FALSE"
+            exit 1
+          fi
+
+          # Test 3: Explicitly set to true
+          echo "Testing explicit true value..."
+          OUTPUT_TRUE=$(helm template adaptive-test ./charts/adaptive -f .github/test-values-oidc-true.yaml 2>&1)
+          OIDC_TRUE=$(echo "$OUTPUT_TRUE" | grep -A 2 "oidcProviders:" | tail -1 | awk '{print $2}' | base64 -d)
+          if echo "$OIDC_TRUE" | grep -q "require_email_verified=true"; then
+            echo "✓ True value correctly set"
+          else
+            echo "✗ True value test failed"
+            echo "Output: $OIDC_TRUE"
+            exit 1
+          fi
+
+          echo "All require_email_verified tests passed!"
+          echo "::endgroup::"
+
           echo "::group::Testing monitoring stack"
           helm install --dry-run --debug adaptive-monitoring ./charts/monitoring
           echo "::endgroup::"
