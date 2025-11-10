@@ -231,7 +231,12 @@ Harmony service ws endpoint
     {{- end -}}
     scopes={{ .scopes | toJson }},
     pkce={{ .pkce }},
-    allow_sign_up={{ .allow_sign_up }}
+    allow_sign_up={{ .allow_sign_up }},
+    {{- if hasKey . "require_email_verified" }}
+    require_email_verified={{ .require_email_verified }}
+    {{- else }}
+    require_email_verified=true
+    {{- end }}
   },
   {{- end -}}
 ]
