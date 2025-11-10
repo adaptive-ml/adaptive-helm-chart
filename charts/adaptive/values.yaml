@@ -51,6 +51,10 @@ secrets:
           # if true, user account will be created if it does not exist
           allow_sign_up: true
 
+          # if true, user email must be verified to login in the oidc provider (default is true).
+          # in some identity providers, this is not supported and should be opted out.
+          require_email_verified: true
+
 auth:
   # One of [admin, read-only, inference, annotator]
   default_role: admin
