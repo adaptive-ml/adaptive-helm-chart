@@ -232,7 +232,11 @@ Harmony service ws endpoint
     scopes={{ .scopes | toJson }},
     pkce={{ .pkce }},
     allow_sign_up={{ .allow_sign_up }},
-    require_email_verified={{ default true .require_email_verified }}
+    {{- if hasKey . "require_email_verified" }}
+    require_email_verified={{ .require_email_verified }}
+    {{- else }}
+    require_email_verified=true
+    {{- end }}
   },
   {{- end -}}
 ]
