@@ -116,8 +116,6 @@ spec:
               value: "0"
             - name: GPU_COUNT
               value: "{{ $poolMerged.gpusPerReplica | default 1 }}"
-            - name: WORLD_SIZE
-              value: "{{ $poolMerged.gpusPerReplica | default 1 }}"
             - name: MASTER_ADDR
               value: "127.0.0.1"
             - name: MASTER_PORT
