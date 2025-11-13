@@ -186,3 +186,33 @@ spec:
 ingress:
   className: internal
 ```
+
+## Authentication
+
+We support OIDC as authentication protocol. In an Azure environment this is provided by [Azure Entra ID](https://www.microsoft.com/en-us/security/business/identity-access/microsoft-entra-id).
+
+### Process
+
+1. Create a new App registration in your Tenant
+2. Ensure the redirect URI is `<Adaptive Engine URL>/api/v1/auth/login/azure/callback`
+3. Copy Client ID from you App registration
+4. Add a new "Client Secret" and store the newly created secret
+5. In your `values.yaml` you should have a block like this
+```yaml
+secrets:
+  auth:
+    oidc:
+      providers:
+        - name: "Azure"
+          key: "azure"
+          issuer_url: "https://login.microsoftonline.com/<tenant_id>/v2.0"
+          client_id: "<client_id>"
+          client_secret: "<client_secret>"
+          scopes: ["email", "profile"]
+          pkce: true
+          allow_sign_up: true
+          require_email_verified: false
+```
+
+> [!IMPORTANT]
+> The field `require_email_verified: false` is required to ensure oidc works with Entra ID
