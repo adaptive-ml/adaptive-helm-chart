@@ -44,7 +44,7 @@ spec:
       {{- if .Values.harmony.tolerations}}
       tolerations:
         {{- toYaml .Values.harmony.tolerations | nindent 8 }}
-      {{- end}} 
+      {{- end}}
       initContainers:
       - name: init-permissions
         image: busybox
@@ -98,8 +98,6 @@ spec:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
             - name: GPU_COUNT
               value: "{{ .Values.harmony.gpusPerReplica | default 1 }}"
-            - name: WORLD_SIZE
-              value: "{{ mul (int .Values.harmony.replicaCount) (int .Values.harmony.gpusPerReplica) | default .Values.harmony.replicaCount }}"
             - name: MASTER_ADDR
               value: "{{ include "adaptive.harmony.fullname" . }}-0.{{ include "adaptive.harmony.headlessService.fullname" . }}"
             - name: MASTER_PORT
