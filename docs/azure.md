@@ -13,7 +13,6 @@ This page lists information for a deployment on Azure platform with [AKS](https:
 - [Networking](#networking)
   - [CNI](#cni)
   - [Ingress](#ingress)
-    - [Private Ingress](#private-ingress)
 - [Authentication](#authentication)
   - [Process](#process)
 
