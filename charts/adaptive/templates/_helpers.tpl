@@ -243,6 +243,13 @@ Harmony service ws endpoint
 {{- end -}}
 
 {{/*
+Generate a checksum of OIDC providers configuration to trigger pod redeployment on changes
+*/}}
+{{- define "adaptive.oidcProviders.checksum" -}}
+{{- include "adaptive.oidcProviders" . | sha256sum | trunc 8 }}
+{{- end -}}
+
+{{/*
 Control plane ports
 */}}
 {{- define "adaptive.controlPlane.ports" -}}
