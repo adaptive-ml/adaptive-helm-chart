@@ -81,6 +81,11 @@ spec:
           volumeMounts:
             - name: postgresql-data
               mountPath: /var/lib/postgresql/data
+            {{- if .Values.installPostgres.extraVolumeMounts }}
+            {{- with .Values.installPostgres.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- end }}
           livenessProbe:
             exec:
               command:
@@ -103,6 +108,18 @@ spec:
             timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 6
+      {{- if or (not .Values.installPostgres.persistence.enabled) .Values.installPostgres.extraVolumes }}
+      volumes:
+      {{- if not .Values.installPostgres.persistence.enabled }}
+        - name: postgresql-data
+          emptyDir: {}
+      {{- end }}
+      {{- if .Values.installPostgres.extraVolumes }}
+      {{- with .Values.installPostgres.extraVolumes }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
   {{- if .Values.installPostgres.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
@@ -119,10 +136,6 @@ spec:
         resources:
           requests:
             storage: {{ .Values.installPostgres.persistence.size | quote }}
-  {{- else }}
-      volumes:
-        - name: postgresql-data
-          emptyDir: {}
   {{- end }}
 {{- end }}
 

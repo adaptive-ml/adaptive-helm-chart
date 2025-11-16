@@ -632,7 +632,27 @@ installPostgres:
   #   - name: init-db
   #     image: busybox
   #     command: ['sh', '-c', 'echo "Initializing database..."']
+  #     volumeMounts:
+  #       - name: init-script
+  #         mountPath: /scripts
   initContainers: []
+  # Extra volumes to be mounted in the pod (available to init containers and main container)
+  # Example:
+  # extraVolumes:
+  #   - name: init-script
+  #     configMap:
+  #       name: postgres-init-script
+  #   - name: backup-storage
+  #     persistentVolumeClaim:
+  #       claimName: postgres-backup-pvc
+  extraVolumes: []
+  # Extra volume mounts for the main postgresql container
+  # Example:
+  # extraVolumeMounts:
+  #   - name: init-script
+  #     mountPath: /docker-entrypoint-initdb.d
+  #     readOnly: true
+  extraVolumeMounts: []
 
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
