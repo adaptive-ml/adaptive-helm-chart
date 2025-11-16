@@ -45,6 +45,12 @@ spec:
       {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- end }}
+      {{- if .Values.installPostgres.initContainers }}
+      initContainers:
+      {{- with .Values.installPostgres.initContainers }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+      {{- end }}
       containers:
         - name: postgresql
           image: "{{ .Values.installPostgres.image.repository }}:{{ .Values.installPostgres.image.tag }}"

@@ -626,6 +626,13 @@ installPostgres:
   extraEnvVars: {}
   nodeSelector: {}
   tolerations: []
+  # Optional init containers to run before the main postgresql container
+  # Example:
+  # initContainers:
+  #   - name: init-db
+  #     image: busybox
+  #     command: ['sh', '-c', 'echo "Initializing database..."']
+  initContainers: []
 
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
