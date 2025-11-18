@@ -59,7 +59,7 @@ mountOptions:
 - uid=1002
 - gid=1002
 parameters:
-  skuName: Premium_LRS
+  skuName: PremiumV2_ZRS
 provisioner: file.csi.azure.com
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
