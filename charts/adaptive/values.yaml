@@ -559,6 +559,24 @@ alloy:
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 
+# Preflight check job that validates configuration before deployment
+preflight:
+  enabled: true
+  image: ghcr.io/adaptive-ml-ops/preflight-check:main
+  imagePullPolicy: Always
+  backoffLimit: 3
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  extraEnvVars: {}
+
 redis:  # Redis is required and cannot be disabled
   image:
     repository: redis
