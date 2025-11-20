@@ -294,7 +294,7 @@ The existing secret must contain a `redisUrl` key with the Redis connection URL.
 
 **Mutual Exclusivity:**
 
-- `redis.install.enabled=true` and `redis.external.url` cannot both be set
+- `redis.install.enabled=true` and `redis.external.url` cannot both be set (unless using `existingRedisSecret`)
 - `redis.install.enabled=false` requires `redis.external.url` to be provided
 - `existingRedisSecret` cannot be used with inline `redis.auth.*` values
 
