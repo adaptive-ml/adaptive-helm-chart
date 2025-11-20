@@ -340,6 +340,11 @@ app.kubernetes.io/component: redis
 {{- end }}
 
 {{- define "adaptive.redis.url" -}}
+{{- if not .Values.redis.install.enabled -}}
+{{- /* External Redis: use the provided URL */ -}}
+{{- required "redis.external.url is required when install.enabled is false" .Values.redis.external.url -}}
+{{- else -}}
+{{- /* Internal Redis: construct URL from service and auth */ -}}
 {{- $host := include "adaptive.redis.service.fullname" . -}}
 {{- $port := .Values.redis.port | int -}}
 {{- if and .Values.redis.auth.username .Values.redis.auth.password -}}
@@ -348,6 +353,7 @@ app.kubernetes.io/component: redis
 {{- printf "redis://:%s@%s:%d" .Values.redis.auth.password $host $port -}}
 {{- else -}}
 {{- printf "redis://%s:%d" $host $port -}}
+{{- end -}}
 {{- end -}}
 {{- end }}
 

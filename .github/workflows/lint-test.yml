@@ -87,6 +87,10 @@ jobs:
           helm install --dry-run --debug adaptive-stack-postgres ./charts/adaptive --set installPostgres.enabled=true
           echo "::endgroup::"
 
+          echo "::group::Testing adaptive with external URL and external Redis"
+          helm install --dry-run --debug adaptive-stack-external-redis ./charts/adaptive -f .github/test-values-external-redis.yaml
+          echo "::endgroup::"
+
           echo "::group::Testing OIDC require_email_verified functionality"
           # Test 1: Default (not set) - should default to true
           echo "Testing default value (should be true)..."

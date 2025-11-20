@@ -1,0 +1,24 @@
+secrets:
+  dbUrl: postgres://test
+  cookiesSecret: test-secret-1234567890123456789012345678901234567890123456789012345678901234
+  auth:
+    oidc:
+      providers:
+        - name: "Google"
+          key: "google"
+          issuer_url: "https://accounts.google.com"
+          client_id: "test_client"
+          scopes: ["email", "profile"]
+          pkce: true
+          allow_sign_up: true
+          require_email_verified: true
+
+controlPlane:
+  rootUrl: "https://external-test.example.com"
+
+redis:
+  install:
+    enabled: false
+  external:
+    url: "redis://external-redis.example.com:6379"
+
