@@ -18,6 +18,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [4. Deploy the chart](#4-deploy-the-chart)
 - [Configuration](#configuration)
   - [Secrets Configuration](#secrets-configuration)
+  - [Redis Configuration](#redis-configuration)
   - [Container Images](#container-images)
   - [GPU Resources](#gpu-resources)
   - [Ingress Configuration](#ingress-configuration)
@@ -204,9 +205,119 @@ The `existingHarmonySecret` must contain these keys:
 - `sharedDirectoryUrl` - S3 bucket URL for shared directory
 
 The `existingRedisSecret` must contain this key:
-- `redisUrl` - Redis connection URL (auto-generated from `redis.auth.*` if using built-in Redis)
+- `redisUrl` - Redis connection URL (format: `redis://[username:password@]host:port`)
+
+> **Note:** When using `existingRedisSecret`, you should typically set `redis.install.enabled` to `false` (no internal Redis deployment). If you want to deploy Redis internally and manage the secret externally, set `redis.install.enabled=true` **without** specifying `existingRedisSecret`, and manage the Redis authentication values separately. See [Redis Configuration](#redis-configuration) for more details.
 
 For detailed examples of using external secret management tools, see the [Using External Secret Management](#using-external-secret-management) section below.
+
+### Redis Configuration
+
+Adaptive Engine requires Redis for caching and session management. The chart supports three Redis deployment options:
+
+1. **Internal Redis** (default) - Deploys Redis within the cluster
+2. **External Redis** - Uses an existing external Redis instance
+3. **Existing Secret** - References a pre-existing Kubernetes secret containing the Redis URL
+
+#### Option 1: Internal Redis (Default)
+
+By default, the chart deploys a Redis instance within your Kubernetes cluster:
+
+```yaml
+redis:
+  install:
+    enabled: true  # Deploy Redis in-cluster (default)
+
+  # Redis image configuration
+  image:
+    repository: redis
+    tag: "7.4.7-alpine"
+    pullPolicy: IfNotPresent
+
+  port: 6379
+
+  # Optional: Redis authentication
+  auth:
+    username: ""  # Leave empty for no username
+    password: ""  # Leave empty for no password
+
+  # Resource limits
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+```
+
+**Note:** The chart currently manages Redis 7.  We recommend using an external managed Redis service for production deployments.
+
+#### Option 2: External Redis
+
+To use an external Redis instance (e.g., AWS ElastiCache, Azure Cache for Redis, Google Cloud Memorystore, or a self-managed Redis):
+
+```yaml
+redis:
+  install:
+    enabled: false  # Disable in-cluster Redis deployment
+
+  # External Redis endpoint
+  external:
+    url: "redis://redis.example.com:6379"
+    # Or with authentication:
+    # url: "redis://username:password@redis.example.com:6379"
+```
+
+**Important:** When `install.enabled=false`, you **must** provide `redis.external.url`. The chart will validate this requirement and fail with a clear error if missing.
+
+#### Option 3: Existing Secret
+
+If you manage Redis secrets externally (using External Secrets Operator, Sealed Secrets, etc.), you can reference an existing Kubernetes secret:
+
+```yaml
+secrets:
+  existingRedisSecret: "my-redis-secret"
+
+redis:
+  install:
+    enabled: false  # Can be true or false when using existingRedisSecret
+    # If true: Redis will be deployed but will use the existing secret for connection
+    # If false: No Redis deployed, uses existing secret only
+```
+
+The existing secret must contain a `redisUrl` key with the Redis connection URL.
+
+**Note:** When using `existingRedisSecret`, you cannot provide inline `redis.auth.*` values. The chart validates this to prevent configuration conflicts.
+
+#### Configuration Options
+
+**Mutual Exclusivity:**
+
+- `redis.install.enabled=true` and `redis.external.url` cannot both be set (unless using `existingRedisSecret`)
+- `redis.install.enabled=false` requires `redis.external.url` to be provided
+- `existingRedisSecret` cannot be used with inline `redis.auth.*` values
+
+**Customization:**
+
+You can customize the internal Redis deployment with:
+
+```yaml
+redis:
+  install:
+    enabled: true
+
+  # Pod annotations and labels
+  podAnnotations: {}
+  podLabels: {}
+
+  # Node placement
+  nodeSelector: {}
+  tolerations: []
+
+  # Additional environment variables
+  extraEnvVars: {}
+```
 
 ### Container Images
 

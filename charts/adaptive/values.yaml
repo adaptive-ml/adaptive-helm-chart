@@ -560,6 +560,14 @@ alloy:
 imagePullSecrets: []
 
 redis:  # Redis is required and cannot be disabled
+  # OPTIONAL: Set to true to deploy an internal Redis instance in the cluster
+  # DEFAULT BEHAVIOR: Deploy internal Redis (set install.enabled=false to use external Redis)
+  # When install.enabled=true, the internal Redis service will be used instead of external Redis
+  # We recommend using an external managed Redis for production
+  install:
+    enabled: true  # Set to false to use external Redis endpoint
+
+  # Internal Redis configuration (used when install.enabled=true)
   image:
     repository: redis
     tag: "7.4.7-alpine"
@@ -567,7 +575,7 @@ redis:  # Redis is required and cannot be disabled
 
   port: 6379
 
-  # Redis authentication (optional)
+  # Redis authentication (optional, only used for internal Redis)
   auth:
     username: ""  # Leave empty for no username
     password: ""  # Leave empty for no password
@@ -585,6 +593,11 @@ redis:  # Redis is required and cannot be disabled
   extraEnvVars: {}
   nodeSelector: {}
   tolerations: []
+
+  # External Redis configuration (used when install.enabled=false)
+  external:
+    # URL of the external Redis server (e.g., "redis://redis.example.com:6379" or "redis://user:pass@redis.example.com:6379")
+    url: ""  # Required when install.enabled=false
 
 installPostgres:
   # OPTIONAL: Set to true to deploy an internal PostgreSQL database in the cluster
