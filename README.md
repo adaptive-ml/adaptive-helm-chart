@@ -207,7 +207,7 @@ The `existingHarmonySecret` must contain these keys:
 The `existingRedisSecret` must contain this key:
 - `redisUrl` - Redis connection URL (format: `redis://[username:password@]host:port`)
 
-> **Note:** When using `existingRedisSecret`, you can set `redis.install.enabled` to either `true` or `false`. If `true`, Redis will be deployed but will use the existing secret for the connection URL. If `false`, no Redis is deployed and only the existing secret is used. See [Redis Configuration](#redis-configuration) for more details.
+> **Note:** When using `existingRedisSecret`, you should typically set `redis.install.enabled` to `false` (no internal Redis deployment). If you want to deploy Redis internally and manage the secret externally, set `redis.install.enabled=true` **without** specifying `existingRedisSecret`, and manage the Redis authentication values separately. See [Redis Configuration](#redis-configuration) for more details.
 
 For detailed examples of using external secret management tools, see the [Using External Secret Management](#using-external-secret-management) section below.
 
