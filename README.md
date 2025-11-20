@@ -251,7 +251,7 @@ redis:
       memory: 512Mi
 ```
 
-**Note:** We recommend using an external managed Redis service for production deployments.
+**Note:** The chart currently manages Redis 7.  We recommend using an external managed Redis service for production deployments.
 
 #### Option 2: External Redis
 
