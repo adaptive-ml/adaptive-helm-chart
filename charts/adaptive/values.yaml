@@ -561,7 +561,7 @@ imagePullSecrets: []
 
 redis:  # Redis is required and cannot be disabled
   # OPTIONAL: Set to true to deploy an internal Redis instance in the cluster
-  # DEFAULT BEHAVIOR: Use external Redis (configured via redis.external.url below)
+  # DEFAULT BEHAVIOR: Deploy internal Redis (set install.enabled=false to use external Redis)
   # When install.enabled=true, the internal Redis service will be used instead of external Redis
   # We recommend using an external managed Redis for production
   install:
