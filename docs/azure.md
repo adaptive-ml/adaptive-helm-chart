@@ -32,6 +32,7 @@ This is done in order to guarantee that the compute plane has access to all the 
 * Nodepools need to have a x86_64 cpu. Adaptive does not currently support ARM architectures.
 * The [maximum pods per node](https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning#maximum-pods-per-node) needs to be *at least 50*
 * The CPU nodepool vms should have at least 32GB of memory and at least 8 vCPUs. Our recommended instance type is Standard_D16as_v6 with 16 vCPUs and 64GB of memory
+* NodePool shuld have at least 800GB of os disk size in order to accomodate for adaptive disk usage
 
 
 ## Storage
@@ -58,6 +59,7 @@ mountOptions:
 - nosharesock
 - uid=1002
 - gid=1002
+- nobrl
 parameters:
   skuName: PremiumV2_ZRS
 provisioner: file.csi.azure.com
@@ -90,7 +92,7 @@ spec:
   storageClassName: azurefile-csi-premium-adaptive
   resources:
     requests:
-      storage: 500Gi
+      storage: 1500Gi
 ```
 
 Then you will need to make sure that you have the following values for the helm chart
