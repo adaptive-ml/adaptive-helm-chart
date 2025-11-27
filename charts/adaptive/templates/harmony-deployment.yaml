@@ -108,7 +108,7 @@ spec:
                   fieldPath: metadata.name
             - name: IMAGE_TAG
               value: {{ $.Values.harmony.image.tag | quote }}
-            - name: MY_POD_IP
+            - name: POD_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
@@ -133,7 +133,7 @@ spec:
             - name: PARTITION_KEY
               value: "$(MY_POD_NAME)"
             - name: SERVICE_URL
-              value: "http://$(MY_POD_IP):{{ $ports.http.containerPort }}"
+              value: "http://$(POD_IP):{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
             - name: ADAPTIVE_MODE

@@ -92,6 +92,10 @@ spec:
             {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
             - name: IMAGE_TAG
               value: {{ .Values.harmony.image.tag | quote }}
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: ORDINAL
               valueFrom:
                 fieldRef:
