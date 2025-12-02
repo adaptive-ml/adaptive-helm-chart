@@ -219,7 +219,7 @@ spec:
         - name: dshm
           emptyDir:
             medium: Memory
-            sizeLimit: 32Gi
+            sizeLimit: {{ .Values.harmony.shmSize }}
         # extra volume Mounts from values.yaml
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}

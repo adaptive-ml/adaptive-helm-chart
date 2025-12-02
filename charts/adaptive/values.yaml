@@ -103,6 +103,10 @@ harmony:
       cpu: 30
       memory: 500Gi
 
+  # Size of /dev/shm (shared memory) volume for NCCL and other IPC
+  # This should not be modified under normal circumstances
+  shmSize: 32Gi
+
   podAnnotations:
     ingest-adaptive-logs: "true"
     prometheus.io/scrape: "adaptive"
