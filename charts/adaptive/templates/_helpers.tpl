@@ -397,17 +397,38 @@ Usage: {{ include "adaptive.redis.secretEnvVars" . | nindent 12 }}
 {{- end }}
 
 {{/*
-Generate the database URL - uses internal PostgreSQL if enabled, otherwise uses external URL from secrets
+Generate individual database components - uses internal PostgreSQL if enabled, otherwise uses values from secrets.db
 */}}
-{{- define "adaptive.db.url" -}}
+{{- define "adaptive.db.username" -}}
+{{- if .Values.installPostgres.enabled -}}
+{{- .Values.installPostgres.username -}}
+{{- else -}}
+{{- required "secrets.db.username is required!" .Values.secrets.db.username -}}
+{{- end -}}
+{{- end }}
+
+{{- define "adaptive.db.password" -}}
+{{- if .Values.installPostgres.enabled -}}
+{{- include "adaptive.postgresql.password" . -}}
+{{- else -}}
+{{- required "secrets.db.password is required!" .Values.secrets.db.password -}}
+{{- end -}}
+{{- end }}
+
+{{- define "adaptive.db.host" -}}
 {{- if .Values.installPostgres.enabled -}}
 {{- $host := include "adaptive.postgresql.service.fullname" . -}}
 {{- $port := .Values.installPostgres.port | int -}}
-{{- $database := .Values.installPostgres.database -}}
-{{- $username := .Values.installPostgres.username -}}
-{{- $password := include "adaptive.postgresql.password" . -}}
-{{- printf "postgres://%s:%s@%s:%d/%s" ($username | urlquery) ($password | urlquery) $host $port $database -}}
+{{- printf "%s:%d" $host $port -}}
 {{- else -}}
-{{- required "A db url is required!" .Values.secrets.dbUrl -}}
+{{- required "secrets.db.host is required!" .Values.secrets.db.host -}}
+{{- end -}}
+{{- end }}
+
+{{- define "adaptive.db.database" -}}
+{{- if .Values.installPostgres.enabled -}}
+{{- .Values.installPostgres.database -}}
+{{- else -}}
+{{- required "secrets.db.database is required!" .Values.secrets.db.database -}}
 {{- end -}}
 {{- end }}

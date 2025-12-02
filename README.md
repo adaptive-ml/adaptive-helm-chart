@@ -134,8 +134,12 @@ secrets:
   # Use same bucket as above and can use a different prefix
   sharedDirectoryUrl: "s3://bucket-name/shared"
 
-  # Postgres database connection string
-  dbUrl: "postgres://username:password@db_address:5432/db_name"
+  # Postgres database connection configuration
+  db:
+    username: "username"
+    password: "password"
+    host: "db_address:5432"  # Host and port
+    database: "db_name"
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: "change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315" # Must be >= 64 chars
 
@@ -168,13 +172,7 @@ secrets:
   existingRedisSecret: "my-redis-secret"
 
   # IMPORTANT: Clear inline values to avoid validation errors
-  dbUrl: ""
-  cookiesSecret: ""
-  modelRegistryUrl: ""
-  sharedDirectoryUrl: ""
-  auth:
-    oidc:
-      providers: []
+  # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, and auth should not be set
 ```
 
 > **Note:** The chart validates that you don't accidentally provide both an `existingSecret` reference and inline values. If both are detected, Helm will fail with a clear error message to prevent configuration surprises. Make sure to clear/remove inline secret values when using external secrets.
@@ -184,7 +182,10 @@ secrets:
 > **Note:** Secret keys use the same names as the values.yaml field names for simplicity. The chart handles mapping them to the appropriate environment variables internally.
 
 The `existingControlPlaneSecret` must contain these keys:
-- `dbUrl` - Database connection string
+- `dbUsername` - Database username
+- `dbPassword` - Database password
+- `dbHost` - Database host and port (e.g., `db_address:5432`)
+- `dbName` - Database name
 - `cookiesSecret` - Cookie signing secret (>= 64 chars)
 - `oidcProviders` - OIDC configuration in TOML array format (example below):
   ```toml
@@ -465,7 +466,7 @@ spec:
 
 **3. Create ExternalSecret resources** for Control Plane, Harmony, and Redis:
 
-> **Note:** Secret keys match the values.yaml field names for simplicity (e.g., `dbUrl`, `cookiesSecret`). The chart handles environment variable mapping internally.
+> **Note:** Secret keys match the values.yaml field names for simplicity (e.g., `dbUsername`, `dbPassword`, `cookiesSecret`). The chart handles environment variable mapping internally.
 
 ```yaml
 ---
@@ -482,9 +483,18 @@ spec:
     name: adaptive-control-plane-secret
     creationPolicy: Owner
   data:
-    - secretKey: dbUrl
+    - secretKey: dbUsername
       remoteRef:
-        key: adaptive/db-url
+        key: adaptive/db-username
+    - secretKey: dbPassword
+      remoteRef:
+        key: adaptive/db-password
+    - secretKey: dbHost
+      remoteRef:
+        key: adaptive/db-host
+    - secretKey: dbName
+      remoteRef:
+        key: adaptive/db-name
     - secretKey: cookiesSecret
       remoteRef:
         key: adaptive/cookies-secret
@@ -538,14 +548,8 @@ secrets:
   existingHarmonySecret: "adaptive-harmony-secret"
   existingRedisSecret: "adaptive-redis-secret"
 
-  # Clear inline values to use external secrets
-  dbUrl: ""
-  cookiesSecret: ""
-  modelRegistryUrl: ""
-  sharedDirectoryUrl: ""
-  auth:
-    oidc:
-      providers: []
+  # Do not set inline values when using external secrets
+  # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, and auth should not be set
 ```
 
 **5. Deploy the Helm chart:**
@@ -560,13 +564,16 @@ If you're using [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets)
 
 **1. Create your secrets** and seal them:
 
-> **Note:** Secret keys match the values.yaml field names (e.g., `dbUrl`, `cookiesSecret`) for simplicity.
+> **Note:** Secret keys match the values.yaml field names (e.g., `dbUsername`, `dbPassword`, `cookiesSecret`) for simplicity.
 
 ```bash
 # Create control plane secret
 # Note: oidcProviders must be in TOML array format
 kubectl create secret generic adaptive-control-plane-secret \
-  --from-literal=dbUrl="postgres://..." \
+  --from-literal=dbUsername="username" \
+  --from-literal=dbPassword="password" \
+  --from-literal=dbHost="db_address:5432" \
+  --from-literal=dbName="db_name" \
   --from-literal=cookiesSecret="..." \
   --from-literal=oidcProviders='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="...",client_secret="...",scopes=["email","profile"],pkce=true,allow_sign_up=true},]' \
   --dry-run=client -o yaml | kubeseal -o yaml > sealed-control-plane-secret.yaml
@@ -594,13 +601,16 @@ kubectl apply -f sealed-redis-secret.yaml
 
 You can also create secrets manually:
 
-> **Note:** Secret keys match the values.yaml field names (e.g., `dbUrl`, `cookiesSecret`) for simplicity.
+> **Note:** Secret keys match the values.yaml field names (e.g., `dbUsername`, `dbPassword`, `cookiesSecret`) for simplicity.
 
 ```bash
 # Control plane secret
 # Note: oidcProviders must be in TOML array format
 kubectl create secret generic adaptive-control-plane-secret \
-  --from-literal=dbUrl="postgres://username:password@host:5432/db" \
+  --from-literal=dbUsername="username" \
+  --from-literal=dbPassword="password" \
+  --from-literal=dbHost="host:5432" \
+  --from-literal=dbName="db_name" \
   --from-literal=cookiesSecret="your-64-char-secret" \
   --from-literal=oidcProviders='[{key="google",name="Google",issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true}]'
 

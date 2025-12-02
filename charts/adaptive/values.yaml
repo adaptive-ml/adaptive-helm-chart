@@ -14,7 +14,7 @@ serviceAccount:
 # or reference existing secrets that you provision yourself
 secrets:
   # Optional: Reference existing secrets instead of creating new ones
-  # Control Plane existing secret (must contain keys: dbUrl, cookiesSecret, oidcProviders)
+  # Control Plane existing secret (must contain keys: dbUsername, dbPassword, dbHost, dbName, cookiesSecret, oidcProviders)
   existingControlPlaneSecret: ""
   # Harmony existing secret (must contain keys: modelRegistryUrl, sharedDirectoryUrl)
   existingHarmonySecret: ""
@@ -24,8 +24,12 @@ secrets:
   modelRegistryUrl: s3://bucket-name/model_registry
   # Use same bucket as above and can use a different prefix
   sharedDirectoryUrl: s3://bucket-name/shared
-  # Postgres database connection string
-  dbUrl: postgres://username:password@db_address:5432/db_name
+  # Postgres database connection configuration
+  db:
+    username: username
+    password: password
+    host: db_address:5432  # Host and port (e.g., db_address:5432 or db_address)
+    database: db_name
   # Secret used to sign cookies. Must be the same on all servers of a cluster and >= 64 chars
   cookiesSecret: change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315   # Must be >= 64 chars
 
@@ -601,7 +605,7 @@ redis:  # Redis is required and cannot be disabled
 
 installPostgres:
   # OPTIONAL: Set to true to deploy an internal PostgreSQL database in the cluster
-  # DEFAULT BEHAVIOR: Use external PostgreSQL (configured via secrets.dbUrl above)
+  # DEFAULT BEHAVIOR: Use external PostgreSQL (configured via secrets.db above)
   # When enabled=true, the internal PostgreSQL service will be used instead of external database
   # We strongly recommend using an external managed database for production
   enabled: false

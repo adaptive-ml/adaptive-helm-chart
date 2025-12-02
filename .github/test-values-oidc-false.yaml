@@ -1,5 +1,9 @@
 secrets:
-  dbUrl: postgres://test
+  db:
+    username: test
+    password: test
+    host: localhost:5432
+    database: test
   cookiesSecret: test-secret-1234567890123456789012345678901234567890123456789012345678901234
   auth:
     oidc:
