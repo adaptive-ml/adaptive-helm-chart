@@ -67,8 +67,9 @@ jobs:
           DIFF_OUTPUT=""
           HAS_CHANGES=false
 
-          # Add header to comment
-          echo "# Helm Chart Diff Report" > /tmp/diffs/comment.md
+          # Add header to comment with hidden marker for comment identification
+          echo "<!-- helm-diff-bot -->" > /tmp/diffs/comment.md
+          echo "# Helm Chart Diff Report" >> /tmp/diffs/comment.md
           echo "" >> /tmp/diffs/comment.md
           echo "Comparing rendered Helm charts between \`${{ github.base_ref }}\` (base) and this PR." >> /tmp/diffs/comment.md
           echo "" >> /tmp/diffs/comment.md
@@ -111,9 +112,17 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "<!-- helm-diff-bot -->"
+
       - name: Post comment with diff
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
           body-path: /tmp/diffs/comment.md
           edit-mode: replace
