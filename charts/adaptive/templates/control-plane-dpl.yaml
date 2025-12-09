@@ -46,7 +46,7 @@ spec:
       {{- if .Values.controlPlane.tolerations}}
       tolerations:
         {{- toYaml .Values.controlPlane.tolerations | nindent 8 }}
-      {{- end}} 
+      {{- end}}
       {{- $ports := include "adaptive.controlPlane.ports" . | fromJson }}
       containers:
         - name: control-plane
@@ -93,12 +93,6 @@ spec:
                   key: oidcProviders
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
               value: {{ .Values.controlPlane.sharedDirType | quote }}
-            {{- if .Values.s3proxy.enabled }}
-            - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
-              value: http://{{ .Values.s3proxy.fullnameOverride }}
-            - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
-              value: "true"
-            {{- end }}
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
             - name: ADAPTIVE_SERVER__BIND
@@ -118,12 +112,6 @@ spec:
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
             {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
-            {{- if .Values.tensorboard.enabled }}
-            - name: ADAPTIVE_TENSORBOARD__ENABLED
-              value: "true"
-            - name: ADAPTIVE_TENSORBOARD__URL
-              value: "http://{{ include "adaptive.harmony.service.fullname" . }}:{{ $harmonyPorts.tensorboard.containerPort }}"
-            {{- end }}
             {{- if .Values.mlflow.enabled }}
             - name: ADAPTIVE_MLFLOW__ENABLED
               value: "true"
