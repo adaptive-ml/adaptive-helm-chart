@@ -188,7 +188,6 @@ Harmony ports
   "http": {"name": "http", "containerPort": 50053, "port": 80},
   "queue": {"name": "queue", "containerPort": 50052},
   "torch": {"name": "torch", "containerPort": 7777},
-  "tensorboard": {"name": "tensorboard", "containerPort": 6006},
   "alloy": {"name": "alloy", "containerPort": 12345}
 }
 {{- end }}

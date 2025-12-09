@@ -26,7 +26,6 @@ A Helm Chart to deploy Adaptive Engine.
 - [Monitoring and Observability](#monitoring-and-observability)
   - [Prometheus Monitoring](#prometheus-monitoring)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
-  - [Tensorboard Support](#tensorboard-support)
 - [Sandboxing service](#sandboxing-service)
 - [Inference and Autoscaling](#inference-and-autoscaling)
   - [Compute Pools](#compute-pools)
@@ -691,7 +690,7 @@ podAnnotations:
 
 Adaptive Engine supports MLflow for experiment tracking and model versioning. When enabled, training jobs can log metrics, parameters, and artifacts to a dedicated MLflow tracking server.
 
-By default, MLflow is **enabled** and takes priority over Tensorboard if both are enabled.
+By default, MLflow is **enabled**.
 
 The chart supports three MLflow configurations:
 
@@ -770,33 +769,6 @@ To disable MLflow tracking entirely:
 ```yaml
 mlflow:
   enabled: false
-```
-
-When MLflow is disabled, you can optionally enable Tensorboard for logging (see [Tensorboard Support](#tensorboard-support)).
-
-### Tensorboard Support
-
-To track training job progress with Tensorboard, you can enable Tensorboard support. This will start a Tensorboard server as a sidecar container. By default, the logs are not persisted and are saved in a temporary directory.
-
-**Note:** MLflow takes priority over Tensorboard if both are enabled.
-
-```yaml
-tensorboard:
-  enabled: true  # default is false
-  imageUri: tensorflow/tensorflow:latest
-
-  # Use the persistent volume config to enable log saving across restarts
-  persistentVolume:
-    enabled: true
-    storageClass: "your-storage-class"
-
-  resources:
-    limits:
-      cpu: 1000m
-      memory: 1Gi
-    requests:
-      cpu: 500m
-      memory: 1Gi
 ```
 
 ---
