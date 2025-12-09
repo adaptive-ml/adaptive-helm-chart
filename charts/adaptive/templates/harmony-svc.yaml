@@ -16,9 +16,4 @@ spec:
     - name: {{ $ports.http.name }}
       port: {{ $ports.http.port }}
       targetPort: {{ $ports.http.containerPort }}
-    {{- if .Values.tensorboard.enabled }}
-    - name: {{ $ports.tensorboard.name }}
-      port: {{ $ports.tensorboard.containerPort }}
-      targetPort: {{ $ports.tensorboard.containerPort }}
-    {{- end }}
 {{- end }}
