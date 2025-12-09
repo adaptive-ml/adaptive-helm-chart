@@ -21,3 +21,7 @@ dependencies:
   - name: "s3proxy"
     version: "0.1.0"
     condition: s3proxy.enabled
+  - name: minio
+    version: "14.1.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: installMinio.enabled

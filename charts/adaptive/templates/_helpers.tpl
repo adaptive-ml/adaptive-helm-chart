@@ -432,3 +432,124 @@ Generate individual database components - uses internal PostgreSQL if enabled, o
 {{- required "secrets.db.database is required!" .Values.secrets.db.database -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+MinIO related helpers
+*/}}
+{{- define "adaptive.minio.fullname" -}}
+{{- printf "%s-minio" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.minio.service.fullname" -}}
+{{- /* Bitnami MinIO chart creates service as: <release-name>-minio */ -}}
+{{- printf "%s-minio" .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.minio.port" -}}
+{{- 9000 -}}
+{{- end }}
+
+{{- define "adaptive.minio.endpoint" -}}
+{{- $host := include "adaptive.minio.service.fullname" . -}}
+{{- $port := include "adaptive.minio.port" . | int -}}
+{{- printf "http://%s:%d" $host $port -}}
+{{- end }}
+
+{{- define "adaptive.minio.username" -}}
+{{- .Values.installMinio.username | default "adaptive" -}}
+{{- end }}
+
+{{- define "adaptive.minio.password" -}}
+{{- required "installMinio.password is required when installMinio.enabled is true" .Values.installMinio.password -}}
+{{- end }}
+
+{{- define "adaptive.minio.bucketName" -}}
+{{- .Values.installMinio.bucketName | default "adaptive" -}}
+{{- end }}
+
+{{- define "adaptive.minio.modelRegistryUrl" -}}
+{{- $bucket := include "adaptive.minio.bucketName" . -}}
+{{- printf "s3://%s/model_registry" $bucket -}}
+{{- end }}
+
+{{- define "adaptive.minio.sharedDirectoryUrl" -}}
+{{- $bucket := include "adaptive.minio.bucketName" . -}}
+{{- printf "s3://%s/shared" $bucket -}}
+{{- end }}
+
+{{/*
+Generate S3 URLs - uses MinIO if enabled, otherwise uses values from secrets
+*/}}
+{{- define "adaptive.modelRegistryUrl" -}}
+{{- if .Values.installMinio.enabled -}}
+{{- include "adaptive.minio.modelRegistryUrl" . -}}
+{{- else -}}
+{{- required "secrets.modelRegistryUrl is required when installMinio.enabled is false!" .Values.secrets.modelRegistryUrl -}}
+{{- end -}}
+{{- end }}
+
+{{- define "adaptive.sharedDirectoryUrl" -}}
+{{- if .Values.installMinio.enabled -}}
+{{- include "adaptive.minio.sharedDirectoryUrl" . -}}
+{{- else -}}
+{{- required "secrets.sharedDirectoryUrl is required when installMinio.enabled is false!" .Values.secrets.sharedDirectoryUrl -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Helper to generate S3/MinIO environment variables for harmony components
+Usage: {{ include "adaptive.minio.envVars" . | nindent 12 }}
+Returns environment variables for AWS_ENDPOINT_URL, S3_FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+*/}}
+{{- define "adaptive.minio.envVars" -}}
+{{- if .Values.s3proxy.enabled }}
+- name: AWS_ENDPOINT_URL
+  value: http://{{ .Values.s3proxy.fullnameOverride }}
+- name: S3_FORCE_PATH_STYLE
+  value: "true"
+{{- else if .Values.installMinio.enabled }}
+- name: AWS_ENDPOINT_URL
+  value: {{ include "adaptive.minio.endpoint" . }}
+- name: S3_FORCE_PATH_STYLE
+  value: "true"
+- name: AWS_ACCESS_KEY_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-user
+- name: AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-password
+{{- end }}
+{{- end }}
+
+{{/*
+Helper to generate S3/MinIO environment variables for control plane
+Usage: {{ include "adaptive.minio.controlPlaneEnvVars" . | nindent 12 }}
+Returns environment variables for ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT, ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+*/}}
+{{- define "adaptive.minio.controlPlaneEnvVars" -}}
+{{- if .Values.s3proxy.enabled }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
+  value: http://{{ .Values.s3proxy.fullnameOverride }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
+  value: "true"
+{{- else if .Values.installMinio.enabled }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
+  value: {{ include "adaptive.minio.endpoint" . }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
+  value: "true"
+- name: AWS_ACCESS_KEY_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-user
+- name: AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-password
+{{- end }}
+{{- end }}

@@ -1,0 +1,20 @@
+{{- if .Values.installMinio.enabled }}
+{{- /* Validation: Ensure password is set when MinIO is enabled */}}
+{{- if not .Values.installMinio.password }}
+  {{- fail "installMinio.password is required when installMinio.enabled is true" }}
+{{- end }}
+{{- /* Validation: Ensure minio subchart auth is set and matches installMinio values */}}
+{{- $expectedUsername := include "adaptive.minio.username" . }}
+{{- if not .Values.minio.auth.rootUser }}
+  {{- fail (printf "minio.auth.rootUser must be set to '%s' (matching installMinio.username) when installMinio.enabled is true" $expectedUsername) }}
+{{- end }}
+{{- if ne .Values.minio.auth.rootUser $expectedUsername }}
+  {{- fail (printf "minio.auth.rootUser (%s) must match installMinio.username (%s)" .Values.minio.auth.rootUser $expectedUsername) }}
+{{- end }}
+{{- if not .Values.minio.auth.rootPassword }}
+  {{- fail "minio.auth.rootPassword must be set (matching installMinio.password) when installMinio.enabled is true" }}
+{{- end }}
+{{- if ne .Values.minio.auth.rootPassword .Values.installMinio.password }}
+  {{- fail "minio.auth.rootPassword must match installMinio.password" }}
+{{- end }}
+{{- end }}

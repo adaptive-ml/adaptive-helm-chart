@@ -89,12 +89,7 @@ spec:
                   key: oidcProviders
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
               value: {{ .Values.controlPlane.sharedDirType | quote }}
-            {{- if .Values.s3proxy.enabled }}
-            - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
-              value: http://{{ .Values.s3proxy.fullnameOverride }}
-            - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
-              value: "true"
-            {{- end }}
+            {{- include "adaptive.minio.controlPlaneEnvVars" . | nindent 12 }}
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
             - name: ADAPTIVE_SERVER__BIND

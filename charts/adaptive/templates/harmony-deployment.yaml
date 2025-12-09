@@ -53,9 +53,21 @@ spec:
 
       {{- if $poolMerged.tolerations }}
       tolerations:
-      {{- with $poolMerged.tolerations }}
-      {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- if ($poolMerged.requireGpu | default true) }}
+        {{- /* Include all tolerations when GPU is required */}}
+        {{- toYaml $poolMerged.tolerations | nindent 8 }}
+        {{- else }}
+        {{- /* Filter out GPU tolerations when requireGpu is false (testing only) */}}
+        {{- $filteredTolerations := list }}
+        {{- range $poolMerged.tolerations }}
+        {{- if ne .key "nvidia.com/gpu" }}
+        {{- $filteredTolerations = append $filteredTolerations . }}
+        {{- end }}
+        {{- end }}
+        {{- if $filteredTolerations }}
+        {{- toYaml $filteredTolerations | nindent 8 }}
+        {{- end }}
+        {{- end }}
       {{- end }}
       initContainers:
       - name: init-permissions
@@ -83,12 +95,12 @@ spec:
           resources:
             limits:
               {{- toYaml $poolMerged.resources.limits | nindent 14 }}
-              {{- if $poolMerged.gpusPerReplica}}
+              {{- if and ($poolMerged.requireGpu | default true) $poolMerged.gpusPerReplica}}
               nvidia.com/gpu: {{ $poolMerged.gpusPerReplica }}
               {{- end}}
             requests:
               {{- toYaml $poolMerged.resources.requests | nindent 14 }}
-              {{- if $poolMerged.gpusPerReplica }}
+              {{- if and ($poolMerged.requireGpu | default true) $poolMerged.gpusPerReplica }}
               nvidia.com/gpu: {{ $poolMerged.gpusPerReplica }}
               {{- end}}
           ports:
@@ -136,6 +148,7 @@ spec:
               value: "http://$(POD_IP):{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
+            {{- include "adaptive.minio.envVars" $ | nindent 12 }}
             - name: ADAPTIVE_MODE
               value: PROD
             - name: JOB_LOG_DIR
