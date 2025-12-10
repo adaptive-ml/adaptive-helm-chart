@@ -499,16 +499,16 @@ Generate S3 URLs - uses MinIO if enabled, otherwise uses values from secrets
 {{/*
 Helper to generate S3/MinIO environment variables for harmony components
 Usage: {{ include "adaptive.minio.envVars" . | nindent 12 }}
-Returns environment variables for AWS_ENDPOINT_URL, S3_FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+Returns environment variables for AWS_ENDPOINT_URL_S3, S3_FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 */}}
 {{- define "adaptive.minio.envVars" -}}
 {{- if .Values.s3proxy.enabled }}
-- name: AWS_ENDPOINT_URL
+- name: AWS_ENDPOINT_URL_S3
   value: http://{{ .Values.s3proxy.fullnameOverride }}
 - name: S3_FORCE_PATH_STYLE
   value: "true"
 {{- else if .Values.installMinio.enabled }}
-- name: AWS_ENDPOINT_URL
+- name: AWS_ENDPOINT_URL_S3
   value: {{ include "adaptive.minio.endpoint" . }}
 - name: S3_FORCE_PATH_STYLE
   value: "true"
