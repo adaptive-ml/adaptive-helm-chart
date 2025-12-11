@@ -729,14 +729,12 @@ minio:
   auth:
     rootUser: ""  # REQUIRED when installMinio.enabled=true: Set to installMinio.username (default: "adaptive")
     rootPassword: ""  # REQUIRED when installMinio.enabled=true: Set to installMinio.password
-  
   # Service configuration
   service:
     type: ClusterIP
     ports:
       api: 9000
       console: 9001
-  
   # Persistence configuration
   # NOTE: Helm does NOT automatically inherit values from installMinio.persistence.
   # If you want minio.persistence to match installMinio.persistence, you MUST set both sections to the same values manually.
@@ -746,8 +744,9 @@ minio:
     size: 20Gi
     accessModes:
       - ReadWriteOnce
-  
-  # Resources (inherits from installMinio.resources if not overridden)
+  # Resources
+  # NOTE: Helm does NOT automatically inherit values from installMinio.resources.
+  # If you want minio.resources to match installMinio.resources, you MUST set both sections to the same values manually.
   resources:
     limits:
       cpu: 2000m
@@ -755,15 +754,12 @@ minio:
     requests:
       cpu: 500m
       memory: 1Gi
-  
-  # Node selector and tolerations (inherits from installMinio if not overridden)
+  # Node selector and tolerations
   nodeSelector: {}
   tolerations: []
-  
-  # Pod annotations and labels (inherits from installMinio if not overridden)
+  # Pod annotations and labels
   podAnnotations: {}
   podLabels: {}
-  
   # Default buckets to create
   # Set this to the bucket name from installMinio.bucketName (default: "adaptive")
   # The bucket will be created automatically on MinIO startup
@@ -772,20 +768,16 @@ minio:
   # In production environments with restricted IAM policies, ensure buckets are pre-created and specified here,
   # or grant the necessary permissions for bucket creation. Required S3/MinIO permissions: s3:CreateBucket (or equivalent).
   defaultBuckets: ""
-  
   # Additional configuration
   extraEnvVars: []
-
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry
     #   persistentVolumeClaim:
     #     claimName: model-registry-pvc
-
 volumeMounts: []
     # - name: model-registry
     #   mountPath: /model-registry
-
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
