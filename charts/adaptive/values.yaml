@@ -737,7 +737,9 @@ minio:
       api: 9000
       console: 9001
   
-  # Persistence configuration (inherits from installMinio.persistence if not overridden)
+  # Persistence configuration
+  # NOTE: Helm does NOT automatically inherit values from installMinio.persistence.
+  # If you want minio.persistence to match installMinio.persistence, you MUST set both sections to the same values manually.
   persistence:
     enabled: false
     storageClass: ""
@@ -765,7 +767,10 @@ minio:
   # Default buckets to create
   # Set this to the bucket name from installMinio.bucketName (default: "adaptive")
   # The bucket will be created automatically on MinIO startup
-  # If left empty, buckets will be created by the application on first use
+  # If left empty, buckets will be created by the application on first use.
+  # WARNING: This requires the application (or MinIO) to have permissions to create buckets.
+  # In production environments with restricted IAM policies, ensure buckets are pre-created and specified here,
+  # or grant the necessary permissions for bucket creation. Required S3/MinIO permissions: s3:CreateBucket (or equivalent).
   defaultBuckets: ""
   
   # Additional configuration
