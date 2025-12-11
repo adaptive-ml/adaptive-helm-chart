@@ -737,7 +737,9 @@ minio:
       api: 9000
       console: 9001
   
-  # Persistence configuration (inherits from installMinio.persistence if not overridden)
+  # Persistence configuration
+  # NOTE: Helm does NOT automatically inherit values from installMinio.persistence.
+  # If you want minio.persistence to match installMinio.persistence, you MUST set both sections to the same values manually.
   persistence:
     enabled: false
     storageClass: ""
