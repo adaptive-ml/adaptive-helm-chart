@@ -631,6 +631,12 @@ installPostgres:
   username: adaptive
   password: ""  # Leave empty to auto-generate, or set a custom password
 
+  # Set to true for PostgreSQL images with embedded data dumps (testing scenarios)
+  # When enabled, no volume is mounted to /var/lib/postgresql/data, allowing the image's
+  # built-in data to be used. This also sets PGDATA to /var/lib/postgresql/data (no subdirectory).
+  # WARNING: Data will be lost when the pod is deleted. Only use for testing.
+  useEmbeddedData: false
+
   # PostgreSQL persistence
   persistence:
     enabled: false

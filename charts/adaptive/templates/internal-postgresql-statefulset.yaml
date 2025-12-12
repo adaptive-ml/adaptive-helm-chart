@@ -68,8 +68,10 @@ spec:
                 secretKeyRef:
                   name: {{ include "adaptive.postgresql.secret.fullname" . }}
                   key: password
+            {{- if not .Values.installPostgres.useEmbeddedData }}
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
+            {{- end }}
             {{- if .Values.installPostgres.extraEnvVars }}
             {{- range $key, $value := .Values.installPostgres.extraEnvVars }}
             - name: {{ $key }}
@@ -78,14 +80,18 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.installPostgres.resources | nindent 12 }}
+          {{- if or (not .Values.installPostgres.useEmbeddedData) .Values.installPostgres.extraVolumeMounts }}
           volumeMounts:
+            {{- if not .Values.installPostgres.useEmbeddedData }}
             - name: postgresql-data
               mountPath: /var/lib/postgresql/data
+            {{- end }}
             {{- if .Values.installPostgres.extraVolumeMounts }}
             {{- with .Values.installPostgres.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
             {{- end }}
+          {{- end }}
           livenessProbe:
             exec:
               command:
@@ -108,9 +114,9 @@ spec:
             timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 6
-      {{- if or (not .Values.installPostgres.persistence.enabled) .Values.installPostgres.extraVolumes }}
+      {{- if or (and (not .Values.installPostgres.useEmbeddedData) (not .Values.installPostgres.persistence.enabled)) .Values.installPostgres.extraVolumes }}
       volumes:
-      {{- if not .Values.installPostgres.persistence.enabled }}
+      {{- if and (not .Values.installPostgres.useEmbeddedData) (not .Values.installPostgres.persistence.enabled) }}
         - name: postgresql-data
           emptyDir: {}
       {{- end }}
@@ -120,7 +126,7 @@ spec:
       {{- end }}
       {{- end }}
       {{- end }}
-  {{- if .Values.installPostgres.persistence.enabled }}
+  {{- if and (not .Values.installPostgres.useEmbeddedData) .Values.installPostgres.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
         name: postgresql-data
