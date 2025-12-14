@@ -558,6 +558,11 @@ mlflow:
 
 
 alloy:
+  # Set to true to enable alloy sidecar container in harmony pods (default: false)
+  # Alloy collects job logs and sends them to Loki (http://loki:3100/loki/api/v1/push)
+  # IMPORTANT: Alloy is only useful when Loki is deployed (via the monitoring subchart)
+  enabled: false
+  # Image URI for the alloy sidecar container
   imageUri: grafana/alloy:latest
   image:
     pullPolicy: IfNotPresent
