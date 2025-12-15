@@ -1,0 +1,86 @@
+{{- if .Values.otel_collector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "adaptive.otelCollector.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.otel_collector.replicaCount | default 1 | int }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.otelCollector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/otel-collector-confmap.yaml") . | sha256sum }}
+        {{- with .Values.otel_collector.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.otelCollector.selectorLabels" . | nindent 8 }}
+        {{- with .Values.otel_collector.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- with .Values.otel_collector.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.otel_collector.tolerations }}
+      tolerations:
+        {{- toYaml .Values.otel_collector.tolerations | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: alloy
+          image: "{{ include "adaptive.otelCollector.imageUri" . }}"
+          imagePullPolicy: {{ .Values.otel_collector.image.pullPolicy }}
+          args:
+            - "run"
+            - "--server.http.listen-addr=0.0.0.0:{{ (include "adaptive.otelCollector.ports" . | fromJson).http.containerPort }}"
+            - "--storage.path=/var/lib/alloy/data"
+            - "/etc/alloy/config.alloy"
+          ports:
+            {{- $ports := include "adaptive.otelCollector.ports" . | fromJson }}
+            - containerPort: {{ $ports.http.containerPort }}
+              name: {{ $ports.http.name }}
+              protocol: TCP
+          {{- if .Values.otel_collector.resources }}
+          resources:
+            {{- toYaml .Values.otel_collector.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: alloy-config
+              mountPath: /etc/alloy
+            - name: alloy-data
+              mountPath: /var/lib/alloy/data
+            {{- if .Values.otel_collector.extraVolumeMounts }}
+            {{- toYaml .Values.otel_collector.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+          {{- if .Values.otel_collector.extraEnvVars }}
+          env:
+            {{- range $key, $value := .Values.otel_collector.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+      volumes:
+        - name: alloy-config
+          configMap:
+            name: {{ include "adaptive.otelCollector.configMap.fullname" . }}
+        - name: alloy-data
+          emptyDir: {}
+        {{- if .Values.otel_collector.extraVolumes }}
+        {{- toYaml .Values.otel_collector.extraVolumes | nindent 8 }}
+        {{- end }}
+{{- end }}

@@ -1,0 +1,20 @@
+{{- if .Values.otel_collector.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.otelCollector.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.otel_collector.service.type | default "ClusterIP" }}
+  ports:
+    {{- $ports := include "adaptive.otelCollector.ports" . | fromJson }}
+    - port: {{ $ports.http.port }}
+      targetPort: {{ $ports.http.containerPort }}
+      protocol: TCP
+      name: {{ $ports.http.name }}
+  selector:
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+{{- end }}

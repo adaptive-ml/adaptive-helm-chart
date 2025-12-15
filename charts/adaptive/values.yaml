@@ -564,6 +564,69 @@ alloy:
       cpu: 100m
       memory: 512Mi
 
+otel_collector:
+  # Set to true to deploy a standalone OpenTelemetry Collector (Grafana Alloy) instance
+  enabled: false
+
+  imageUri: grafana/alloy:latest
+  image:
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  # Service configuration
+  service:
+    type: ClusterIP
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+
+  # Additional Alloy configuration to append to the default logging configuration
+  # The default config includes logging level set to "info" with "logfmt" format
+  # See Grafana Alloy documentation: https://grafana.com/docs/alloy/
+  additional_config: ""
+  # Example configuration:
+  # additional_config: |
+  #   prometheus.scrape "default" {
+  #     targets = [
+  #       {"__address__" = "localhost:9090"},
+  #     ]
+  #     forward_to = [prometheus.remote_write.default.receiver]
+  #   }
+  #
+  #   prometheus.remote_write "default" {
+  #     endpoint {
+  #       url = "http://prometheus:9090/api/v1/write"
+  #     }
+  #   }
+
+  # Node selection and tolerations
+  nodeSelector: {}
+  tolerations: []
+
+  podAnnotations: {}
+  podLabels: {}
+  extraEnvVars: {}
+  extraVolumes: []
+  # Example:
+  # extraVolumes:
+  #   - name: varlog
+  #     hostPath:
+  #       path: /var/log
+
+  # Extra volume mounts
+  extraVolumeMounts: []
+  # Example:
+  # extraVolumeMounts:
+  #   - name: varlog
+  #     mountPath: /var/log
+  #     readOnly: true
+
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 

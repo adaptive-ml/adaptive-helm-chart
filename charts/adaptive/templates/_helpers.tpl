@@ -432,3 +432,33 @@ Generate individual database components - uses internal PostgreSQL if enabled, o
 {{- required "secrets.db.database is required!" .Values.secrets.db.database -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+OpenTelemetry Collector related helpers
+*/}}
+{{- define "adaptive.otelCollector.fullname" -}}
+{{- printf "%s-otel-collector" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.configMap.fullname" -}}
+{{- printf "%s-config" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.selectorLabels" -}}
+app.kubernetes.io/component: otel-collector
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.imageUri" -}}
+{{- printf "%s" .Values.otel_collector.imageUri }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.ports" -}}
+{
+  "http": {"name": "http", "containerPort": 12345, "port": 12345}
+}
+{{- end }}
