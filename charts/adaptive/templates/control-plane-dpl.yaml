@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   name: {{ include "adaptive.controlPlane.fullname" . }}
   namespace: {{ .Release.Namespace}}
+  {{- with .Values.controlPlane.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "adaptive.labels" . | nindent 4 }}
     {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}

@@ -151,6 +151,7 @@ controlPlane:
   # Update the DB schema; defaults to True unless explictly False
   runDbMigrations: true
 
+  annotations: {}
   podAnnotations:
     ingest-adaptive-logs: "true"
     prometheus.io/scrape: "adaptive"
