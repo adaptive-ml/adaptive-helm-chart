@@ -116,9 +116,6 @@ volumes:
       claimName: adaptive-workdir
 ```
 
-> [!NOTE]
-> There is still a deprecated S3Proxy available in the helm chart. S3proxy integration is not optimal for recent versions of Adaptive and we recommend instead using the simpler route of k8s PVC.
-
 ## Networking
 
 ### CNI

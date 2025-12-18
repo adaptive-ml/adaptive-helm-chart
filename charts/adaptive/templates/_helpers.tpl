@@ -501,12 +501,7 @@ Usage: {{ include "adaptive.minio.envVars" . | nindent 12 }}
 Returns environment variables for AWS_ENDPOINT_URL_S3, S3_FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 */}}
 {{- define "adaptive.minio.envVars" -}}
-{{- if .Values.s3proxy.enabled }}
-- name: AWS_ENDPOINT_URL_S3
-  value: http://{{ .Values.s3proxy.fullnameOverride }}
-- name: S3_FORCE_PATH_STYLE
-  value: "true"
-{{- else if .Values.installMinio.enabled }}
+{{- if .Values.installMinio.enabled }}
 - name: AWS_ENDPOINT_URL_S3
   value: {{ include "adaptive.minio.endpoint" . }}
 - name: S3_FORCE_PATH_STYLE
@@ -530,12 +525,7 @@ Usage: {{ include "adaptive.minio.controlPlaneEnvVars" . | nindent 12 }}
 Returns environment variables for ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT, ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 */}}
 {{- define "adaptive.minio.controlPlaneEnvVars" -}}
-{{- if .Values.s3proxy.enabled }}
-- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
-  value: http://{{ .Values.s3proxy.fullnameOverride }}
-- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
-  value: "true"
-{{- else if .Values.installMinio.enabled }}
+{{- if .Values.installMinio.enabled }}
 - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
   value: {{ include "adaptive.minio.endpoint" . }}
 - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
