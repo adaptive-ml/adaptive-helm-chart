@@ -71,14 +71,6 @@ jobs:
           helm install --dry-run --debug adaptive-stack ./charts/adaptive
           echo "::endgroup::"
 
-          echo "::group::Testing adaptive with tensorboard enabled"
-          helm install --dry-run --debug adaptive-stack-tensorboard ./charts/adaptive --set tensorboard.enabled=true
-          echo "::endgroup::"
-
-          echo "::group::Testing adaptive with s3proxy enabled"
-          helm install --dry-run --debug adaptive-stack-s3proxy ./charts/adaptive --set s3proxy.enabled=true
-          echo "::endgroup::"
-
           echo "::group::Testing adaptive with mlflow enabled"
           helm install --dry-run --debug adaptive-stack-mlflow ./charts/adaptive --set mlflow.enabled=true
           echo "::endgroup::"

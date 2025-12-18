@@ -18,6 +18,3 @@ dependencies:
     version: "2.16.0"
     repository: "https://kedacore.github.io/charts"
     condition: autoscaling.enabled
-  - name: "s3proxy"
-    version: "0.1.0"
-    condition: s3proxy.enabled
