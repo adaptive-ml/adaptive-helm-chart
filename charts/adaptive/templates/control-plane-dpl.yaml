@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   name: {{ include "adaptive.controlPlane.fullname" . }}
   namespace: {{ .Release.Namespace}}
+  {{- with .Values.controlPlane.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "adaptive.labels" . | nindent 4 }}
     {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
@@ -42,7 +46,7 @@ spec:
       {{- if .Values.controlPlane.tolerations}}
       tolerations:
         {{- toYaml .Values.controlPlane.tolerations | nindent 8 }}
-      {{- end}} 
+      {{- end}}
       {{- $ports := include "adaptive.controlPlane.ports" . | fromJson }}
       containers:
         - name: control-plane
@@ -109,12 +113,6 @@ spec:
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
             {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
-            {{- if .Values.tensorboard.enabled }}
-            - name: ADAPTIVE_TENSORBOARD__ENABLED
-              value: "true"
-            - name: ADAPTIVE_TENSORBOARD__URL
-              value: "http://{{ include "adaptive.harmony.service.fullname" . }}:{{ $harmonyPorts.tensorboard.containerPort }}"
-            {{- end }}
             {{- if .Values.mlflow.enabled }}
             - name: ADAPTIVE_MLFLOW__ENABLED
               value: "true"
