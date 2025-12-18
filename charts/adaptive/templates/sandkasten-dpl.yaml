@@ -68,6 +68,7 @@ spec:
             {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
             - name: HARMONY_WS_ENDPOINT
               value: "{{ include "adaptive.harmony.wsEndpoint" . }}"
+            {{- include "adaptive.minio.envVars" . | nindent 12 }}
             - name: CONTROL_PLANE_URL
               value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}:{{ .Values.controlPlane.servicePort | default 80 }}"
             {{- if .Values.sandkasten.extraEnvVars }}

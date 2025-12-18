@@ -1,3 +1,4 @@
+{{- if .Values.alloy.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -51,3 +52,4 @@ data:
       targets = discovery.relabel.job_files_labels.output
       forward_to = [loki.write.grafana_loki.receiver]
     }
+{{- end }}

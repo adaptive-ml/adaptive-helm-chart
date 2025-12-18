@@ -85,8 +85,11 @@ harmony:
 
   replicaCount: 1
 
+  # Require GPU resources for harmony pods (default: true)
+  # WARNING: Setting this to false is only for testing purposes. Harmony requires GPUs for production workloads.
+  requireGpu: true
+
   # Should be equal to, or a divisor of the # of GPUs on each node
-  # If you are not deploying on GPU, comment out the line
   gpusPerReplica: 8
 
   nodeSelector:   # Uncomment to deploy harmony on specify EKS node group or GKE node pool
@@ -114,6 +117,8 @@ harmony:
     prometheus.io/port: "50053"
   podLabels: {}
   extraEnvVars: {}
+  # GPU tolerations - only applied when requireGpu is true (default)
+  # Set requireGpu: false to disable GPU requirements (testing only)
   tolerations:
     - key: "nvidia.com/gpu"
       operator: "Exists"
@@ -516,6 +521,11 @@ mlflow:
 
 
 alloy:
+  # Set to true to enable alloy sidecar container in harmony pods (default: false)
+  # Alloy collects job logs and sends them to Loki (http://loki:3100/loki/api/v1/push)
+  # IMPORTANT: Alloy is only useful when Loki is deployed (via the monitoring subchart)
+  enabled: false
+  # Image URI for the alloy sidecar container
   imageUri: grafana/alloy:latest
   image:
     pullPolicy: IfNotPresent
@@ -589,6 +599,12 @@ installPostgres:
   username: adaptive
   password: ""  # Leave empty to auto-generate, or set a custom password
 
+  # Set to true for PostgreSQL images with embedded data dumps (testing scenarios)
+  # When enabled, no volume is mounted to /var/lib/postgresql/data, allowing the image's
+  # built-in data to be used. This also sets PGDATA to /var/lib/postgresql/data (no subdirectory).
+  # WARNING: Data will be lost when the pod is deleted. Only use for testing.
+  useEmbeddedData: false
+
   # PostgreSQL persistence
   persistence:
     enabled: false
@@ -638,16 +654,104 @@ installPostgres:
   #     readOnly: true
   extraVolumeMounts: []
 
+installMinio:
+  # OPTIONAL: Set to true to deploy an internal MinIO S3-compatible object storage in the cluster
+  # DEFAULT BEHAVIOR: Use external S3 storage (configured via secrets.modelRegistryUrl and secrets.sharedDirectoryUrl above)
+  # When enabled=true, the internal MinIO service will be used instead of external S3 storage
+  # We strongly recommend using an external managed S3 service for production
+  enabled: false
+
+  # MinIO username (default: "adaptive")
+  username: adaptive
+  # MinIO password (required when enabled=true)
+  password: ""
+
+  # Default bucket name for model registry and shared directory
+  bucketName: adaptive
+
+  # MinIO persistence
+  persistence:
+    enabled: false
+    storageClass: ""  # Use default storage class if empty
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+
+  # MinIO resources
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+
+# MinIO subchart configuration (Bitnami MinIO chart)
+# See https://github.com/bitnami/charts/tree/main/bitnami/minio for full options
+# Note: This section is only used when installMinio.enabled=true
+# IMPORTANT: When installMinio.enabled=true, you MUST set:
+#   - minio.auth.rootUser to match installMinio.username (default: "adaptive")
+#   - minio.auth.rootPassword to match installMinio.password (required)
+minio:
+  # Authentication configuration
+  # These values MUST match installMinio.username and installMinio.password when installMinio.enabled=true
+  auth:
+    rootUser: ""  # REQUIRED when installMinio.enabled=true: Set to installMinio.username (default: "adaptive")
+    rootPassword: ""  # REQUIRED when installMinio.enabled=true: Set to installMinio.password
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      api: 9000
+      console: 9001
+  # Persistence configuration
+  # NOTE: Helm does NOT automatically inherit values from installMinio.persistence.
+  # If you want minio.persistence to match installMinio.persistence, you MUST set both sections to the same values manually.
+  persistence:
+    enabled: false
+    storageClass: ""
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+  # Resources
+  # NOTE: Helm does NOT automatically inherit values from installMinio.resources.
+  # If you want minio.resources to match installMinio.resources, you MUST set both sections to the same values manually.
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  # Node selector and tolerations
+  nodeSelector: {}
+  tolerations: []
+  # Pod annotations and labels
+  podAnnotations: {}
+  podLabels: {}
+  # Default buckets to create
+  # Set this to the bucket name from installMinio.bucketName (default: "adaptive")
+  # The bucket will be created automatically on MinIO startup
+  # If left empty, buckets will be created by the application on first use.
+  # WARNING: This requires the application (or MinIO) to have permissions to create buckets.
+  # In production environments with restricted IAM policies, ensure buckets are pre-created and specified here,
+  # or grant the necessary permissions for bucket creation. Required S3/MinIO permissions: s3:CreateBucket (or equivalent).
+  defaultBuckets: ""
+  # Additional configuration
+  extraEnvVars: []
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry
     #   persistentVolumeClaim:
     #     claimName: model-registry-pvc
-
 volumeMounts: []
     # - name: model-registry
     #   mountPath: /model-registry
-
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
