@@ -82,6 +82,30 @@ Control plane and harmony components full names
 {{- define "adaptive.harmony.headlessService.fullname"}}
 {{- printf "%s-hdls" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+
+{{/*
+Compute pool specific fullnames - these take a pool object as context
+*/}}
+{{- define "adaptive.harmony.computePool.fullname" -}}
+{{- $root := .root -}}
+{{- $pool := .pool -}}
+{{- $poolKey := $pool.name | lower | replace " " "-" | replace "_" "-" -}}
+{{- printf "%s-%s" (include "adaptive.harmony.fullname" $root) $poolKey | trunc 63 | trimSuffix "-" }}
+{{- end}}
+
+{{- define "adaptive.harmony.computePool.headlessService.fullname" -}}
+{{- $root := .root -}}
+{{- $pool := .pool -}}
+{{- printf "%s-hdls" (include "adaptive.harmony.computePool.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+
+{{- define "adaptive.harmony.computePool.selectorLabels" -}}
+{{- $root := .root -}}
+{{- $pool := .pool -}}
+app.kubernetes.io/component: harmony
+app.kubernetes.io/pool: {{ $pool.name | lower | replace " " "-" | replace "_" "-" }}
+{{ include "adaptive.sharedSelectorLabels" $root }}
+{{- end}}
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}

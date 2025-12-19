@@ -1,50 +1,72 @@
 {{- if .Values.harmony.enabled }}
+{{- /* Validation: Check for deprecated harmony configuration values */ -}}
+{{- if .Values.harmony.replicaCount }}
+{{- fail "DEPRECATED: 'harmony.replicaCount' is no longer supported. Please migrate to 'harmony.computePools' configuration. Each compute pool should specify its own 'replicas' value. See UPGRADE.md for migration instructions." }}
+{{- end }}
+{{- if .Values.harmony.group }}
+{{- fail "DEPRECATED: 'harmony.group' is no longer supported. Please migrate to 'harmony.computePools' configuration. Each compute pool uses its 'name' field as the group. See UPGRADE.md for migration instructions." }}
+{{- end }}
+{{- if .Values.harmony.partitionKey }}
+{{- fail "DEPRECATED: 'harmony.partitionKey' is no longer supported. Please migrate to 'harmony.computePools' configuration. The partition key is now automatically derived from the pool 'name'. See UPGRADE.md for migration instructions." }}
+{{- end }}
+{{- if not .Values.harmony.computePools }}
+{{- fail "ERROR: 'harmony.computePools' is required but not defined. Please define at least one compute pool. See UPGRADE.md for migration instructions." }}
+{{- end }}
+{{- if eq (len .Values.harmony.computePools) 0 }}
+{{- fail "ERROR: 'harmony.computePools' must contain at least one compute pool. See UPGRADE.md for migration instructions." }}
+{{- end }}
 {{- $harmonySettings := include "adaptive.harmony.settings" . | fromJson }}
+{{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+{{- $root := . }}
+{{- range $index, $pool := .Values.harmony.computePools }}
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "adaptive.harmony.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}
+  namespace: {{ $root.Release.Namespace }}
   labels:
-    {{- include "adaptive.labels" . | nindent 4 }}
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+    {{- include "adaptive.labels" $root | nindent 4 }}
+    {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 4 }}
 spec:
-  serviceName: {{ include "adaptive.harmony.headlessService.fullname" . }}
-  replicas: {{ .Values.harmony.replicaCount | default 1 | int }}
+  serviceName: {{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}
+  replicas: {{ $pool.replicas | default 1 | int }}
   podManagementPolicy: Parallel
   selector:
     matchLabels:
-      {{- include "adaptive.harmony.selectorLabels" . | nindent 6}}
+      {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.harmony.podAnnotations }}
+      {{- with ($pool.podAnnotations | default $root.Values.harmony.podAnnotations) }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "adaptive.labels" . | nindent 8 }}
-        {{- include "adaptive.harmony.selectorLabels" . | nindent 8 }}
-        {{- with .Values.harmony.podLabels }}
+        {{- include "adaptive.labels" $root | nindent 8 }}
+        {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 8 }}
+        {{- with ($pool.podLabels | default $root.Values.harmony.podLabels) }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with $root.Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.serviceAccount.name }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if $root.Values.serviceAccount.name }}
+      serviceAccountName: {{ $root.Values.serviceAccount.name }}
       {{- end }}
-      {{- if .Values.harmony.nodeSelector}}
+      {{- $nodeSelector := $pool.nodeSelector | default $root.Values.harmony.nodeSelector }}
+      {{- if $nodeSelector }}
       nodeSelector:
-         {{- with .Values.harmony.nodeSelector}}
+         {{- with $nodeSelector }}
          {{ toYaml . }}
-         {{- end}}
-      {{- end}}
-      {{- if .Values.harmony.tolerations}}
+         {{- end }}
+      {{- end }}
+      {{- $tolerations := $pool.tolerations | default $root.Values.harmony.tolerations }}
+      {{- if $tolerations }}
       tolerations:
-        {{- toYaml .Values.harmony.tolerations | nindent 8 }}
-      {{- end}}
+        {{- toYaml $tolerations | nindent 8 }}
+      {{- end }}
       initContainers:
       - name: init-permissions
         image: busybox
@@ -57,30 +79,31 @@ spec:
           - name: cloud-cache-volume
             mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
           # extra volume Mounts from values.yaml
-          {{- with .Values.volumeMounts }}
+          {{- with $root.Values.volumeMounts }}
           {{- toYaml . | nindent 10 }}
           {{- end }}
       containers:
         - name: harmony
-          image: "{{ include "adaptive.harmony.imageUri" . }}"
-          imagePullPolicy: {{ .Values.harmony.image.pullPolicy }}
-          {{- if .Values.harmony.securityContext }}
+          image: "{{ include "adaptive.harmony.imageUri" $root }}"
+          imagePullPolicy: {{ $root.Values.harmony.image.pullPolicy }}
+          {{- if $root.Values.harmony.securityContext }}
           securityContext:
-            {{- toYaml .Values.harmony.securityContext | nindent 12 }}
+            {{- toYaml $root.Values.harmony.securityContext | nindent 12 }}
           {{- end }}
+          {{- $resources := $pool.resources | default $root.Values.harmony.resources }}
+          {{- $gpusPerReplica := $pool.gpusPerReplica | default $root.Values.harmony.gpusPerReplica }}
           resources:
             limits:
-              {{- toYaml .Values.harmony.resources.limits | nindent 14 }}
-              {{- if .Values.harmony.gpusPerReplica}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
-              {{- end}}
+              {{- toYaml $resources.limits | nindent 14 }}
+              {{- if $gpusPerReplica }}
+              nvidia.com/gpu: {{ $gpusPerReplica }}
+              {{- end }}
             requests:
-              {{- toYaml .Values.harmony.resources.requests | nindent 14 }}
-              {{- if .Values.harmony.gpusPerReplica}}
-              nvidia.com/gpu: {{ .Values.harmony.gpusPerReplica }}
-              {{- end}}
+              {{- toYaml $resources.requests | nindent 14 }}
+              {{- if $gpusPerReplica }}
+              nvidia.com/gpu: {{ $gpusPerReplica }}
+              {{- end }}
           ports:
-            {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
             - containerPort: {{ $ports.http.containerPort }}
               name: {{ $ports.http.name }}
             - containerPort: {{ $ports.queue.containerPort }}
@@ -88,10 +111,10 @@ spec:
             - containerPort: {{ $ports.torch.containerPort }}
               name: {{ $ports.torch.name }}
           env:
-            {{- include "adaptive.harmony.secretEnvVars" . | nindent 12 }}
-            {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
+            {{- include "adaptive.harmony.secretEnvVars" $root | nindent 12 }}
+            {{- include "adaptive.redis.secretEnvVars" $root | nindent 12 }}
             - name: IMAGE_TAG
-              value: {{ .Values.harmony.image.tag | quote }}
+              value: {{ $root.Values.harmony.image.tag | quote }}
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -101,38 +124,40 @@ spec:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
             - name: GPU_COUNT
-              value: "{{ .Values.harmony.gpusPerReplica | default 1 }}"
+              value: "{{ $gpusPerReplica | default 1 }}"
             - name: MASTER_ADDR
-              value: "{{ include "adaptive.harmony.fullname" . }}-0.{{ include "adaptive.harmony.headlessService.fullname" . }}"
+              value: "{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}"
             - name: MASTER_PORT
               value: "{{ $ports.torch.containerPort }}"
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
-              value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" . }}"
+              value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" $root }}"
             - name: ENABLE_SANDBOX
               value: "1"
             - name: SANDBOX_SERVICE_URL
-              value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" . }}"
+              value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" $root }}"
             - name: GROUP
-              value: {{ .Values.harmony.group }}
+              value: {{ $pool.name }}
             - name: GROUP_CAPABILITIES
-              value: "TRAINING,INFERENCE,EVALUATION"
+              value: {{ $pool.capabilities | default "TRAINING,INFERENCE,EVALUATION" | quote }}
             - name: PARTITION_KEY
-              value: {{ .Values.harmony.partitionKey }}
+              value: {{ $pool.name | lower | replace " " "-" | replace "_" "-" }}
             - name: SERVICE_URL
-              value: "{{ include "adaptive.harmony.httpEndpoint" . }}"
+              value: "http://{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
             - name: ADAPTIVE_MODE
               value: PROD
             - name: JOB_LOG_DIR
               value: "{{ $harmonySettings.working_dir }}/job_logs"
-            {{- if .Values.mlflow.enabled }}
+            {{- if $root.Values.mlflow.enabled }}
             - name: MLFLOW_TRACKING_URI
-              value: "{{ include "adaptive.mlflow.trackingUrl" . }}"
-            {{- if .Values.harmony.extraEnvVars }}
-            {{- range $key, $value := .Values.harmony.extraEnvVars }}
+              value: "{{ include "adaptive.mlflow.trackingUrl" $root }}"
+            {{- end }}
+            {{- $extraEnvVars := $pool.extraEnvVars | default $root.Values.harmony.extraEnvVars }}
+            {{- if $extraEnvVars }}
+            {{- range $key, $value := $extraEnvVars }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
@@ -148,12 +173,12 @@ spec:
             - name: dshm
               mountPath: /dev/shm
             # extra volume Mounts from values.yaml
-            {{- with .Values.volumeMounts }}
+            {{- with $root.Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
         - name: job-log-exporter
-          image: {{ .Values.alloy.imageUri }}
-          imagePullPolicy: {{ .Values.alloy.image.pullPolicy }}
+          image: {{ $root.Values.alloy.imageUri }}
+          imagePullPolicy: {{ $root.Values.alloy.image.pullPolicy }}
           ports:
             - containerPort: {{ $ports.alloy.containerPort }}
               name: {{ $ports.alloy.name }}
@@ -162,9 +187,9 @@ spec:
             - "--server.http.listen-addr=0.0.0.0:{{ $ports.alloy.containerPort }}"
             - "--storage.path=/var/lib/alloy/data"
             - "/etc/alloy/config.alloy"
-          {{- if .Values.alloy.resources }}
+          {{- if $root.Values.alloy.resources }}
           resources:
-{{ toYaml .Values.alloy.resources | indent 12 }}
+{{ toYaml $root.Values.alloy.resources | indent 12 }}
           {{- end }}
           volumeMounts:
             - name: workdir-volume
@@ -178,16 +203,16 @@ spec:
           emptyDir: {}
         - name: harmony-settings-volume
           configMap:
-            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" . }}
+            name: {{ include "adaptive.harmony.settingsConfigMap.fullname" $root }}
         - name: alloy-config
           configMap:
-            name: {{ include "adaptive.harmony.alloyConfigMap.fullname" . }}
+            name: {{ include "adaptive.harmony.alloyConfigMap.fullname" $root }}
         - name: dshm
           emptyDir:
             medium: Memory
-            sizeLimit: {{ .Values.harmony.shmSize }}
+            sizeLimit: {{ $pool.shmSize | default $root.Values.harmony.shmSize }}
         # extra volume Mounts from values.yaml
-        {{- with .Values.volumes }}
+        {{- with $root.Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
 {{- end }}

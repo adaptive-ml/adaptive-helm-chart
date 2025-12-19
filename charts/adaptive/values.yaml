@@ -80,11 +80,7 @@ harmony:
     tag: harmony:latest   # Add the harmony image tag
     pullPolicy: Always
 
-  group: default   # Visible name of the group for this statefulset
-  partitionKey: default-statefulset   # Partition name, should be unique across other groups
-
-  replicaCount: 1
-
+  # Default values inherited by all compute pools unless overridden
   # Should be equal to, or a divisor of the # of GPUs on each node
   # If you are not deploying on GPU, comment out the line
   gpusPerReplica: 8
@@ -93,6 +89,8 @@ harmony:
     {}
     # eks.amazonaws.com/nodegroup: gpu-node-group-name
     # cloud.google.com/gke-accelerator: a2-ultragpu-4g
+
+  # Default resource limits/requests - can be overridden per compute pool
   # Adjust to your deployment server specs and model size requirements
   # It is recommended to use as much RAM and CPU as your machine provides
   resources:
@@ -118,21 +116,51 @@ harmony:
     - key: "nvidia.com/gpu"
       operator: "Exists"
       effect: "NoSchedule"
-  computePool:   # Uncomment to deploy new partitions to handle inference. Any values not specified will be copied from harmony section, otherwise if specified will override them
-    # - name: "Inference Pool"
-    #   minReplicaCount: 1
-    #   maxReplicaCount: 5
+
+  # List of compute pools - each creates a separate StatefulSet and headless Service
+  # Pool-specific values override the defaults above
+  computePools:
+    - name: default
+      replicas: 1
+      # Optional pool-specific overrides (uncomment to use):
+      # gpusPerReplica: 8
+      # capabilities: "TRAINING,INFERENCE,EVALUATION"  # Default capabilities
+      # resources:
+      #   limits:
+      #     cpu: 30
+      #     memory: 500Gi
+      #   requests:
+      #     cpu: 30
+      #     memory: 500Gi
+      # nodeSelector: {}
+      # tolerations: []
+      # podAnnotations: {}
+      # podLabels: {}
+      # extraEnvVars: {}
+      # shmSize: 32Gi
+
+    # Example: Add additional pools for different workloads
+    # - name: inference
+    #   replicas: 2
+    #   gpusPerReplica: 4
+    #   capabilities: "INFERENCE"
+    #   resources:
+    #     limits:
+    #       cpu: 16
+    #       memory: 128Gi
+    #     requests:
+    #       cpu: 16
+    #       memory: 128Gi
+    #   nodeSelector:
+    #     cloud.google.com/gke-accelerator: nvidia-l4
     #   tolerations:
     #     - key: "nvidia.com/gpu"
     #       operator: "Exists"
     #       effect: "NoSchedule"
-    #   nodeSelector: {}
-    #   gpusPerReplica: 4
-autoscaling:
-  enabled: false    # whether to enable autoscaling for inference (requires prometheus.enabled: true)
-  coolDownPeriodSeconds: 180  # duration to await before scaling down pods
-  ttftTimeoutThreshold: 0.1   # proportion of timed out completion requests above which the autoscaler decides to scale-out
-  # externalPrometheusEndpoint: http://prometheus-server # (Optional) Override the Prometheus endpoint URL if using an external Prometheus instance instead of the built-in one
+    # - name: training
+    #   replicas: 1
+    #   gpusPerReplica: 8
+    #   capabilities: "TRAINING,EVALUATION"
 
 controlPlane:
   sharedDirType: s3
@@ -193,7 +221,7 @@ sandkasten:
 
 # prometheus stack settings
 prometheus:
-  enabled: true  # Set to false to disable Prometheus subchart (required for autoscaling)
+  enabled: true  # Set to false to disable Prometheus subchart
   prometheus-node-exporter:
     enabled: false
 
@@ -446,11 +474,6 @@ prometheus:
               action: replace
               target_label: node
 
-
-keda:
-  crds:
-    # -- Defines whether the KEDA CRDs have to be installed or not.
-    install: true
 
 mlflow:
   # If set to true, jobs will use MLflow for experiment tracking
