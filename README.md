@@ -27,10 +27,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [Prometheus Monitoring](#prometheus-monitoring)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
 - [Sandboxing service](#sandboxing-service)
-- [Inference and Autoscaling](#inference-and-autoscaling)
-  - [Compute Pools](#compute-pools)
-  - [Autoscaling Configuration](#autoscaling-configuration)
-  - [External Prometheus for Autoscaling](#external-prometheus-for-autoscaling)
+- [Compute Pools](#compute-pools)
 - [Storage and Persistence](#storage-and-persistence)
   - [Monitoring Stack](#monitoring-stack)
   - [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
@@ -57,12 +54,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 ### Optional
 
-3. **For Inference Autoscaling**: Adaptive engine supports horizontal pod scaling for inference pools based on QoS metrics (TTFT) and technical metrics (required GPUs vs available GPUs). To support node autoscaling, these requirements must be met:
-   - **Cluster Autoscaler** enabled and correctly configured
-   - Node pool (or equivalent in your cloud provider) configured to allow scaling GPU nodes
-   - Your cloud provider must support on-demand provisioning of GPU instances
-
-4. **Storage Classes**: Required for logs and Prometheus timeseries persistence. See [Storage and Persistence](#storage-and-persistence) for details.
+3. **Storage Classes**: Required for logs and Prometheus timeseries persistence. See [Storage and Persistence](#storage-and-persistence) for details.
 
 ---
 
@@ -634,7 +626,6 @@ Then reference these secrets in your values file as shown above
 This Helm chart includes Prometheus as a dependency for metrics collection and monitoring. Prometheus is used to:
 
 - Collect metrics from Adaptive Engine components (Control Plane and Harmony)
-- Power the autoscaling feature by providing TTFT (Time To First Token) timeout metrics to KEDA
 - Monitor system health and performance
 
 #### Enabling/Disabling Prometheus
@@ -645,8 +636,6 @@ By default, Prometheus is **enabled**. You can disable it by setting:
 prometheus:
   enabled: false  # Set to false to disable the embedded Prometheus subchart
 ```
-
-**Important:** If you enable inference autoscaling (`autoscaling.enabled=true`), Prometheus **must** be enabled (or an external Prometheus instance must be configured). The autoscaler relies on Prometheus metrics to make scaling decisions based on TTFT timeout rates.
 
 #### Configuring Prometheus
 
@@ -807,71 +796,24 @@ sandkasten:
 
 ---
 
-## Inference and Autoscaling
-
-### Compute Pools
+## Compute Pools
 
 You can define Harmony deployment groups dedicated to inference tasks:
 
 ```yaml
 harmony:
-  computePool:
+  computePools:
      - name: "Pool-A"
-       minReplicaCount: 1
-       maxReplicaCount: 5
+       replicas: 1
+       gpusPerReplica: 8
      - name: "Pool-B"
-       minReplicaCount: 2
-       maxReplicaCount: 10
+       replicas: 2
+       gpusPerReplica: 8
        nodeSelector:
-         gpu-type: a100
+         gpu-type: h100
 ```
 
 Each compute pool can have its own configuration. Any values not specified will be inherited from the main `harmony` section.
-
-### Autoscaling Configuration
-
-By default, `autoscaling.enabled` is set to `false`. When disabled, the `maxReplicaCount` is ignored and each pool has a fixed number of replicas equal to `minReplicaCount`.
-
-When `autoscaling.enabled=true`, the inference autoscaling is activated using **KEDA** (Kubernetes Event-Driven Autoscaling). The autoscaler can scale each inference pool up to its configured `maxReplicaCount` based on metrics collected from Prometheus.
-
-**Basic Configuration:**
-
-```yaml
-autoscaling:
-  enabled: true
-  coolDownPeriodSeconds: 180  # Duration to wait before scaling down pods
-  ttftTimeoutThreshold: 0.1   # Proportion of timed-out requests that triggers scale-out
-```
-
-**How it works:**
-- KEDA monitors TTFT (Time To First Token) timeout metrics from Prometheus
-- When the timeout rate exceeds `ttftTimeoutThreshold`, the autoscaler triggers scale-out
-- After scaling, the autoscaler waits `coolDownPeriodSeconds` before considering scale-down
-
-### External Prometheus for Autoscaling
-
-By default, the autoscaler uses the embedded Prometheus instance (`http://adaptive-prometheus`). If you have an external Prometheus instance that collects metrics from Adaptive Engine, you can configure the autoscaler to use it instead:
-
-```yaml
-autoscaling:
-  enabled: true
-  externalPrometheusEndpoint: "your-external-prometheus-http(s)-endpoint"
-```
-
-**Example with external Prometheus:**
-
-```yaml
-autoscaling:
-  enabled: true
-  externalPrometheusEndpoint: "http://prometheus-server.monitoring.svc.cluster.local"
-  coolDownPeriodSeconds: 180
-  ttftTimeoutThreshold: 0.1
-```
-
-This is useful when:
-- You have an external Prometheus instance for your cluster
-- You want to disable the embedded Prometheus (`prometheus.enabled=false`) and use your own
-- You need to query metrics from a Prometheus instance in a different namespace
 
 ---
 

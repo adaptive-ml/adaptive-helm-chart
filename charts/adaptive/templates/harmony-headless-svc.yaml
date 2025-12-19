@@ -1,18 +1,21 @@
 {{- if .Values.harmony.enabled }}
+{{- $ports := include "adaptive.harmony.ports" . | fromJson }}
+{{- $root := . }}
+{{- range $index, $pool := .Values.harmony.computePools }}
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "adaptive.harmony.headlessService.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}
+  namespace: {{ $root.Release.Namespace }}
   labels:
-    {{- include "adaptive.labels" . | nindent 4 }}
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+    {{- include "adaptive.labels" $root | nindent 4 }}
+    {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 4 }}
 spec:
   clusterIP: None
   selector:
-    {{- include "adaptive.harmony.selectorLabels" . | nindent 6}}
+    {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 4 }}
   ports:
-    {{- $ports := include "adaptive.harmony.ports" . | fromJson }}
     - name: {{ $ports.http.name }}
       port: {{ $ports.http.containerPort }}
       targetPort: {{ $ports.http.containerPort }}
@@ -22,4 +25,5 @@ spec:
     - name: {{ $ports.torch.name }}
       port: {{ $ports.torch.containerPort }}
       targetPort: {{ $ports.torch.containerPort }}
+{{- end }}
 {{- end }}
