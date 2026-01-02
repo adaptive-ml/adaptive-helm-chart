@@ -490,7 +490,6 @@ mlflow:
   image:
     pullPolicy: IfNotPresent
 
-  replicaCount: 1
   workers: 4  # Recommended: 2-4 workers per CPU core. With 1 CPU limit, 4 workers is optimal
 
   # MLflow server configuration
@@ -501,7 +500,17 @@ mlflow:
   defaultArtifactRoot: mlflow-artifacts:/
   serveArtifacts: true
 
-  # Storage configuration for mlflow database and artifacts
+  # Persistence configuration for MLflow data (database and artifacts)
+  persistence:
+    enabled: false  # Set to true to use a PersistentVolumeClaim
+    storageClass: ""  # Use default storage class if empty
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    mountPath: /mlflow-storage  # Mount path for persistent storage
+
+  # Legacy storage configuration (used when persistence.enabled=false)
+  # These volumes/volumeMounts are for non-persistent storage or custom volume configurations
   volumes:
     - name: mlflow-storage
       emptyDir: {}
