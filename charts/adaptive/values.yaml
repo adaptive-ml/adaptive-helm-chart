@@ -197,6 +197,16 @@ controlPlane:
 
   extraEnvVars: {}
 
+  # Resource limits and requests for the control plane
+  # Uncomment and adjust based on your workload requirements
+  # resources:
+  #   limits:
+  #     cpu: 2000m
+  #     memory: 2Gi
+  #   requests:
+  #     cpu: 500m
+  #     memory: 1Gi
+
 # Sandboxing service
 sandkasten:
   servicePort: 3005
