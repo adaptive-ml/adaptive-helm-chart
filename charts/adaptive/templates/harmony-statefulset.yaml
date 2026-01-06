@@ -176,26 +176,6 @@ spec:
             {{- with $root.Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-        - name: job-log-exporter
-          image: {{ $root.Values.alloy.imageUri }}
-          imagePullPolicy: {{ $root.Values.alloy.image.pullPolicy }}
-          ports:
-            - containerPort: {{ $ports.alloy.containerPort }}
-              name: {{ $ports.alloy.name }}
-          args:
-            - "run"
-            - "--server.http.listen-addr=0.0.0.0:{{ $ports.alloy.containerPort }}"
-            - "--storage.path=/var/lib/alloy/data"
-            - "/etc/alloy/config.alloy"
-          {{- if $root.Values.alloy.resources }}
-          resources:
-{{ toYaml $root.Values.alloy.resources | indent 12 }}
-          {{- end }}
-          volumeMounts:
-            - name: workdir-volume
-              mountPath: /workdir/
-            - name: alloy-config
-              mountPath: "/etc/alloy"
       volumes:
         - name: cloud-cache-volume
           emptyDir: {}
@@ -204,9 +184,6 @@ spec:
         - name: harmony-settings-volume
           configMap:
             name: {{ include "adaptive.harmony.settingsConfigMap.fullname" $root }}
-        - name: alloy-config
-          configMap:
-            name: {{ include "adaptive.harmony.alloyConfigMap.fullname" $root }}
         - name: dshm
           emptyDir:
             medium: Memory
