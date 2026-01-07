@@ -126,3 +126,7 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
+          {{- if .Values.controlPlane.resources }}
+          resources:
+            {{- toYaml .Values.controlPlane.resources | nindent 12 }}
+          {{- end }}
