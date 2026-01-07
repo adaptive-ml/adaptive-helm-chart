@@ -109,9 +109,6 @@ app.kubernetes.io/pool: {{ $pool.name | lower | replace " " "-" | replace "_" "-
 {{- define "adaptive.harmony.settingsConfigMap.fullname"}}
 {{- printf "%s-settings" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
-{{- define "adaptive.harmony.alloyConfigMap.fullname"}}
-{{- printf "%s-alloy" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end}}
 {{- define "adaptive.harmony.deployment.fullname"}}
 {{- printf "%s" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
@@ -211,8 +208,7 @@ Harmony ports
 {
   "http": {"name": "http", "containerPort": 50053, "port": 80},
   "queue": {"name": "queue", "containerPort": 50052},
-  "torch": {"name": "torch", "containerPort": 7777},
-  "alloy": {"name": "alloy", "containerPort": 12345}
+  "torch": {"name": "torch", "containerPort": 7777}
 }
 {{- end }}
 

@@ -556,19 +556,6 @@ mlflow:
   # Additional environment variables
   extraEnvVars: {}
 
-
-alloy:
-  imageUri: grafana/alloy:latest
-  image:
-    pullPolicy: IfNotPresent
-  resources:
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 100m
-      memory: 512Mi
-
 # Optional: This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 
