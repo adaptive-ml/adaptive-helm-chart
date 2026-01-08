@@ -58,9 +58,7 @@ spec:
       {{- $nodeSelector := $pool.nodeSelector | default $root.Values.harmony.nodeSelector }}
       {{- if $nodeSelector }}
       nodeSelector:
-         {{- with $nodeSelector }}
-         {{ toYaml . }}
-         {{- end }}
+        {{- toYaml $nodeSelector | nindent 8 }}
       {{- end }}
       {{- $tolerations := $pool.tolerations | default $root.Values.harmony.tolerations }}
       {{- if $tolerations }}
@@ -84,7 +82,7 @@ spec:
           {{- end }}
       containers:
         - name: harmony
-          image: "{{ include "adaptive.harmony.imageUri" $root }}"
+          image: "{{ include "adaptive.harmony.computePool.imageUri" (dict "root" $root "pool" $pool) }}"
           imagePullPolicy: {{ $root.Values.harmony.image.pullPolicy }}
           {{- if $root.Values.harmony.securityContext }}
           securityContext:
@@ -113,8 +111,12 @@ spec:
           env:
             {{- include "adaptive.harmony.secretEnvVars" $root | nindent 12 }}
             {{- include "adaptive.redis.secretEnvVars" $root | nindent 12 }}
+            {{- $imageTag := $root.Values.harmony.image.tag }}
+            {{- if and $pool.image $pool.image.tag }}
+            {{- $imageTag = $pool.image.tag }}
+            {{- end }}
             - name: IMAGE_TAG
-              value: {{ $root.Values.harmony.image.tag | quote }}
+              value: {{ $imageTag | quote }}
             - name: POD_IP
               valueFrom:
                 fieldRef:

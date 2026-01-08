@@ -123,6 +123,8 @@ harmony:
     - name: default
       replicas: 1
       # Optional pool-specific overrides (uncomment to use):
+      # image:
+      #   tag: harmony:latest  # Override image tag for this pool
       # gpusPerReplica: 8
       # capabilities: "TRAINING,INFERENCE,EVALUATION"  # Default capabilities
       # resources:
@@ -132,7 +134,9 @@ harmony:
       #   requests:
       #     cpu: 30
       #     memory: 500Gi
-      # nodeSelector: {}
+      # nodeSelector:  # Multiple node selector labels can be specified
+      #   eks.amazonaws.com/nodegroup: gpu-node-group
+      #   node.kubernetes.io/instance-type: p4d.24xlarge
       # tolerations: []
       # podAnnotations: {}
       # podLabels: {}
@@ -142,6 +146,8 @@ harmony:
     # Example: Add additional pools for different workloads
     # - name: inference
     #   replicas: 2
+    #   image:
+    #     tag: harmony:inference-optimized  # Different image tag for inference pool
     #   gpusPerReplica: 4
     #   capabilities: "INFERENCE"
     #   resources:
@@ -153,6 +159,7 @@ harmony:
     #       memory: 128Gi
     #   nodeSelector:
     #     cloud.google.com/gke-accelerator: nvidia-l4
+    #     cloud.google.com/gke-spot: "true"
     #   tolerations:
     #     - key: "nvidia.com/gpu"
     #       operator: "Exists"
@@ -161,6 +168,9 @@ harmony:
     #   replicas: 1
     #   gpusPerReplica: 8
     #   capabilities: "TRAINING,EVALUATION"
+    #   nodeSelector:
+    #     eks.amazonaws.com/nodegroup: training-nodes
+    #     topology.kubernetes.io/zone: us-east-1a
 
 controlPlane:
   sharedDirType: s3

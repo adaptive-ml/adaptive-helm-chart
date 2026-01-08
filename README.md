@@ -28,6 +28,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
 - [Sandboxing service](#sandboxing-service)
 - [Compute Pools](#compute-pools)
+  - [Per-Pool Node Selectors](#per-pool-node-selectors)
 - [Storage and Persistence](#storage-and-persistence)
   - [Monitoring Stack](#monitoring-stack)
   - [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
@@ -798,7 +799,7 @@ sandkasten:
 
 ## Compute Pools
 
-You can define Harmony deployment groups dedicated to inference tasks:
+You can define Harmony deployment groups dedicated to different workloads:
 
 ```yaml
 harmony:
@@ -814,6 +815,26 @@ harmony:
 ```
 
 Each compute pool can have its own configuration. Any values not specified will be inherited from the main `harmony` section.
+
+### Per-Pool Node Selectors
+
+You can specify multiple node selector labels per compute pool to target specific node types:
+
+```yaml
+harmony:
+  computePools:
+    - name: "inference"
+      replicas: 2
+      nodeSelector:
+        eks.amazonaws.com/nodegroup: inference-nodes
+        node.kubernetes.io/instance-type: g5.12xlarge
+        topology.kubernetes.io/zone: us-east-1a
+    - name: "training"
+      replicas: 1
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-a100
+        cloud.google.com/gke-spot: "true"
+```
 
 ---
 
