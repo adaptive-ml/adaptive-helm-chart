@@ -1,0 +1,20 @@
+{{- if .Values.controlPlane.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "adaptive.controlPlane.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+spec:
+  {{- if .Values.controlPlane.pdb.minAvailable }}
+  minAvailable: {{ .Values.controlPlane.pdb.minAvailable }}
+  {{- end }}
+  {{- if .Values.controlPlane.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.controlPlane.pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.controlPlane.selectorLabels" . | nindent 6 }}
+{{- end }}
