@@ -221,10 +221,11 @@ controlPlane:
 
   # Pod Disruption Budget for control plane
   # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+  # NOTE: Specify either minAvailable OR maxUnavailable, not both
   pdb:
     enabled: false
-    # minAvailable: 1
-    # maxUnavailable: 1
+    # minAvailable: 1    # Minimum number/percentage of pods that must remain available
+    # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
   extraEnvVars: {}
 
@@ -273,10 +274,11 @@ sandkasten:
 
   # Pod Disruption Budget for sandkasten
   # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+  # NOTE: Specify either minAvailable OR maxUnavailable, not both
   pdb:
     enabled: false
-    # minAvailable: 1
-    # maxUnavailable: 1
+    # minAvailable: 1    # Minimum number/percentage of pods that must remain available
+    # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
   extraEnvVars: {}
   replicaCount: 2
