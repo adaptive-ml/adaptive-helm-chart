@@ -47,6 +47,14 @@ spec:
       tolerations:
         {{- toYaml .Values.controlPlane.tolerations | nindent 8 }}
       {{- end}}
+      {{- if .Values.controlPlane.affinity}}
+      affinity:
+        {{- toYaml .Values.controlPlane.affinity | nindent 8 }}
+      {{- end}}
+      {{- if .Values.controlPlane.topologySpreadConstraints}}
+      topologySpreadConstraints:
+        {{- toYaml .Values.controlPlane.topologySpreadConstraints | nindent 8 }}
+      {{- end}}
       {{- $ports := include "adaptive.controlPlane.ports" . | fromJson }}
       containers:
         - name: control-plane

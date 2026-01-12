@@ -195,6 +195,38 @@ controlPlane:
   #     operator: "Exists"
   #     effect: "NoSchedule"
 
+  # Pod affinity/anti-affinity rules
+  # Example: Schedule control plane pods on different nodes
+  # affinity:
+  #   podAntiAffinity:
+  #     preferredDuringSchedulingIgnoredDuringExecution:
+  #       - weight: 100
+  #         podAffinityTerm:
+  #           labelSelector:
+  #             matchLabels:
+  #               app.kubernetes.io/component: control-plane
+  #           topologyKey: kubernetes.io/hostname
+  affinity: {}
+
+  # Topology spread constraints for pod distribution
+  # Example: Spread control plane pods across availability zones
+  # topologySpreadConstraints:
+  #   - maxSkew: 1
+  #     topologyKey: topology.kubernetes.io/zone
+  #     whenUnsatisfiable: ScheduleAnyway
+  #     labelSelector:
+  #       matchLabels:
+  #         app.kubernetes.io/component: control-plane
+  topologySpreadConstraints: []
+
+  # Pod Disruption Budget for control plane
+  # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+  # NOTE: Specify either minAvailable OR maxUnavailable, not both
+  pdb:
+    enabled: false
+    # minAvailable: 1    # Minimum number/percentage of pods that must remain available
+    # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
+
   extraEnvVars: {}
 
   # Resource limits and requests for the control plane
@@ -215,6 +247,39 @@ sandkasten:
   podLabels: {}
   nodeSelector: {}
   tolerations: {}
+
+  # Pod affinity/anti-affinity rules
+  # Example: Schedule sandkasten pods on different nodes for high availability
+  # affinity:
+  #   podAntiAffinity:
+  #     preferredDuringSchedulingIgnoredDuringExecution:
+  #       - weight: 100
+  #         podAffinityTerm:
+  #           labelSelector:
+  #             matchLabels:
+  #               app.kubernetes.io/component: sandkasten
+  #           topologyKey: kubernetes.io/hostname
+  affinity: {}
+
+  # Topology spread constraints for pod distribution
+  # Example: Spread sandkasten pods across availability zones
+  # topologySpreadConstraints:
+  #   - maxSkew: 1
+  #     topologyKey: topology.kubernetes.io/zone
+  #     whenUnsatisfiable: ScheduleAnyway
+  #     labelSelector:
+  #       matchLabels:
+  #         app.kubernetes.io/component: sandkasten
+  topologySpreadConstraints: []
+
+  # Pod Disruption Budget for sandkasten
+  # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+  # NOTE: Specify either minAvailable OR maxUnavailable, not both
+  pdb:
+    enabled: false
+    # minAvailable: 1    # Minimum number/percentage of pods that must remain available
+    # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
+
   extraEnvVars: {}
   replicaCount: 2
   image:
