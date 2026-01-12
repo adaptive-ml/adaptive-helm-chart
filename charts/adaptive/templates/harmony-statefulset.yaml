@@ -133,8 +133,9 @@ spec:
               value: "{{ $ports.queue.containerPort }}"
             - name: CONTROL_PLANE_URL
               value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" $root }}"
+            {{- $extraEnvVars := $pool.extraEnvVars | default $root.Values.harmony.extraEnvVars }}
             - name: ENABLE_SANDBOX
-              value: "1"
+              value: {{ (get $extraEnvVars "ENABLE_SANDBOX") | default "1" | quote }}
             - name: SANDBOX_SERVICE_URL
               value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" $root }}"
             - name: GROUP
@@ -155,11 +156,12 @@ spec:
             - name: MLFLOW_TRACKING_URI
               value: "{{ include "adaptive.mlflow.trackingUrl" $root }}"
             {{- end }}
-            {{- $extraEnvVars := $pool.extraEnvVars | default $root.Values.harmony.extraEnvVars }}
             {{- if $extraEnvVars }}
             {{- range $key, $value := $extraEnvVars }}
+            {{- if ne $key "ENABLE_SANDBOX" }}
             - name: {{ $key }}
               value: {{ $value | quote }}
+            {{- end }}
             {{- end }}
             {{- end }}
           volumeMounts:
