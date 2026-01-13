@@ -306,6 +306,20 @@ Build the image URIs from registry, repository, name, and tag
 {{- define "adaptive.harmony.imageUri" -}}
 {{- printf "%s/%s:%s" .Values.containerRegistry .Values.harmony.image.repository .Values.harmony.image.tag | trimSuffix "/" }}
 {{- end }}
+
+{{/*
+Build harmony image URI for a specific compute pool (allows per-pool tag override)
+Context: dict with "root" (root context) and "pool" (pool object)
+*/}}
+{{- define "adaptive.harmony.computePool.imageUri" -}}
+{{- $root := .root -}}
+{{- $pool := .pool -}}
+{{- $tag := $root.Values.harmony.image.tag -}}
+{{- if and $pool.image $pool.image.tag -}}
+{{- $tag = $pool.image.tag -}}
+{{- end -}}
+{{- printf "%s/%s:%s" $root.Values.containerRegistry $root.Values.harmony.image.repository $tag | trimSuffix "/" }}
+{{- end }}
 {{- define "adaptive.controlPlane.imageUri" -}}
 {{- printf "%s/%s:%s" .Values.containerRegistry .Values.controlPlane.image.repository .Values.controlPlane.image.tag | trimSuffix "/" }}
 {{- end }}
