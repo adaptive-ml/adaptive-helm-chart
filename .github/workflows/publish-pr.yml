@@ -1,0 +1,48 @@
+name: Publish PR Helm Charts to OCI Registry
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  publish:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        chart:
+          - name: adaptive
+          - name: monitoring
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changes
+        id: changes
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^charts/${{ matrix.chart.name }}/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Chart ${{ matrix.chart.name }} has changes"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Chart ${{ matrix.chart.name }} has no changes, skipping publish"
+          fi
+
+      - name: Set short SHA
+        id: sha
+        run: echo "short=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Publish Chart
+        if: steps.changes.outputs.changed == 'true'
+        uses: appany/helm-oci-chart-releaser@v0.5.0
+        with:
+          name: ${{ matrix.chart.name }}
+          repository: ${{ github.repository_owner }}
+          tag: 0.0.0-sha.${{ steps.sha.outputs.short }}
+          registry: ghcr.io
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
