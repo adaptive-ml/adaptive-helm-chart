@@ -1,0 +1,26 @@
+{{- if and .Values.otelCollector.enabled .Values.otelCollector.pdb.enabled }}
+{{- if and .Values.otelCollector.pdb.minAvailable .Values.otelCollector.pdb.maxUnavailable }}
+{{- fail "otelCollector.pdb: cannot specify both minAvailable and maxUnavailable, choose one" }}
+{{- end }}
+{{- if not (or .Values.otelCollector.pdb.minAvailable .Values.otelCollector.pdb.maxUnavailable) }}
+{{- fail "otelCollector.pdb: must specify either minAvailable or maxUnavailable when pdb is enabled" }}
+{{- end }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "adaptive.otelCollector.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+spec:
+  {{- if .Values.otelCollector.pdb.minAvailable }}
+  minAvailable: {{ .Values.otelCollector.pdb.minAvailable }}
+  {{- end }}
+  {{- if .Values.otelCollector.pdb.maxUnavailable }}
+  maxUnavailable: {{ .Values.otelCollector.pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.otelCollector.selectorLabels" . | nindent 6 }}
+{{- end }}
