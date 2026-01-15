@@ -1,3 +1,26 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [CLAUDE.md](#claudemd)
+  - [Repository Overview](#repository-overview)
+  - [Common Commands](#common-commands)
+    - [Linting and Validation](#linting-and-validation)
+    - [Local Testing](#local-testing)
+    - [Update Dependencies](#update-dependencies)
+    - [TOC Generation](#toc-generation)
+  - [Architecture](#architecture)
+    - [Adaptive Chart Structure](#adaptive-chart-structure)
+    - [Secrets Management](#secrets-management)
+    - [Template Helpers (`_helpers.tpl`)](#template-helpers-_helperstpl)
+    - [Monitoring Chart](#monitoring-chart)
+  - [Key Configuration Patterns](#key-configuration-patterns)
+    - [Compute Pools (Harmony)](#compute-pools-harmony)
+    - [Prometheus Integration](#prometheus-integration)
+  - [CI/CD](#cicd)
+  - [Version Bumping](#version-bumping)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
