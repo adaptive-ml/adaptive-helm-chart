@@ -1,0 +1,32 @@
+{{- if .Values.harmony.enabled }}
+{{- if .Values.harmony.pdb.enabled }}
+{{- if and .Values.harmony.pdb.minAvailable .Values.harmony.pdb.maxUnavailable }}
+{{- fail "harmony.pdb: cannot specify both minAvailable and maxUnavailable, choose one" }}
+{{- end }}
+{{- if not (or .Values.harmony.pdb.minAvailable .Values.harmony.pdb.maxUnavailable) }}
+{{- fail "harmony.pdb: must specify either minAvailable or maxUnavailable when pdb is enabled" }}
+{{- end }}
+{{- $root := . }}
+{{- range $index, $pool := .Values.harmony.computePools }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" $root | nindent 4 }}
+    {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 4 }}
+spec:
+  {{- if $root.Values.harmony.pdb.minAvailable }}
+  minAvailable: {{ $root.Values.harmony.pdb.minAvailable }}
+  {{- end }}
+  {{- if $root.Values.harmony.pdb.maxUnavailable }}
+  maxUnavailable: {{ $root.Values.harmony.pdb.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}

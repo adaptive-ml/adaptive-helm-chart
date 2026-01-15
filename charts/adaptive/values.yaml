@@ -117,6 +117,15 @@ harmony:
       operator: "Exists"
       effect: "NoSchedule"
 
+  # Pod Disruption Budget for harmony compute pools
+  # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+  # NOTE: Specify either minAvailable OR maxUnavailable, not both
+  # This applies to all compute pools
+  pdb:
+    enabled: false
+    # minAvailable: 1    # Minimum number/percentage of pods that must remain available
+    # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
+
   # List of compute pools - each creates a separate StatefulSet and headless Service
   # Pool-specific values override the defaults above
   computePools:
