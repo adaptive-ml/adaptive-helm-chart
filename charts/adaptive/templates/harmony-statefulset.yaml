@@ -109,6 +109,7 @@ spec:
             - containerPort: {{ $ports.torch.containerPort }}
               name: {{ $ports.torch.name }}
           env:
+            {{- include "adaptive.otelCollector.envVars" $root | nindent 12 }}
             {{- include "adaptive.harmony.secretEnvVars" $root | nindent 12 }}
             {{- include "adaptive.redis.secretEnvVars" $root | nindent 12 }}
             {{- $imageTag := $root.Values.harmony.image.tag }}

@@ -1,0 +1,92 @@
+{{- if .Values.otelCollector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "adaptive.otelCollector.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.otelCollector.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.otelCollector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/otel-collector-confmap.yaml") . | sha256sum }}
+        {{- with .Values.otelCollector.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.otelCollector.selectorLabels" . | nindent 8 }}
+        {{- with .Values.otelCollector.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      {{- with .Values.otelCollector.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.otelCollector.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.otelCollector.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: otel-collector
+          image: "{{ .Values.otelCollector.image.repository }}:{{ .Values.otelCollector.image.tag }}"
+          imagePullPolicy: {{ .Values.otelCollector.image.pullPolicy }}
+          args:
+            - --config=/etc/otelcol/config.yaml
+          {{- $ports := fromJson (include "adaptive.otelCollector.ports" .) }}
+          ports:
+            - name: {{ index $ports "otlp-http" "name" }}
+              containerPort: {{ index $ports "otlp-http" "containerPort" }}
+              protocol: {{ index $ports "otlp-http" "protocol" }}
+            - name: {{ index $ports "metrics" "name" }}
+              containerPort: {{ index $ports "metrics" "containerPort" }}
+              protocol: {{ index $ports "metrics" "protocol" }}
+          {{- with .Values.otelCollector.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.otelCollector.extraEnvVars }}
+          env:
+          {{- range $key, $value := .Values.otelCollector.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
+          volumeMounts:
+            - name: otel-collector-config
+              mountPath: /etc/otelcol
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: otel-collector-config
+          configMap:
+            name: {{ include "adaptive.otelCollector.configMap.fullname" . }}
+{{- end }}

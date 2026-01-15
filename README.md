@@ -24,14 +24,13 @@ A Helm Chart to deploy Adaptive Engine.
   - [Ingress Configuration](#ingress-configuration)
   - [Using External Secret Management](#using-external-secret-management)
 - [Monitoring and Observability](#monitoring-and-observability)
-  - [Prometheus Monitoring](#prometheus-monitoring)
+  - [OpenTelemetry Collector](#opentelemetry-collector)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
 - [Sandboxing service](#sandboxing-service)
 - [Compute Pools](#compute-pools)
   - [Per-Pool Node Selectors](#per-pool-node-selectors)
 - [Storage and Persistence](#storage-and-persistence)
   - [Monitoring Stack](#monitoring-stack)
-  - [Adaptive Chart (Prometheus)](#adaptive-chart-prometheus)
 - [Cloud specific information](#cloud-specific-information)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -55,7 +54,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 ### Optional
 
-3. **Storage Classes**: Required for logs and Prometheus timeseries persistence. See [Storage and Persistence](#storage-and-persistence) for details.
+3. **Storage Classes**: Required for logs persistence. See [Storage and Persistence](#storage-and-persistence) for details.
 
 ---
 
@@ -622,59 +621,156 @@ Then reference these secrets in your values file as shown above
 
 ## Monitoring and Observability
 
-### Prometheus Monitoring
+### OpenTelemetry Collector
 
-This Helm chart includes Prometheus as a dependency for metrics collection and monitoring. Prometheus is used to:
+The chart includes an [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) for collecting and exporting telemetry data (traces, metrics, and logs) from Adaptive Engine components.
 
-- Collect metrics from Adaptive Engine components (Control Plane and Harmony)
-- Monitor system health and performance
+For complete configuration options and advanced usage, refer to the [official OpenTelemetry Collector documentation](https://opentelemetry.io/docs/collector/configuration/).
 
-#### Enabling/Disabling Prometheus
+By default, the OpenTelemetry Collector is **enabled**.
 
-By default, Prometheus is **enabled**. You can disable it by setting:
-
-```yaml
-prometheus:
-  enabled: false  # Set to false to disable the embedded Prometheus subchart
-```
-
-#### Configuring Prometheus
-
-The chart uses the [Prometheus Community Helm Chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus) as a subchart. You can customize Prometheus settings under the `prometheus` key in your values file:
+#### Configuration
 
 ```yaml
-prometheus:
-  enabled: true
+otelCollector:
+  enabled: true  # Set to false to disable
 
-  server:
-    # Prometheus data retention period
-    retention: "30d"
+  image:
+    repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib
+    tag: "0.143.1"
 
-    # Number of Prometheus replicas for high availability
-    replicaCount: 2
+  replicaCount: 2  # Default replicas for high availability
 
-    # Persistence configuration
-    persistentVolume:
-      enabled: true
-      size: 10Gi
-      storageClass: "your-storage-class"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  # Pod Disruption Budget (enabled by default)
+  pdb:
+    enabled: true
+    minAvailable: 1
 ```
 
-#### Metrics Collection
+#### Fixed Receivers and Processors
 
-Adaptive Engine components expose metrics that are automatically scraped by Prometheus:
+The collector configuration includes fixed receivers and processors that cannot be changed:
 
-- **Harmony pods**: Expose metrics on port `50053` at `/metrics`
-- **Control Plane**: Exposes metrics on port `9009` at `/metrics`
+- **Receivers**:
+  - OTLP HTTP on port `4318`
+  - Prometheus scraper for pods with annotation `prometheus.io/scrape: "adaptive"`
+- **Processors**: `batch` and `memory_limiter`
 
-Pods are discovered automatically using the annotation-based scraping configuration:
+You can adjust the memory limiter and Prometheus scraping settings:
 
 ```yaml
-podAnnotations:
-  prometheus.io/scrape: "adaptive"
-  prometheus.io/path: /metrics
-  prometheus.io/port: "50053"  # or "9009" for Control Plane
+otelCollector:
+  memoryLimitMiB: 400    # Memory limit for the processor
+  memorySpikeLimit: 100  # Spike limit for the processor
+
+  prometheus:
+    scrapeInterval: "15s"  # How often to scrape metrics
 ```
+
+#### Prometheus Metrics Scraping
+
+The collector automatically scrapes Prometheus metrics from pods in the same namespace that have the following annotations:
+
+```yaml
+annotations:
+  prometheus.io/scrape: "adaptive"  # Required - enables scraping
+  prometheus.io/path: "/metrics"    # Optional - metrics endpoint path (default: /metrics)
+  prometheus.io/port: "9090"        # Optional - metrics port
+```
+
+Adaptive Engine components (Control Plane, Harmony) are already configured with these annotations and will be automatically scraped.
+
+#### Configuring Exporters
+
+Configure where telemetry data is sent by customizing the `exporters` section:
+
+```yaml
+otelCollector:
+  exporters: |
+    # Debug exporter (logs to stdout)
+    debug:
+      verbosity: detailed
+
+    # OTLP exporter to send data to another collector or backend
+    otlp:
+      endpoint: "your-otlp-endpoint:4317"
+      tls:
+        insecure: true
+
+    # Example: Send to Jaeger
+    otlp/jaeger:
+      endpoint: "jaeger-collector:4317"
+      tls:
+        insecure: true
+```
+
+#### Configuring Pipelines
+
+Define how data flows through the collector by customizing the `pipelines` section:
+
+```yaml
+otelCollector:
+  pipelines: |
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]  # Use your configured exporter
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
+```
+
+#### Environment Variables
+
+When the OpenTelemetry Collector is enabled, the following environment variables are automatically added to Adaptive Engine pods (Control Plane, Sandkasten, and Harmony):
+
+| Variable | Description |
+|----------|-------------|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | URL of the collector service (`http://<release>-adaptive-otel-collector-svc:4318`) |
+| `OTEL_RESOURCE_ATTRIBUTES` | Resource attributes including `deployment.environment.name` |
+
+#### Resource Attributes
+
+Customize the resource attributes added to all telemetry data:
+
+```yaml
+otelCollector:
+  resourceAttributes:
+    # Override the environment name (defaults to Helm release name)
+    environmentName: "production"
+
+    # Add extra attributes (comma-separated key=value pairs)
+    extra: "service.namespace=ml,deployment.region=us-east-1"
+```
+
+This results in the environment variable:
+```
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=production,service.namespace=ml,deployment.region=us-east-1
+```
+
+#### Disabling the Collector
+
+To disable the OpenTelemetry Collector:
+
+```yaml
+otelCollector:
+  enabled: false
+```
+
+When disabled, no collector is deployed and no OTEL environment variables are added to pods.
 
 ### MLflow Experiment Tracking
 
@@ -848,19 +944,6 @@ For the **monitoring** stack helm chart: by default, logs and Grafana data are n
 grafana:
   enablePersistence: true
   storageClass: "your-storage-class-name"
-```
-
-### Adaptive Chart (Prometheus)
-
-For the **adaptive** helm chart: Prometheus may require metrics data to be persisted. By default, `prometheus.server.persistentVolume.enabled=false`. When enabling persistence, you must specify the storage class name:
-
-```yaml
-prometheus:
-  server:
-    persistentVolume:
-      enabled: true
-      size: 10Gi
-      storageClass: "your-storage-class-name"
 ```
 
 ---

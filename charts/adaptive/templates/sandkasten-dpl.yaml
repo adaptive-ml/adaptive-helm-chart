@@ -73,6 +73,7 @@ spec:
             - name: working-dir
               mountPath: /working_dir
           env:
+            {{- include "adaptive.otelCollector.envVars" . | nindent 12 }}
             {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
             - name: HARMONY_WS_ENDPOINT
               value: "{{ include "adaptive.harmony.wsEndpoint" . }}"
