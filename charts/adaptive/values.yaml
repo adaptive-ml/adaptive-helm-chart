@@ -270,9 +270,6 @@ sandkasten:
     name: "sandbox.adaptive-ml.com"
     # Annotations to add to the service account (e.g., for workload identity)
     annotations: {}
-    # The name of the service account to use for sandkasten.
-    # If not set and create is true, a name is generated using the sandkasten fullname template
-    name: ""
 
   podAnnotations:
     ingest-adaptive-logs: "true"
