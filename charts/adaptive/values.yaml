@@ -270,6 +270,9 @@ sandkasten:
     automount: true
     # Annotations to add to the service account (e.g., for workload identity)
     annotations: {}
+    # The name of the service account to use for sandkasten.
+    # If not set and create is true, a name is generated using the sandkasten fullname template
+    name: ""
 
   # RBAC configuration for sandkasten recipe runner
   rbac:
