@@ -73,7 +73,11 @@ Control plane and harmony components full names
 {{- printf "%s-svc" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
 {{- define "adaptive.sandkasten.serviceAccount.fullname"}}
+{{- if .Values.sandkasten.serviceAccount.name }}
+{{- .Values.sandkasten.serviceAccount.name }}
+{{- else }}
 {{- printf "%s-sa" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end}}
 {{- define "adaptive.sandkasten.role.fullname"}}
 {{- printf "%s-role" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
