@@ -261,6 +261,21 @@ controlPlane:
 # Sandboxing service
 sandkasten:
   servicePort: 3005
+
+  # Service account for sandkasten (dedicated SA with RBAC for recipe execution)
+  serviceAccount:
+    # Specifies whether a sandkasten-specific service account should be created
+    create: true
+    # Automatically mount a ServiceAccount's API credentials
+    automount: true
+    # Annotations to add to the service account (e.g., for workload identity)
+    annotations: {}
+
+  # RBAC configuration for sandkasten recipe runner
+  rbac:
+    # Create Role and RoleBinding for sandkasten to manage jobs, pods, and pod logs
+    create: true
+
   podAnnotations:
     ingest-adaptive-logs: "true"
   podLabels: {}

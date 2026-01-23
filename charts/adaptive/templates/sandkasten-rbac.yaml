@@ -1,0 +1,56 @@
+{{- if .Values.sandkasten.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "adaptive.sandkasten.serviceAccount.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+  {{- with .Values.sandkasten.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+automountServiceAccountToken: {{ .Values.sandkasten.serviceAccount.automount }}
+{{- end }}
+{{- if .Values.sandkasten.rbac.create }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "adaptive.sandkasten.role.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+rules:
+  # Jobs: create, get, delete, watch, list
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "delete", "watch", "list"]
+  # Pods: list, get (for finding job pods and getting termination details)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list", "get"]
+  # Pod logs: get (for fetching container logs)
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "adaptive.sandkasten.roleBinding.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "adaptive.sandkasten.serviceAccount.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "adaptive.sandkasten.role.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

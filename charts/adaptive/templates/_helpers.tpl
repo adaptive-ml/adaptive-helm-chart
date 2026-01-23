@@ -72,6 +72,15 @@ Control plane and harmony components full names
 {{- define "adaptive.sandkasten.service.fullname"}}
 {{- printf "%s-svc" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}
+{{- define "adaptive.sandkasten.serviceAccount.fullname"}}
+{{- printf "%s-sa" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.sandkasten.role.fullname"}}
+{{- printf "%s-role" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
+{{- define "adaptive.sandkasten.roleBinding.fullname"}}
+{{- printf "%s-rolebinding" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end}}
 
 {{- define "adaptive.harmony.fullname" -}}
 {{- printf "%s-harmony" (include "adaptive.fullname" .) | trunc 30 | trimSuffix "-" }}
