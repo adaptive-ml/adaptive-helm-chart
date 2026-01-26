@@ -1,14 +1,3 @@
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Automatically mount a ServiceAccount's API credentials?
-  automount: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: serviceaccount.adaptive-ml.com
-
 # Secrets configuration
 # You can either provide values directly (and the chart will create secrets)
 # or reference existing secrets that you provision yourself
@@ -75,6 +64,17 @@ containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com   # Add the A
 harmony:
   # Set to false to disable the harmony statefulset deployment (advanced mode only)
   enabled: true
+
+  # Service account for harmony pods
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account (e.g., for IAM roles)
+    annotations: {}
+    # The name of the service account to use if not creating one
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: harmony:latest   # Add the harmony image tag
@@ -183,6 +183,17 @@ harmony:
 
 controlPlane:
   sharedDirType: s3
+
+  # Service account for control plane pods
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account (e.g., for IAM roles)
+    annotations: {}
+    # The name of the service account to use if not creating one
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
   image:
     repository: adaptive-repository   # Add the Adaptive Repository you have been granted access to
     tag: control-plane:latest   # Add the control plane image tag
@@ -260,6 +271,16 @@ controlPlane:
 
 # Sandboxing service
 sandkasten:
+  # Service account for sandkasten pods
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account (e.g., for IAM roles)
+    annotations: {}
+    # The name of the service account to use if not creating one
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
   servicePort: 3005
   podAnnotations:
     ingest-adaptive-logs: "true"
