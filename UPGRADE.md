@@ -2,6 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Upgrade Guide](#upgrade-guide)
+  - [0.29.x to 0.30.0](#029x-to-0300)
+    - [Breaking Change: Service Account Split](#breaking-change-service-account-split)
   - [0.24.x to 0.25.0](#024x-to-0250)
     - [Breaking Change: Harmony Compute Pools Configuration](#breaking-change-harmony-compute-pools-configuration)
   - [0.17.x to 0.18.0](#017x-to-0180)
@@ -12,6 +14,115 @@
 # Upgrade Guide
 
 This document describes breaking changes between Helm chart versions and how to migrate your configuration.
+
+## 0.29.x to 0.30.0
+
+### Breaking Change: Service Account Split
+
+The single global `serviceAccount` configuration has been replaced with three separate service accounts, one for each main component: control plane, harmony, and sandkasten.
+
+**Removed fields:**
+- `serviceAccount.create` - Use `controlPlane.serviceAccount.create`, `harmony.serviceAccount.create`, `sandkasten.serviceAccount.create` instead
+- `serviceAccount.automount` - Removed, defaults to `true`
+- `serviceAccount.annotations` - Use per-component `serviceAccount.annotations` instead
+- `serviceAccount.name` - Use per-component `serviceAccount.name` instead
+
+**Old format (0.29.x and earlier):**
+
+```yaml
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: serviceaccount.adaptive-ml.com
+```
+
+**New format (0.30.0+):**
+
+```yaml
+controlPlane:
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+harmony:
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+sandkasten:
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+```
+
+**New service account names:**
+
+| Component     | Service Account Name            |
+|---------------|--------------------------------|
+| Control Plane | `<release>-controlplane-sa`    |
+| Harmony       | `<release>-harmony-sa`         |
+| Sandkasten    | `<release>-sandkasten-sa`      |
+
+**Migration steps:**
+
+1. Remove the global `serviceAccount` section from your values file
+2. Add `serviceAccount` sections under `controlPlane`, `harmony`, and `sandkasten`
+3. If using IAM roles (IRSA on AWS or Workload Identity on GCP), update your IAM bindings for each new service account name
+
+**Example: IAM role migration**
+
+If you had:
+```yaml
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/adaptive-role
+  name: adaptive-sa
+```
+
+Change to:
+```yaml
+controlPlane:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/adaptive-controlplane-role
+
+harmony:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/adaptive-harmony-role
+
+sandkasten:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/adaptive-sandkasten-role
+```
+
+**Using existing service accounts:**
+
+```yaml
+controlPlane:
+  serviceAccount:
+    create: false
+    name: my-existing-controlplane-sa
+
+harmony:
+  serviceAccount:
+    create: false
+    name: my-existing-harmony-sa
+
+sandkasten:
+  serviceAccount:
+    create: false
+    name: my-existing-sandkasten-sa
+```
 
 ## 0.24.x to 0.25.0
 

@@ -52,8 +52,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if $root.Values.serviceAccount.name }}
-      serviceAccountName: {{ $root.Values.serviceAccount.name }}
+      {{- if $root.Values.harmony.serviceAccount.create }}
+      serviceAccountName: {{ include "adaptive.harmony.serviceAccount.fullname" $root }}
+      {{- else if $root.Values.harmony.serviceAccount.name }}
+      serviceAccountName: {{ $root.Values.harmony.serviceAccount.name }}
       {{- end }}
       {{- $nodeSelector := $pool.nodeSelector | default $root.Values.harmony.nodeSelector }}
       {{- if $nodeSelector }}

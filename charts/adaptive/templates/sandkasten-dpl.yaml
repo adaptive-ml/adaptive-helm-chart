@@ -28,8 +28,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.serviceAccount.name }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if .Values.sandkasten.serviceAccount.create }}
+      serviceAccountName: {{ include "adaptive.sandkasten.serviceAccount.fullname" . }}
+      {{- else if .Values.sandkasten.serviceAccount.name }}
+      serviceAccountName: {{ .Values.sandkasten.serviceAccount.name }}
       {{- end }}
       volumes:
         - name: working-dir

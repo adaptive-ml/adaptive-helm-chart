@@ -1,0 +1,17 @@
+{{- if .Values.harmony.enabled }}
+{{- if .Values.harmony.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "adaptive.harmony.serviceAccount.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+  {{- with .Values.harmony.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+automountServiceAccountToken: true
+{{- end }}
+{{- end }}

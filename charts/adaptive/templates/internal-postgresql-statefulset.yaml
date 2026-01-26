@@ -30,9 +30,6 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.serviceAccount.name }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
-      {{- end }}
       {{- if .Values.installPostgres.nodeSelector }}
       nodeSelector:
         {{- with .Values.installPostgres.nodeSelector }}

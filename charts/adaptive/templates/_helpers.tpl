@@ -195,6 +195,21 @@ app.kubernetes.io/component: sandkasten
 {{ include "adaptive.sharedSelectorLabels" . }}
 {{- end }}
 
+{{/*
+Service account fullnames for each component
+*/}}
+{{- define "adaptive.controlPlane.serviceAccount.fullname" -}}
+{{- printf "%s-sa" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.harmony.serviceAccount.fullname" -}}
+{{- printf "%s-sa" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.sandkasten.serviceAccount.fullname" -}}
+{{- printf "%s-sa" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 # MLFlow selector labels
 {{- define "adaptive.mlflow.selectorLabels" -}}
 app.kubernetes.io/component: mlflow

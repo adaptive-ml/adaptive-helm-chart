@@ -32,8 +32,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.serviceAccount.name }}
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if .Values.controlPlane.serviceAccount.create }}
+      serviceAccountName: {{ include "adaptive.controlPlane.serviceAccount.fullname" . }}
+      {{- else if .Values.controlPlane.serviceAccount.name }}
+      serviceAccountName: {{ .Values.controlPlane.serviceAccount.name }}
       {{- end }}
       {{- with .Values.volumes }}
       volumes:
