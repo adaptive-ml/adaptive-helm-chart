@@ -72,6 +72,8 @@ spec:
               mountPath: /working_dir
           env:
             {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
+            - name: K8S_RECIPE_RUNNER_IMAGE
+              value: "{{ include "adaptive.recipeRunner.imageUri" . }}"
             - name: HARMONY_WS_ENDPOINT
               value: "{{ include "adaptive.harmony.wsEndpoint" . }}"
             - name: CONTROL_PLANE_URL

@@ -342,6 +342,9 @@ Context: dict with "root" (root context) and "pool" (pool object)
 {{- define "adaptive.sandkasten.imageUri" -}}
 {{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository .Values.sandkasten.image.tag | trimSuffix "/" }}
 {{- end }}
+{{- define "adaptive.recipeRunner.imageUri" -}}
+{{- printf "%s/recipe-runner:%s" .Values.containerRegistry .Values.sandkasten.image.tag | trimSuffix "/" }}
+{{- end }}
 {{- define "adaptive.mlflow.imageUri" -}}
 {{- printf "%s" .Values.mlflow.imageUri }}
 {{- end }}
