@@ -2,7 +2,7 @@ name: adaptive
 description: Helm Chart for Adaptive Engine
 kubeVersion: ">=1.28.0-0"
 type: application
-version: 0.30.0
+version: 0.31.0
 apiVersion: v2
 appVersion: "1.0"
 icon: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAXVBMVEXt6ujv6+fr6+fv6enr6efv79/p6ent6+jU0s9ZVlNAPTqjoJ3g3tu7ubavrarHxcMnJCEzMC00MS6WlJFyb2xMSUaKh4SKiIV+e3jIxsNxbmtlYl9lY2Dh39xNSkednTH/AAAAB3RSTlO/QEAwkBAwtdHlmAAAAK9JREFUeF7N00cSgzAMBVCnSq6Fnnr/YyYEbDFBZs1fafFmrDIWp8NmLkLAZo67A/iQ3zSmCJrwS18COszBAlAJSB7okGNZMBBwLMAqAVXooUtAF8Br7rIFDhjvwU0gekT8AyjHp7VBxIFGJXCr0g5p2prAYkWW6mgIuJByhzrXPYEuAwUqg8iBN0jCBCw9sag116QHeNJJuTHpJLheVDvdwMkx9WrVFvf7cc5iM9cPZL8jDpv6dmsAAAAASUVORK5CYII=
