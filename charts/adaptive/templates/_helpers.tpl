@@ -210,6 +210,14 @@ Service account fullnames for each component
 {{- printf "%s-sa" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "adaptive.sandkasten.role.fullname" -}}
+{{- printf "%s-role" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.sandkasten.roleBinding.fullname" -}}
+{{- printf "%s-rolebinding" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 # MLFlow selector labels
 {{- define "adaptive.mlflow.selectorLabels" -}}
 app.kubernetes.io/component: mlflow
