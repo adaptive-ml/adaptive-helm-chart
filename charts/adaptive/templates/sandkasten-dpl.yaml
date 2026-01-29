@@ -83,6 +83,8 @@ spec:
               value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}:{{ .Values.controlPlane.servicePort | default 80 }}"
             - name: K8S_RECIPE_RUNNER_NAMESPACE
               value: {{ .Release.Namespace | quote }}
+            - name: K8S_RECIPE_RUNNER_IMAGE
+              value: "{{ .Values.containerRegistry }}/recipe-runner:{{ .Values.sandkasten.image.tag }}"
             {{- if .Values.sandkasten.extraEnvVars }}
             {{- range $key, $value := .Values.sandkasten.extraEnvVars }}
             - name: {{ $key }}
