@@ -531,11 +531,12 @@ app.kubernetes.io/component: otel-collector
 {{/*
 OpenTelemetry environment variables for application pods
 Usage: {{ include "adaptive.otelCollector.envVars" . | nindent 12 }}
-Note: Resource attributes are handled at the otel-collector level via the resource processor
 */}}
 {{- define "adaptive.otelCollector.envVars" -}}
 {{- if .Values.otelCollector.enabled }}
 - name: OTEL_EXPORTER_OTLP_ENDPOINT
   value: "http://{{ include "adaptive.otelCollector.service.fullname" . }}:4318"
+- name: OTEL_RESOURCE_ATTRIBUTES
+  value: "deployment.environment.name={{ .Values.otelCollector.resourceAttributes.environmentName | default .Release.Name }}"
 {{- end }}
 {{- end }}

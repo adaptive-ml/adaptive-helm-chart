@@ -66,16 +66,15 @@ data:
         check_interval: 1s
         limit_mib: {{ .Values.otelCollector.memoryLimitMiB | default 400 }}
         spike_limit_mib: {{ .Values.otelCollector.memorySpikeLimit | default 100 }}
+      {{- if .Values.otelCollector.resourceAttributes.extra }}
       resource:
         attributes:
-          - key: deployment.environment.name
-            value: {{ .Values.otelCollector.resourceAttributes.environmentName | default .Release.Name | quote }}
-            action: upsert
           {{- range $key, $value := .Values.otelCollector.resourceAttributes.extra }}
           - key: {{ $key }}
             value: {{ $value | quote }}
             action: upsert
           {{- end }}
+      {{- end }}
 
     extensions:
       health_check:
