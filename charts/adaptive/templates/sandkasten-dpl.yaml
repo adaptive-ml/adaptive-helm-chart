@@ -80,6 +80,8 @@ spec:
               value: "{{ include "adaptive.harmony.wsEndpoint" . }}"
             - name: CONTROL_PLANE_URL
               value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}:{{ .Values.controlPlane.servicePort | default 80 }}"
+            - name: K8S_RECIPE_RUNNER_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
             {{- if .Values.sandkasten.extraEnvVars }}
             {{- range $key, $value := .Values.sandkasten.extraEnvVars }}
             - name: {{ $key }}
