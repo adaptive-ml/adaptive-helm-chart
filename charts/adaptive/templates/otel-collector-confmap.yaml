@@ -1,0 +1,90 @@
+{{- if .Values.otelCollector.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "adaptive.otelCollector.configMap.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'kubernetes-pods'
+              scrape_interval: {{ .Values.otelCollector.prometheus.scrapeInterval | default "15s" }}
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    own_namespace: true
+              relabel_configs:
+                # Only scrape pods with prometheus.io/scrape: "adaptive" annotation
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: adaptive
+                # Use custom path if specified
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  action: replace
+                  target_label: __metrics_path__
+                  regex: (.+)
+                # Use custom port if specified
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
+                  action: replace
+                  regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
+                  replacement: '[$2]:$1'
+                  target_label: __address__
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
+                  action: replace
+                  regex: (\d+);((([0-9]+?)(\.|$)){4})
+                  replacement: $2:$1
+                  target_label: __address__
+                # Add pod labels
+                - action: labelmap
+                  regex: __meta_kubernetes_pod_label_(.+)
+                - source_labels: [__meta_kubernetes_namespace]
+                  action: replace
+                  target_label: namespace
+                - source_labels: [__meta_kubernetes_pod_name]
+                  action: replace
+                  target_label: pod
+                - source_labels: [__meta_kubernetes_pod_node_name]
+                  action: replace
+                  target_label: node
+
+    processors:
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: {{ .Values.otelCollector.memoryLimitMiB | default 400 }}
+        spike_limit_mib: {{ .Values.otelCollector.memorySpikeLimit | default 100 }}
+      {{- if .Values.otelCollector.resourceAttributes.extra }}
+      resource:
+        attributes:
+          {{- range $key, $value := .Values.otelCollector.resourceAttributes.extra }}
+          - key: {{ $key }}
+            value: {{ $value | quote }}
+            action: upsert
+          {{- end }}
+      {{- end }}
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+
+    exporters:
+{{ .Values.otelCollector.exporters | indent 6 }}
+
+    service:
+      extensions: [health_check]
+      pipelines:
+{{ .Values.otelCollector.pipelines | indent 8 }}
+{{- end }}

@@ -334,261 +334,110 @@ sandkasten:
       cpu: 2000m
       memory: 32Gi
 
-# prometheus stack settings
-prometheus:
-  enabled: true  # Set to false to disable Prometheus subchart
-  prometheus-node-exporter:
-    enabled: false
+# OpenTelemetry Collector configuration
+otelCollector:
+  # Set to false to disable the OpenTelemetry Collector
+  enabled: true
 
-  prometheus-pushgateway:
-    enabled: false
+  # Service account configuration for otel-collector
+  serviceAccount:
+    # Create a dedicated service account for otel-collector
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
 
-  kube-state-metrics:
-    enabled: false
+  image:
+    repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib
+    tag: "0.143.1"
+    pullPolicy: IfNotPresent
 
-  alertmanager:
-    ## disable alert manager
-    enabled: false
+  replicaCount: 2
 
-  server:
-    fullnameOverride: "adaptive-prometheus"
+  service:
+    type: ClusterIP
 
-    name: prometheus
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
 
-    # restrict prometheus scope to the namespace it's installed in
-    releaseNamespace: true
+  # Memory limiter processor settings (in MiB)
+  memoryLimitMiB: 400
+  memorySpikeLimit: 100
 
-    ## Prometheus server container image
-    image:
-      repository: quay.io/prometheus/prometheus
-      # if not set appVersion field from Chart.yaml is used
-      tag: "v3.1.0"
-      # When digest is set to a non-empty value, images will be pulled by digest (regardless of tag value).
-      digest: ""
-      pullPolicy: IfNotPresent
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  extraEnvVars: {}
 
-    replicaCount: 2
+  # Pod Disruption Budget for OpenTelemetry Collector
+  # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+  # NOTE: Specify either minAvailable OR maxUnavailable, not both
+  pdb:
+    enabled: true
+    minAvailable: 1
+    # maxUnavailable: 1
 
-    statefulSet:
-      enabled: true
+  # Prometheus scraping configuration
+  # Scrapes metrics from pods with annotation: prometheus.io/scrape: "adaptive"
+  prometheus:
+    scrapeInterval: "15s"
 
-    ## Prometheus data retention period
-    retention: "30d"
+  # Resource attributes configuration
+  resourceAttributes:
+    # Override the environment name (defaults to release name)
+    # This is set via OTEL_RESOURCE_ATTRIBUTES env var on application pods (control-plane, harmony, sandkasten)
+    environmentName: ""
+    # Additional attributes to add via the otel-collector's resource processor (key-value map)
+    # When configured, these are applied to all telemetry data passing through the collector
+    # Example:
+    #   extra:
+    #     service.namespace: production
+    #     deployment.region: us-east-1
+    extra: {}
 
-    persistentVolume:
-      ## when true, prometheus uses PVC defined using "storageClass"
-      enabled: false
-      size: 10Gi
+  # Exporters configuration
+  # Define where to send telemetry data (traces, metrics, logs)
+  # The receiver (otlp HTTP on port 4318) and processors (batch, memory_limiter, resource) are fixed
+  exporters: |
+    # Debug exporter for troubleshooting (logs to stdout)
+    debug:
+      verbosity: detailed
+    # Example: OTLP exporter to send data to another collector or backend
+    # otlp:
+    #   endpoint: "your-otlp-endpoint:4317"
+    #   tls:
+    #     insecure: true
+    # Example: Jaeger exporter
+    # otlp/jaeger:
+    #   endpoint: "jaeger-collector:4317"
+    #   tls:
+    #     insecure: true
 
-    ## storage class
-    storageClass: ""
-
-  ## Prometheus scraping configuration (adavanced - do not change this )
-  serverFiles:
-    prometheus.yml:
-      rule_files:
-        - /etc/config/recording_rules.yml
-        - /etc/config/alerting_rules.yml
-      ## Below two files are DEPRECATED will be removed from this default values file
-        - /etc/config/rules
-        - /etc/config/alerts
-
-      scrape_configs:
-        - job_name: prometheus
-          static_configs:
-            - targets:
-              - localhost:9090
-
-        # A scrape configuration for running Prometheus on a Kubernetes cluster.
-        # This uses separate scrape configs for cluster components (i.e. API server, node)
-        # and services to allow each to use different authentication configs.
-        #
-        # Kubernetes labels will be added as Prometheus labels on metrics via the
-        # `labelmap` relabeling action.
-
-        # Scrape config for API servers.
-        #
-        # Kubernetes exposes API servers as endpoints to the default/kubernetes
-        # service so this uses `endpoints` role and uses relabelling to only keep
-        # the endpoints associated with the default/kubernetes service using the
-        # default named port `https`. This works for single API server deployments as
-        # well as HA API server deployments.
-        - job_name: 'kubernetes-apiservers'
-
-          kubernetes_sd_configs:
-            - role: endpoints
-
-          # Default to scraping over https. If required, just disable this or change to
-          # `http`.
-          scheme: https
-
-          # This TLS & bearer token file config is used to connect to the actual scrape
-          # endpoints for cluster components. This is separate to discovery auth
-          # configuration because discovery & scraping are two separate concerns in
-          # Prometheus. The discovery auth config is automatic if Prometheus runs inside
-          # the cluster. Otherwise, more config options have to be provided within the
-          # <kubernetes_sd_config>.
-          tls_config:
-            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            # If your node certificates are self-signed or use a different CA to the
-            # master CA, then disable certificate verification below. Note that
-            # certificate verification is an integral part of a secure infrastructure
-            # so this should only be disabled in a controlled environment. You can
-            # disable certificate verification by uncommenting the line below.
-            #
-            # insecure_skip_verify: true
-          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-
-          # Keep only the default/kubernetes service endpoints for the https port. This
-          # will add targets for each API server which Kubernetes adds an endpoint to
-          # the default/kubernetes service.
-          relabel_configs:
-            - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
-              action: keep
-              regex: default;kubernetes;https
-
-        - job_name: 'kubernetes-nodes'
-
-          # Default to scraping over https. If required, just disable this or change to
-          # `http`.
-          scheme: https
-
-          # This TLS & bearer token file config is used to connect to the actual scrape
-          # endpoints for cluster components. This is separate to discovery auth
-          # configuration because discovery & scraping are two separate concerns in
-          # Prometheus. The discovery auth config is automatic if Prometheus runs inside
-          # the cluster. Otherwise, more config options have to be provided within the
-          # <kubernetes_sd_config>.
-          tls_config:
-            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            # If your node certificates are self-signed or use a different CA to the
-            # master CA, then disable certificate verification below. Note that
-            # certificate verification is an integral part of a secure infrastructure
-            # so this should only be disabled in a controlled environment. You can
-            # disable certificate verification by uncommenting the line below.
-            #
-            # insecure_skip_verify: true
-          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-
-          kubernetes_sd_configs:
-            - role: node
-
-          relabel_configs:
-            - action: labelmap
-              regex: __meta_kubernetes_node_label_(.+)
-            - target_label: __address__
-              replacement: kubernetes.default.svc:443
-            - source_labels: [__meta_kubernetes_node_name]
-              regex: (.+)
-              target_label: __metrics_path__
-              replacement: /api/v1/nodes/$1/proxy/metrics
-
-
-        - job_name: 'kubernetes-nodes-cadvisor'
-
-          # Default to scraping over https. If required, just disable this or change to
-          # `http`.
-          scheme: https
-
-          # This TLS & bearer token file config is used to connect to the actual scrape
-          # endpoints for cluster components. This is separate to discovery auth
-          # configuration because discovery & scraping are two separate concerns in
-          # Prometheus. The discovery auth config is automatic if Prometheus runs inside
-          # the cluster. Otherwise, more config options have to be provided within the
-          # <kubernetes_sd_config>.
-          tls_config:
-            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-            # If your node certificates are self-signed or use a different CA to the
-            # master CA, then disable certificate verification below. Note that
-            # certificate verification is an integral part of a secure infrastructure
-            # so this should only be disabled in a controlled environment. You can
-            # disable certificate verification by uncommenting the line below.
-            #
-            # insecure_skip_verify: true
-          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-
-          kubernetes_sd_configs:
-            - role: node
-
-          # This configuration will work only on kubelet 1.7.3+
-          # As the scrape endpoints for cAdvisor have changed
-          # if you are using older version you need to change the replacement to
-          # replacement: /api/v1/nodes/$1:4194/proxy/metrics
-          # more info here https://github.com/coreos/prometheus-operator/issues/633
-          relabel_configs:
-            - action: labelmap
-              regex: __meta_kubernetes_node_label_(.+)
-            - target_label: __address__
-              replacement: kubernetes.default.svc:443
-            - source_labels: [__meta_kubernetes_node_name]
-              regex: (.+)
-              target_label: __metrics_path__
-              replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
-
-          # Metric relabel configs to apply to samples before ingestion.
-          # [Metric Relabeling](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs)
-          # metric_relabel_configs:
-          # - action: labeldrop
-          #   regex: (kubernetes_io_hostname|failure_domain_beta_kubernetes_io_region|beta_kubernetes_io_os|beta_kubernetes_io_arch|beta_kubernetes_io_instance_type|failure_domain_beta_kubernetes_io_zone)
-
-        # Example scrape config for pods
-        #
-        # The relabeling allows the actual pod scrape endpoint to be configured via the
-        # following annotations:
-        #
-        # * `prometheus-adaptive/scrape`: Only scrape pods that have a value of `true`,
-        # except if `prometheus-adaptive/scrape-slow` is set to `true` as well.
-        # * `prometheus-adaptive/scheme`: If the metrics endpoint is secured then you will need
-        # to set this to `https` & most likely set the `tls_config` of the scrape config.
-        # * `prometheus-adaptive/path`: If the metrics path is not `/metrics` override this.
-        # * `prometheus-adaptive/port`: Scrape the pod on the indicated port instead of the default of `9102`.
-        - job_name: 'kubernetes-pods'
-          scrape_interval: 5s
-          honor_labels: true
-
-          kubernetes_sd_configs:
-            - role: pod
-
-          relabel_configs:
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-              action: keep
-              regex: adaptive
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
-              action: replace
-              regex: (https?)
-              target_label: __scheme__
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-              action: replace
-              target_label: __metrics_path__
-              regex: (.+)
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
-              action: replace
-              regex: (\d+);(([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4})
-              replacement: '[$2]:$1'
-              target_label: __address__
-            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
-              action: replace
-              regex: (\d+);((([0-9]+?)(\.|$)){4})
-              replacement: $2:$1
-              target_label: __address__
-            - action: labelmap
-              regex: __meta_kubernetes_pod_annotation_prometheus_io_param_(.+)
-              replacement: __param_$1
-            - action: labelmap
-              regex: __meta_kubernetes_pod_label_(.+)
-            - source_labels: [__meta_kubernetes_namespace]
-              action: replace
-              target_label: namespace
-            - source_labels: [__meta_kubernetes_pod_name]
-              action: replace
-              target_label: pod
-            - source_labels: [__meta_kubernetes_pod_phase]
-              regex: Pending|Succeeded|Failed|Completed
-              action: drop
-            - source_labels: [__meta_kubernetes_pod_node_name]
-              action: replace
-              target_label: node
-
+  # Pipelines configuration
+  # Define how data flows from receivers through processors to exporters
+  # Available receivers: [otlp, prometheus]
+  # Available processors: [memory_limiter, batch, resource]
+  # Note: The 'resource' processor is only available when resourceAttributes.extra is configured
+  # Note: deployment.environment.name is now set via OTEL_RESOURCE_ATTRIBUTES env var on application pods
+  pipelines: |
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
 
 mlflow:
   # If set to true, jobs will use MLflow for experiment tracking

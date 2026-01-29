@@ -488,3 +488,55 @@ Generate individual database components - uses internal PostgreSQL if enabled, o
 {{- required "secrets.db.database is required!" .Values.secrets.db.database -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+OpenTelemetry Collector related helpers
+*/}}
+{{- define "adaptive.otelCollector.fullname" -}}
+{{- printf "%s-otel-collector" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.configMap.fullname" -}}
+{{- printf "%s-config" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.selectorLabels" -}}
+app.kubernetes.io/component: otel-collector
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.ports" -}}
+{
+  "otlp-http": {"name": "otlp-http", "containerPort": 4318, "port": 4318, "protocol": "TCP"},
+  "metrics": {"name": "metrics", "containerPort": 8888, "port": 8888, "protocol": "TCP"}
+}
+{{- end }}
+
+{{- define "adaptive.otelCollector.serviceAccount.fullname" -}}
+{{- printf "%s-sa" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.role.fullname" -}}
+{{- printf "%s-role" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.otelCollector.roleBinding.fullname" -}}
+{{- printf "%s-rolebinding" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+OpenTelemetry environment variables for application pods
+Usage: {{ include "adaptive.otelCollector.envVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.otelCollector.envVars" -}}
+{{- if .Values.otelCollector.enabled }}
+- name: OTEL_EXPORTER_OTLP_ENDPOINT
+  value: "http://{{ include "adaptive.otelCollector.service.fullname" . }}:4318"
+- name: OTEL_RESOURCE_ATTRIBUTES
+  value: "deployment.environment.name={{ .Values.otelCollector.resourceAttributes.environmentName | default .Release.Name }}"
+{{- end }}
+{{- end }}
