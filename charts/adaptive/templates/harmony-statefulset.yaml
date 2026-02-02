@@ -139,10 +139,6 @@ spec:
             - name: CONTROL_PLANE_URL
               value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" $root }}"
             {{- $extraEnvVars := $pool.extraEnvVars | default $root.Values.harmony.extraEnvVars }}
-            - name: ENABLE_SANDBOX
-              value: {{ (get $extraEnvVars "ENABLE_SANDBOX") | default "1" | quote }}
-            - name: SANDBOX_SERVICE_URL
-              value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" $root }}"
             - name: GROUP
               value: {{ $pool.name }}
             - name: GROUP_CAPABILITIES
