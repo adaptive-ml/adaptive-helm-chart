@@ -37,6 +37,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 ## Compatibility
 
+- Helm chart versions < `0.34` are not compatible with adaptive version `0.13.0` or higher.
 - Helm chart versions < `0.5.0` are not compatible with adaptive version `0.5.0` or higher.
 - **We strongly recommend using the latest helm chart version**
 
