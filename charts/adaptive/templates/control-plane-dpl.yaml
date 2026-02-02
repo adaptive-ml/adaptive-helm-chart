@@ -115,7 +115,7 @@ spec:
             - name: IMAGE_TAG
               value: {{ .Values.controlPlane.image.tag | quote }}
             - name: ADAPTIVE_SANDBOX__URL
-              value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" $root }}"
+              value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" . }}"
             - name: ADAPTIVE_AUTH__SESSION__SECURE
               value: {{ .Values.auth.session.secure | default "true" | quote }}
             - name: ADAPTIVE_AUTH__SESSION__EXPIRATION_SECONDS
