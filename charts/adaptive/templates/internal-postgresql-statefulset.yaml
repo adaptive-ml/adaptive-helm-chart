@@ -50,6 +50,9 @@ spec:
       {{- end }}
       containers:
         - name: postgresql
+          args:
+          - -c
+          - max_connections=5000
           image: "{{ .Values.installPostgres.image.repository }}:{{ .Values.installPostgres.image.tag }}"
           imagePullPolicy: {{ .Values.installPostgres.image.pullPolicy }}
           ports:
