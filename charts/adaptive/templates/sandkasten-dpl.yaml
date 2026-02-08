@@ -33,7 +33,8 @@ spec:
       {{- end }}
       volumes:
         - name: working-dir
-          emptyDir: {}
+          emptyDir:
+            medium: Memory
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
