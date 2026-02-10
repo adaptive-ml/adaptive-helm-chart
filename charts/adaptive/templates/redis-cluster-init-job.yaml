@@ -1,0 +1,57 @@
+{{- if .Values.redis.install.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "adaptive.redis.fullname" . }}-cluster-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.redis.selectorLabels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  backoffLimit: 10
+  template:
+    metadata:
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.redis.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      containers:
+        - name: cluster-init
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              REPLICAS={{ .Values.redis.replicas | default 3 }}
+              PORT={{ .Values.redis.port }}
+              NODES=""
+              for i in $(seq 0 $((REPLICAS - 1))); do
+                PEER="{{ include "adaptive.redis.fullname" . }}-${i}.{{ include "adaptive.redis.headless.service.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+                until redis-cli -h "$PEER" -p $PORT ping 2>/dev/null | grep -q PONG; do
+                  echo "Waiting for $PEER..."
+                  sleep 2
+                done
+                NODES="$NODES ${PEER}:${PORT}"
+              done
+              echo "All nodes ready. Creating cluster with:$NODES"
+              FIRST_PEER="{{ include "adaptive.redis.fullname" . }}-0.{{ include "adaptive.redis.headless.service.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+              CLUSTER_INFO=$(redis-cli -h "$FIRST_PEER" -p $PORT cluster info 2>/dev/null || true)
+              if echo "$CLUSTER_INFO" | grep -q "cluster_state:ok"; then
+                echo "Cluster already initialized, skipping creation"
+              else
+                echo "yes" | redis-cli --cluster create $NODES --cluster-replicas 0
+                echo "Cluster created successfully"
+              fi
+{{- end }}

@@ -1,0 +1,21 @@
+{{- if .Values.redis.install.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.redis.headless.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.redis.selectorLabels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "adaptive.redis.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: redis
+      port: {{ .Values.redis.port }}
+      targetPort: {{ .Values.redis.port }}
+    - name: cluster-bus
+      port: {{ add (.Values.redis.port | int) 10000 }}
+      targetPort: {{ add (.Values.redis.port | int) 10000 }}
+{{- end }}

@@ -1,0 +1,122 @@
+{{- if .Values.redis.install.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "adaptive.redis.fullname" . }}
+  namespace: {{ .Release.Namespace}}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.redis.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.redis.replicas | default 3 }}
+  serviceName: {{ include "adaptive.redis.headless.service.fullname" . }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      {{- include "adaptive.redis.selectorLabels" . | nindent 6}}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/redis-confmap.yaml") . | sha256sum }}
+      {{- with .Values.redis.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.redis.selectorLabels" . | nindent 8 }}
+        {{- with .Values.redis.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.redis.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      containers:
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          command: ["redis-server"]
+          args:
+            - /config/redis.conf
+            - --aclfile
+            - /config/default.acl
+            - --cluster-announce-hostname
+            - "$(POD_NAME).{{ include "adaptive.redis.headless.service.fullname" . }}.$(POD_NAMESPACE).svc.cluster.local"
+          ports:
+            - containerPort: {{ .Values.redis.port }}
+              name: redis
+            - containerPort: {{ add (.Values.redis.port | int) 10000 }}
+              name: cluster-bus
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          {{- if .Values.redis.extraEnvVars }}
+          {{- range $key, $value := .Values.redis.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /config
+            - name: redis-data
+              mountPath: /data
+      {{- if not .Values.redis.persistence.enabled }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ include "adaptive.redis.configMap.fullname" $ }}
+        - name: redis-data
+          emptyDir: {}
+      {{- else }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ include "adaptive.redis.configMap.fullname" $ }}
+      {{- end }}
+  {{- if .Values.redis.persistence.enabled }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: redis-data
+        labels:
+          {{- include "adaptive.labels" . | nindent 10 }}
+          {{- include "adaptive.redis.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.redis.persistence.accessModes | nindent 10 }}
+        {{- if .Values.redis.persistence.storageClass }}
+        storageClassName: {{ .Values.redis.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.redis.persistence.size | quote }}
+  {{- end }}
+{{- end }}
