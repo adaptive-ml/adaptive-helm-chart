@@ -1,14 +1,17 @@
-{{- if .Values.grafana.enablePersistence }}
+{{- if .Values.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.grafana.pvc.name }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "monitoring.fullname" . }}
+  labels:
+    {{- include "monitoring.labels" . | nindent 4 }}
 spec:
-  storageClassName: {{ .Values.grafana.storageClass }}
   accessModes:
     - ReadWriteOnce
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass }}
+  {{- end }}
   resources:
     requests:
-      storage: {{ .Values.grafana.pvc.size}}
-{{- end}}
+      storage: {{ .Values.persistence.size }}
+{{- end }}
