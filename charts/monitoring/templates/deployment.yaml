@@ -1,104 +1,65 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.grafana.name}}
-  namespace: {{ .Release.Namespace }}
-  {{- with .Values.grafana.labels }}
+  name: {{ include "monitoring.fullname" . }}
   labels:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}   
-
+    {{- include "monitoring.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.grafana.replicas }}
+  replicas: 1
   selector:
-    {{- with .Values.grafana.labels }}
     matchLabels:
-      {{- toYaml . | nindent 6 }}
-    {{- end}}
+      {{- include "monitoring.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.grafana.labels }}
       labels:
-        {{- toYaml . | nindent 8 }}
-      {{- end}}
+        {{- include "monitoring.selectorLabels" . | nindent 8 }}
     spec:
-      securityContext:
-        fsGroup: 472
-        runAsUser: 472
-        supplementalGroups:
-          - 0
       containers:
-        - name: {{ .Values.grafana.name }}
-          image: {{ .Values.grafana.image }}
-          env:
-            - name: GF_AUTH_ANONYMOUS_ENABLED
-              value: "true"
-            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
-              value: "Admin"
-            - name: GF_AUTH_DISABLE_LOGIN_FORM
-              value: "true"
-            {{- if .Values.grafana.proxy.enable }}
-            - name: GF_SERVER_DOMAIN
-              value: "{{ .Values.grafana.proxy.domain }}"
-            - name: GF_SERVER_ROOT_URL
-              value: "{{ .Values.grafana.proxy.scheme }}://{{ .Values.grafana.proxy.domain }}/monitoring/"
-            {{- end }}
-          securityContext:
-            allowPrivilegeEscalation: false            
+        - name: {{ include "monitoring.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: {{ .Values.grafana.ports.name }}
-              containerPort: {{ .Values.grafana.ports.port }}
-              protocol: TCP
-          volumeMounts:
-          {{- if .Values.grafana.enablePersistence }}
-          - name: {{ .Values.grafana.storageClass }}
-            mountPath: /var/lib/grafana
+          {{- with .Values.env }}
+          env:
+            {{- range $name, $value := . }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
           {{- end }}
-          - name: datasource
-            mountPath: /etc/grafana/provisioning/datasources
-          - name: dashboard
-            mountPath: /etc/grafana/provisioning/dashboards
+          ports:
+            - containerPort: 3000
+            - containerPort: 4040
+            - containerPort: 4317
+            - containerPort: 4318
+            - containerPort: 9090
           readinessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /robots.txt
-              port: {{ .Values.grafana.ports.port }}
-              scheme: HTTP
-            initialDelaySeconds: 10
-            periodSeconds: 30
-            successThreshold: 1
-            timeoutSeconds: 2
-          livenessProbe:
-            failureThreshold: 3
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            successThreshold: 1
-            tcpSocket:
-              port: {{ .Values.grafana.ports.port }}
-            timeoutSeconds: 1         
-
+            exec:
+              command:
+                - cat
+                - /tmp/ready
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          # NOTE: By default OpenShift does not allow writing the root directory.
+          # That's why the data dirs for grafana, prometheus and loki can not be
+          # created and the pod never becomes ready.
+          # See: https://github.com/grafana/docker-otel-lgtm/issues/132
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
-        - name: datasource
-          configMap:
-            name: {{ .Values.grafana.configmap.name }}
-            items:
-              - key: datasource
-                path: datasource.yml
-        - name: dashboard
-          configMap:
-            name: {{ .Values.grafana.configmap.name }}
-            items:
-              - key: harmony_metrics.json
-                path: harmony_metrics.json
-              - key: control_plane_kpis.json
-                path: control_plane_kpis.json
-              - key: adaptive_engine_health.json
-                path: adaptive_engine_health.json
-              - key: dashboard
-                path: dashboard.yml
-        {{- if .Values.grafana.enablePersistence }}
-        - name: {{ .Values.grafana.storageClass }}
+        - name: data
+          {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ .Values.grafana.pvc.name }}
-        {{- end }}
+            claimName: {{ include "monitoring.fullname" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
