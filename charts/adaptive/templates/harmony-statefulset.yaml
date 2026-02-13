@@ -110,6 +110,8 @@ spec:
               name: {{ $ports.queue.name }}
             - containerPort: {{ $ports.torch.containerPort }}
               name: {{ $ports.torch.name }}
+            - containerPort: {{ $ports.tcpstore.containerPort }}
+              name: {{ $ports.tcpstore.name }}
           env:
             {{- include "adaptive.otelCollector.envVars" $root | nindent 12 }}
             {{- include "adaptive.harmony.secretEnvVars" $root | nindent 12 }}
@@ -136,6 +138,8 @@ spec:
               value: "{{ $ports.torch.containerPort }}"
             - name: QUEUE_PORT
               value: "{{ $ports.queue.containerPort }}"
+            - name: TCP_STORE_PORT
+              value: "{{ $ports.tcpstore.containerPort }}"
             - name: CONTROL_PLANE_URL
               value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" $root }}"
             {{- $extraEnvVars := $pool.extraEnvVars | default $root.Values.harmony.extraEnvVars }}
