@@ -25,5 +25,8 @@ spec:
     - name: {{ $ports.torch.name }}
       port: {{ $ports.torch.containerPort }}
       targetPort: {{ $ports.torch.containerPort }}
+    - name: {{ $ports.tcpstore.name }}
+      port: {{ $ports.tcpstore.containerPort }}
+      targetPort: {{ $ports.tcpstore.containerPort }}
 {{- end }}
 {{- end }}

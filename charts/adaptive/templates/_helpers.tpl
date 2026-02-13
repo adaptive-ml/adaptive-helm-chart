@@ -231,6 +231,7 @@ Harmony ports
 {
   "http": {"name": "http", "containerPort": 50053, "port": 80},
   "queue": {"name": "queue", "containerPort": 50052},
+  "tcpstore": {"name": "tcpstore", "containerPort": 50054},
   "torch": {"name": "torch", "containerPort": 7777}
 }
 {{- end }}
