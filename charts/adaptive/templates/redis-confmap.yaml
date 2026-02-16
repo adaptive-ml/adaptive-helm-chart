@@ -11,6 +11,16 @@ data:
   # Allow access to all keys, channel and scripting but block
   # -@SHUTDOWN
   # -@admin: CONFIG, SAVE, BGSAVE, REPLICAOF, MODULE
+  # +CLUSTER: re-enable CLUSTER commands (blocked by -@admin) needed for cluster mode
   default.acl: |
-    user default on nopass sanitize-payload ~* &* +@all -@admin -SHUTDOWN
+    user default on nopass sanitize-payload ~* &* +@all -@admin +CLUSTER -SHUTDOWN
+
+  redis.conf: |
+    port {{ .Values.redis.port }}
+    dir /data
+    cluster-enabled yes
+    cluster-config-file nodes.conf
+    cluster-node-timeout {{ .Values.redis.cluster.nodeTimeout | default 5000 }}
+    cluster-announce-port {{ .Values.redis.port }}
+    cluster-announce-bus-port {{ add (.Values.redis.port | int) 10000 }}
 {{- end }}
