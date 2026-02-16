@@ -1,0 +1,22 @@
+{{- if .Values.minio.enabled }}
+{{- if not .Values.minio.auth.rootPassword }}
+  {{- fail "minio.auth.rootPassword is required when minio.enabled is true" }}
+{{- end }}
+{{- if not .Values.minio.defaultBuckets }}
+  {{- fail "minio.defaultBuckets is required when minio.enabled is true (must match minio.bucketName)" }}
+{{- end }}
+{{- $bucketName := .Values.minio.bucketName | default "adaptive" }}
+{{- $buckets := splitList "," (replace ";" "," (replace " " "," .Values.minio.defaultBuckets)) }}
+{{- $found := false }}
+{{- range $buckets }}
+  {{- if eq (trim .) $bucketName }}
+    {{- $found = true }}
+  {{- end }}
+{{- end }}
+{{- if not $found }}
+  {{- fail (printf "minio.defaultBuckets (%s) must contain minio.bucketName (%s)" .Values.minio.defaultBuckets $bucketName) }}
+{{- end }}
+{{- if .Values.secrets.existingHarmonySecret }}
+  {{- fail "minio.enabled and secrets.existingHarmonySecret cannot both be set. MinIO auto-configures modelRegistryUrl and sharedDirectoryUrl, which conflicts with an externally managed harmony secret." }}
+{{- end }}
+{{- end }}

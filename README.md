@@ -19,6 +19,7 @@ A Helm Chart to deploy Adaptive Engine.
 - [Configuration](#configuration)
   - [Secrets Configuration](#secrets-configuration)
   - [Redis Configuration](#redis-configuration)
+  - [MinIO Object Storage (Optional)](#minio-object-storage-optional)
   - [Container Images](#container-images)
   - [GPU Resources](#gpu-resources)
   - [Ingress Configuration](#ingress-configuration)
@@ -37,6 +38,7 @@ A Helm Chart to deploy Adaptive Engine.
 
 ## Compatibility
 
+- Helm chart versions < `0.34` are not compatible with adaptive version `0.13.0` or higher.
 - Helm chart versions < `0.5.0` are not compatible with adaptive version `0.5.0` or higher.
 - **We strongly recommend using the latest helm chart version**
 
@@ -310,6 +312,85 @@ redis:
   # Additional environment variables
   extraEnvVars: {}
 ```
+
+### MinIO Object Storage (Optional)
+
+The chart can deploy an internal [MinIO](https://min.io/) S3-compatible object storage instance using the [Bitnami MinIO subchart](https://github.com/bitnami/charts/tree/main/bitnami/minio). This is intended for **testing and development** environments where you don't have access to an external S3-compatible storage service (e.g., AWS S3, Google Cloud Storage).
+
+> **Warning:** MinIO is **not recommended for production**. For production deployments, use an external managed S3 service and configure `secrets.modelRegistryUrl` and `secrets.sharedDirectoryUrl` directly.
+
+#### Enabling MinIO
+
+```yaml
+minio:
+  enabled: true
+
+  auth:
+    rootUser: adaptive
+    rootPassword: "your-secure-password"  # REQUIRED when enabled=true
+```
+
+When MinIO is enabled, the chart automatically:
+
+- Deploys a MinIO instance in the cluster
+- Creates a default bucket (configurable via `minio.bucketName`, defaults to `adaptive`)
+- Sets `secrets.modelRegistryUrl` to `s3://<bucketName>/model_registry`
+- Sets `secrets.sharedDirectoryUrl` to `s3://<bucketName>/shared`
+- Configures Harmony and Control Plane pods with the MinIO endpoint and credentials via environment variables
+
+You do **not** need to set `secrets.modelRegistryUrl` or `secrets.sharedDirectoryUrl` when MinIO is enabled.
+
+#### Configuration
+
+```yaml
+minio:
+  enabled: false  # Set to true to deploy MinIO
+
+  # Authentication (required when enabled)
+  auth:
+    rootUser: adaptive
+    rootPassword: ""  # REQUIRED when enabled=true
+
+  # URL scheme for the MinIO endpoint (default: "http")
+  # Override to "https" if TLS is configured on the MinIO service
+  scheme: "http"
+
+  # Bucket name for model registry and shared directory
+  bucketName: adaptive
+
+  # Bucket created automatically at MinIO startup
+  # IMPORTANT: Must match minio.bucketName
+  defaultBuckets: "adaptive"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      api: 9000
+
+  # Persistence (recommended for data durability)
+  persistence:
+    enabled: false        # Set to true to persist data across restarts
+    storageClass: ""      # Use default storage class if empty
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+
+  # Resources
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 16Gi
+    requests:
+      cpu: 4000m
+      memory: 16Gi
+
+  # MinIO web console
+  console:
+    enabled: true
+```
+
+For the full list of Bitnami MinIO subchart options, see the [Bitnami MinIO chart documentation](https://github.com/bitnami/charts/tree/main/bitnami/minio).
 
 ### Container Images
 

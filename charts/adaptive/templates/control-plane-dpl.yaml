@@ -104,14 +104,19 @@ spec:
                   key: oidcProviders
             - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__TYPE
               value: {{ .Values.controlPlane.sharedDirType | quote }}
+            {{- include "adaptive.minio.controlPlaneEnvVars" . | nindent 12 }}
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
             - name: ADAPTIVE_SERVER__BIND
               value: "0.0.0.0:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
               value: {{ .Values.controlPlane.rootUrl }}
+            - name: ADAPTIVE_SERVER__CLUSTER_ROOT_URL
+              value: "http://{{ include "adaptive.controlPlane.service.fullname" . }}:{{ .Values.controlPlane.servicePort | default 80 }}"
             - name: IMAGE_TAG
               value: {{ .Values.controlPlane.image.tag | quote }}
+            - name: ADAPTIVE_SANDBOX__URL
+              value: "{{ include "adaptive.sandkasten.privateHttpEndpoint" . }}"
             - name: ADAPTIVE_AUTH__SESSION__SECURE
               value: {{ .Values.auth.session.secure | default "true" | quote }}
             - name: ADAPTIVE_AUTH__SESSION__EXPIRATION_SECONDS

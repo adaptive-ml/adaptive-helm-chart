@@ -231,6 +231,7 @@ Harmony ports
 {
   "http": {"name": "http", "containerPort": 50053, "port": 80},
   "queue": {"name": "queue", "containerPort": 50052},
+  "tcpstore": {"name": "tcpstore", "containerPort": 50054},
   "torch": {"name": "torch", "containerPort": 7777}
 }
 {{- end }}
@@ -538,5 +539,105 @@ Usage: {{ include "adaptive.otelCollector.envVars" . | nindent 12 }}
   value: "http://{{ include "adaptive.otelCollector.service.fullname" . }}:4318"
 - name: OTEL_RESOURCE_ATTRIBUTES
   value: "deployment.environment.name={{ .Values.otelCollector.resourceAttributes.environmentName | default .Release.Name }}"
+{{- end }}
+{{- end }}
+
+{{/*
+MinIO related helpers
+*/}}
+{{- define "adaptive.minio.service.fullname" -}}
+{{- /* Bitnami MinIO chart creates service as: <release-name>-minio */ -}}
+{{- printf "%s-minio" .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.minio.port" -}}
+{{- .Values.minio.service.ports.api | default 9000 -}}
+{{- end }}
+
+{{- define "adaptive.minio.endpoint" -}}
+{{- $host := include "adaptive.minio.service.fullname" . -}}
+{{- $port := include "adaptive.minio.port" . | int -}}
+{{- $scheme := .Values.minio.scheme | default "http" -}}
+{{- printf "%s://%s:%d" $scheme $host $port -}}
+{{- end }}
+
+{{- define "adaptive.minio.bucketName" -}}
+{{- .Values.minio.bucketName | default "adaptive" -}}
+{{- end }}
+
+{{- define "adaptive.minio.modelRegistryUrl" -}}
+{{- $bucket := include "adaptive.minio.bucketName" . -}}
+{{- printf "s3://%s/model_registry" $bucket -}}
+{{- end }}
+
+{{- define "adaptive.minio.sharedDirectoryUrl" -}}
+{{- $bucket := include "adaptive.minio.bucketName" . -}}
+{{- printf "s3://%s/shared" $bucket -}}
+{{- end }}
+
+{{/*
+Generate S3 URLs - uses MinIO if enabled, otherwise uses values from secrets
+*/}}
+{{- define "adaptive.modelRegistryUrl" -}}
+{{- if .Values.minio.enabled -}}
+{{- include "adaptive.minio.modelRegistryUrl" . -}}
+{{- else -}}
+{{- required "secrets.modelRegistryUrl is required when minio.enabled is false!" .Values.secrets.modelRegistryUrl -}}
+{{- end -}}
+{{- end }}
+
+{{- define "adaptive.sharedDirectoryUrl" -}}
+{{- if .Values.minio.enabled -}}
+{{- include "adaptive.minio.sharedDirectoryUrl" . -}}
+{{- else -}}
+{{- required "secrets.sharedDirectoryUrl is required when minio.enabled is false!" .Values.secrets.sharedDirectoryUrl -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Helper to generate S3/MinIO environment variables for harmony components
+Usage: {{ include "adaptive.minio.envVars" . | nindent 12 }}
+Returns environment variables for AWS_ENDPOINT_URL_S3, S3_FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+*/}}
+{{- define "adaptive.minio.envVars" -}}
+{{- if .Values.minio.enabled }}
+- name: AWS_ENDPOINT_URL_S3
+  value: {{ include "adaptive.minio.endpoint" . }}
+- name: S3_FORCE_PATH_STYLE
+  value: "true"
+- name: AWS_ACCESS_KEY_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-user
+- name: AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-password
+{{- end }}
+{{- end }}
+
+{{/*
+Helper to generate S3/MinIO environment variables for control plane
+Usage: {{ include "adaptive.minio.controlPlaneEnvVars" . | nindent 12 }}
+Returns environment variables for ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT, ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+*/}}
+{{- define "adaptive.minio.controlPlaneEnvVars" -}}
+{{- if .Values.minio.enabled }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
+  value: {{ include "adaptive.minio.endpoint" . }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
+  value: "true"
+- name: AWS_ACCESS_KEY_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-user
+- name: AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ printf "%s-minio" .Release.Name }}
+      key: root-password
 {{- end }}
 {{- end }}
