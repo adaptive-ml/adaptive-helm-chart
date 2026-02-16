@@ -421,6 +421,7 @@ harmony:
   gpusPerReplica: 8
 ```
 
+
 ### Ingress Configuration
 
 The Adaptive Helm chart supports configuring a Kubernetes Ingress resource to expose the Control Plane API service and Adaptive UI externally. By default, ingress is disabled.
