@@ -51,7 +51,7 @@ spec:
               if echo "$CLUSTER_INFO" | grep -q "cluster_state:ok"; then
                 echo "Cluster already initialized, skipping creation"
               else
-                echo "yes" | redis-cli --cluster create $NODES --cluster-replicas 0
+                echo "yes" | redis-cli --cluster create $NODES --cluster-replicas 1
                 echo "Cluster created successfully"
               fi
 {{- end }}

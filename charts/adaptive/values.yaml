@@ -532,7 +532,7 @@ redis:  # Redis is required and cannot be disabled
     enabled: true  # Set to false to use external Redis endpoint
 
   # Number of Redis cluster nodes
-  replicas: 3
+  replicas: 6
 
   # Redis Cluster configuration
   cluster:
@@ -565,8 +565,8 @@ redis:  # Redis is required and cannot be disabled
   # NOTE: Specify either minAvailable OR maxUnavailable, not both
   pdb:
     enabled: true
-    minAvailable: 1
-    # maxUnavailable: 1
+    maxUnavailable: 1
+    # minAvailable: 1
 
   # Persistence configuration for Redis data
   persistence:

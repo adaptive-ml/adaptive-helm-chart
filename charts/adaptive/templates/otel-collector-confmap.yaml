@@ -16,7 +16,7 @@ data:
             endpoint: 0.0.0.0:4318
 
       redis:
-        endpoint: {{ include "adaptive.redis.service.fullname" . }}:{{ .Values.redis.port }}
+        endpoint: {{ include "adaptive.redis.fullname" . }}-0.{{ include "adaptive.redis.headless.service.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.redis.port }}
         collection_interval: {{ .Values.otelCollector.prometheus.scrapeInterval | default "15s" }}
         {{- if .Values.redis.auth.username }}
         username: {{ .Values.redis.auth.username | quote }}
