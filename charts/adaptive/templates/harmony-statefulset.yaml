@@ -63,9 +63,22 @@ spec:
         {{- toYaml $nodeSelector | nindent 8 }}
       {{- end }}
       {{- $tolerations := $pool.tolerations | default $root.Values.harmony.tolerations }}
+      {{- $requireGpu := ternary $pool.requireGpu $root.Values.harmony.requireGpu (hasKey $pool "requireGpu") }}
       {{- if $tolerations }}
       tolerations:
+        {{- if $requireGpu }}
         {{- toYaml $tolerations | nindent 8 }}
+        {{- else }}
+        {{- $filteredTolerations := list }}
+        {{- range $tolerations }}
+        {{- if ne .key "nvidia.com/gpu" }}
+        {{- $filteredTolerations = append $filteredTolerations . }}
+        {{- end }}
+        {{- end }}
+        {{- if $filteredTolerations }}
+        {{- toYaml $filteredTolerations | nindent 8 }}
+        {{- end }}
+        {{- end }}
       {{- end }}
       initContainers:
       - name: init-permissions
@@ -95,12 +108,12 @@ spec:
           resources:
             limits:
               {{- toYaml $resources.limits | nindent 14 }}
-              {{- if $gpusPerReplica }}
+              {{- if and $requireGpu $gpusPerReplica }}
               nvidia.com/gpu: {{ $gpusPerReplica }}
               {{- end }}
             requests:
               {{- toYaml $resources.requests | nindent 14 }}
-              {{- if $gpusPerReplica }}
+              {{- if and $requireGpu $gpusPerReplica }}
               nvidia.com/gpu: {{ $gpusPerReplica }}
               {{- end }}
           ports:
@@ -153,6 +166,7 @@ spec:
               value: "http://{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
+            {{- include "adaptive.minio.envVars" $root | nindent 12 }}
             - name: ADAPTIVE_MODE
               value: PROD
             - name: JOB_LOG_DIR

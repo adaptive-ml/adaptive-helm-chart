@@ -80,9 +80,12 @@ harmony:
     tag: harmony:latest   # Add the harmony image tag
     pullPolicy: Always
 
+  # Require GPU resources for harmony pods (default: true)
+  # WARNING: Setting this to false is only for testing purposes. Harmony requires GPUs for production workloads.
+  requireGpu: true
+
   # Default values inherited by all compute pools unless overridden
   # Should be equal to, or a divisor of the # of GPUs on each node
-  # If you are not deploying on GPU, comment out the line
   gpusPerReplica: 8
 
   nodeSelector:   # Uncomment to deploy harmony on specify EKS node group or GKE node pool
@@ -112,6 +115,8 @@ harmony:
     prometheus.io/port: "50053"
   podLabels: {}
   extraEnvVars: {}
+  # GPU tolerations - only applied when requireGpu is true (default)
+  # Set requireGpu: false to disable GPU requirements (testing only)
   tolerations:
     - key: "nvidia.com/gpu"
       operator: "Exists"
@@ -608,6 +613,12 @@ installPostgres:
   username: adaptive
   password: ""  # Leave empty to auto-generate, or set a custom password
 
+  # Set to true for PostgreSQL images with embedded data dumps (testing scenarios)
+  # When enabled, no volume is mounted to /var/lib/postgresql/data, allowing the image's
+  # built-in data to be used. This also sets PGDATA to /var/lib/postgresql/data (no subdirectory).
+  # WARNING: Data will be lost when the pod is deleted. Only use for testing.
+  useEmbeddedData: false
+
   # PostgreSQL persistence
   persistence:
     enabled: false
@@ -657,16 +668,77 @@ installPostgres:
   #     readOnly: true
   extraVolumeMounts: []
 
+# MinIO S3-compatible object storage (Bitnami subchart)
+# See https://github.com/bitnami/charts/tree/main/bitnami/minio for full subchart options
+# OPTIONAL: Set enabled=true to deploy an internal MinIO instance in the cluster
+# DEFAULT BEHAVIOR: Use external S3 storage (configured via secrets.modelRegistryUrl and secrets.sharedDirectoryUrl)
+# We strongly recommend using an external managed S3 service for production
+minio:
+  enabled: false
+
+  # Authentication
+  auth:
+    rootUser: adaptive
+    rootPassword: ""  # REQUIRED when enabled=true
+
+  # URL scheme for the MinIO endpoint (default: "http")
+  # Override to "https" if TLS is configured on the MinIO service
+  scheme: "http"
+
+  # Default bucket name for model registry and shared directory
+  bucketName: adaptive
+
+  # Bucket created automatically at MinIO startup (standalone mode)
+  # IMPORTANT: This must match minio.bucketName above
+  defaultBuckets: "adaptive"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      api: 9000
+
+  # Persistence configuration
+  persistence:
+    enabled: false
+    storageClass: ""  # Use default storage class if empty
+    size: 20Gi
+    accessModes:
+      - ReadWriteOnce
+
+  # Resources — defaults optimized for testing/dev clusters.
+  # For heavy ML model weights (multi-GB files) and high throughput, you may want to increase
+  # these values (e.g., 1–4 cores and 4–16Gi memory) based on your node capacity.
+  # Requests are intentionally lower than limits to allow Burstable QoS.
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 8Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+
+  # Node selector and tolerations
+  nodeSelector: {}
+  tolerations: []
+
+  # Pod annotations and labels
+  podAnnotations: {}
+  podLabels: {}
+
+  # Console UI
+  console:
+    enabled: true
+
+  extraEnvVars: []
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry
     #   persistentVolumeClaim:
     #     claimName: model-registry-pvc
-
 volumeMounts: []
     # - name: model-registry
     #   mountPath: /model-registry
-
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: false
