@@ -570,7 +570,7 @@ redis:  # Redis is required and cannot be disabled
 
   # Persistence configuration for Redis data
   persistence:
-    enabled: false  # Set to true to use PersistentVolumeClaims
+    enabled: true  # Set to true to use PersistentVolumeClaims
     storageClass: ""  # Use default storage class if empty
     size: 1Gi
     accessModes:
