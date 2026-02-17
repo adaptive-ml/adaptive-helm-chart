@@ -645,6 +645,15 @@ installPostgres:
 minio:
   enabled: false
 
+  # Image configuration (defaults to public Docker Hub Bitnami image)
+  # WARNING: Do NOT replace with the official minio/minio image — it is incompatible
+  # with the Bitnami chart templates and will fail at runtime.
+  # To use a private mirror, re-push the Bitnami image to your own registry and override below.
+  image:
+    registry: docker.io
+    repository: bitnami/minio
+    # tag defaults to the subchart's appVersion when omitted
+
   # Authentication
   auth:
     rootUser: adaptive
@@ -700,6 +709,17 @@ minio:
     enabled: true
 
   extraEnvVars: []
+
+# Bitnami image registry validation bypass (used by the MinIO subchart)
+# The Bitnami MinIO subchart verifies that images are pulled from a known Bitnami registry.
+# This is ONLY needed if you override minio.image.registry to a private mirror.
+# It does NOT disable image pull verification or weaken cluster security — it simply
+# tells the Bitnami chart to skip its own registry allowlist check.
+# Uncomment the block below when using a custom image registry for MinIO:
+# global:
+#   security:
+#     allowInsecureImages: true
+
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry
