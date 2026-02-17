@@ -84,10 +84,6 @@ harmony:
   # WARNING: Setting this to false is only for testing purposes. Harmony requires GPUs for production workloads.
   requireGpu: true
 
-  # Require GPU resources for harmony pods (default: true)
-  # WARNING: Setting this to false is only for testing purposes. Harmony requires GPUs for production workloads.
-  requireGpu: true
-
   # Default values inherited by all compute pools unless overridden
   # Should be equal to, or a divisor of the # of GPUs on each node
   gpusPerReplica: 8
