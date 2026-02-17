@@ -609,6 +609,8 @@ Returns environment variables for AWS_ENDPOINT_URL_S3, S3_FORCE_PATH_STYLE, AWS_
   value: {{ include "adaptive.minio.endpoint" . }}
 - name: S3_FORCE_PATH_STYLE
   value: "true"
+- name: AWS_DEFAULT_REGION
+  value: "us-east-1"
 - name: AWS_ACCESS_KEY_ID
   valueFrom:
     secretKeyRef:
@@ -633,6 +635,8 @@ Returns environment variables for ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT, 
   value: {{ include "adaptive.minio.endpoint" . }}
 - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
   value: "true"
+- name: AWS_DEFAULT_REGION
+  value: "us-east-1"
 - name: AWS_ACCESS_KEY_ID
   valueFrom:
     secretKeyRef:
