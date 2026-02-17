@@ -676,14 +676,27 @@ installPostgres:
 minio:
   enabled: false
 
-  # Image configuration (defaults to public Docker Hub Bitnami image)
+  # Image configuration
   # WARNING: Do NOT replace with the official minio/minio image — it is incompatible
   # with the Bitnami chart templates and will fail at runtime.
+  # Uses bitnamilegacy registry since Bitnami removed images from Docker Hub (Aug 2025).
   # To use a private mirror, re-push the Bitnami image to your own registry and override below.
   image:
     registry: docker.io
-    repository: bitnami/minio
+    repository: bitnamilegacy/minio
     # tag defaults to the subchart's appVersion when omitted
+
+  # The minio-client image is used by the subchart for bucket provisioning jobs
+  clientImage:
+    registry: docker.io
+    repository: bitnamilegacy/minio-client
+
+  # Volume-permissions init container image
+  defaultInitContainers:
+    volumePermissions:
+      image:
+        registry: docker.io
+        repository: bitnamilegacy/os-shell
 
   # Authentication
   auth:
@@ -738,6 +751,9 @@ minio:
   # Console UI
   console:
     enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/minio-object-browser
 
   extraEnvVars: []
 
