@@ -379,6 +379,10 @@ Redis related helpers
 {{- printf "%s-svc" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "adaptive.redis.headless.service.fullname" -}}
+{{- printf "%s-headless" (include "adaptive.redis.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{- define "adaptive.redis.configMap.fullname"}}
 {{- printf "%s-redis-confmap" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end}}

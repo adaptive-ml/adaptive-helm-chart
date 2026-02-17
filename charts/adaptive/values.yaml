@@ -84,6 +84,10 @@ harmony:
   # WARNING: Setting this to false is only for testing purposes. Harmony requires GPUs for production workloads.
   requireGpu: true
 
+  # Require GPU resources for harmony pods (default: true)
+  # WARNING: Setting this to false is only for testing purposes. Harmony requires GPUs for production workloads.
+  requireGpu: true
+
   # Default values inherited by all compute pools unless overridden
   # Should be equal to, or a divisor of the # of GPUs on each node
   gpusPerReplica: 8
@@ -431,9 +435,10 @@ otelCollector:
 
   # Pipelines configuration
   # Define how data flows from receivers through processors to exporters
-  # Available receivers: [otlp, prometheus]
-  # Available processors: [memory_limiter, batch, resource]
+  # Available receivers: [otlp, prometheus, redis]
+  # Available processors: [memory_limiter, batch, resource, attributes/redis]
   # Note: The 'resource' processor is only available when resourceAttributes.extra is configured
+  # Note: The 'attributes/redis' processor adds service.name and k8s.namespace.name to redis metrics
   # Note: deployment.environment.name is now set via OTEL_RESOURCE_ATTRIBUTES env var on application pods
   pipelines: |
     traces:
@@ -443,6 +448,10 @@ otelCollector:
     metrics:
       receivers: [otlp, prometheus]
       processors: [memory_limiter, batch]
+      exporters: [debug]
+    metrics/redis:
+      receivers: [redis]
+      processors: [attributes/redis, memory_limiter, batch]
       exporters: [debug]
     logs:
       receivers: [otlp]
@@ -531,6 +540,14 @@ redis:  # Redis is required and cannot be disabled
   install:
     enabled: true  # Set to false to use external Redis endpoint
 
+  # Number of Redis cluster nodes
+  replicas: 6
+
+  # Redis Cluster configuration
+  cluster:
+    # Cluster node timeout in milliseconds
+    nodeTimeout: 5000
+
   # Internal Redis configuration (used when install.enabled=true)
   image:
     repository: redis
@@ -552,11 +569,29 @@ redis:  # Redis is required and cannot be disabled
       cpu: 500m
       memory: 512Mi
 
+  # Pod Disruption Budget for Redis
+  # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+  # NOTE: Specify either minAvailable OR maxUnavailable, not both
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+    # minAvailable: 1
+
+  # Persistence configuration for Redis data
+  persistence:
+    enabled: true  # Set to true to use PersistentVolumeClaims
+    storageClass: ""  # Use default storage class if empty
+    size: 1Gi
+    accessModes:
+      - ReadWriteOnce
+
   podAnnotations: {}
   podLabels: {}
   extraEnvVars: {}
   nodeSelector: {}
   tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
 
   # External Redis configuration (used when install.enabled=false)
   external:
@@ -715,10 +750,9 @@ minio:
 # This is ONLY needed if you override minio.image.registry to a private mirror.
 # It does NOT disable image pull verification or weaken cluster security — it simply
 # tells the Bitnami chart to skip its own registry allowlist check.
-# Uncomment the block below when using a custom image registry for MinIO:
-# global:
-#   security:
-#     allowInsecureImages: true
+global:
+  security:
+    allowInsecureImages: true
 
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
