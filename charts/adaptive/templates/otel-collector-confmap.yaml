@@ -15,16 +15,6 @@ data:
           http:
             endpoint: 0.0.0.0:4318
 
-      redis:
-        endpoint: {{ include "adaptive.redis.fullname" . }}-0.{{ include "adaptive.redis.headless.service.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.redis.port }}
-        collection_interval: {{ .Values.otelCollector.prometheus.scrapeInterval | default "15s" }}
-        {{- if .Values.redis.auth.username }}
-        username: {{ .Values.redis.auth.username | quote }}
-        {{- end }}
-        {{- if .Values.redis.auth.password }}
-        password: {{ .Values.redis.auth.password | quote }}
-        {{- end }}
-
       prometheus:
         config:
           scrape_configs:
@@ -85,21 +75,6 @@ data:
             action: upsert
           {{- end }}
       {{- end }}
-      attributes/redis:
-        actions:
-          - key: service.name
-            value: "redis"
-            action: upsert
-          - key: namespace
-            value: {{ .Release.Namespace | quote }}
-            action: upsert
-          {{- if .Values.otelCollector.resourceAttributes.extra }}
-          {{- range $key, $value := .Values.otelCollector.resourceAttributes.extra }}
-          - key: {{ $key }}
-            value: {{ $value | quote }}
-            action: upsert
-          {{- end }}
-          {{- end }}
 
     extensions:
       health_check:
