@@ -71,8 +71,8 @@ harmony:
     create: true
     # Annotations to add to the service account (e.g., for IAM roles)
     annotations: {}
-    # The name of the service account to use if not creating one
-    # If not set and create is true, a name is generated using the fullname template
+    # The name of the service account to use
+    # If not set, a name is generated using the fullname template
     name: ""
 
   image:
@@ -195,8 +195,8 @@ controlPlane:
     create: true
     # Annotations to add to the service account (e.g., for IAM roles)
     annotations: {}
-    # The name of the service account to use if not creating one
-    # If not set and create is true, a name is generated using the fullname template
+    # The name of the service account to use
+    # If not set, a name is generated using the fullname template
     name: ""
 
   image:
@@ -282,8 +282,8 @@ sandkasten:
     create: true
     # Annotations to add to the service account (e.g., for IAM roles)
     annotations: {}
-    # The name of the service account to use if not creating one
-    # If not set and create is true, a name is generated using the fullname template
+    # The name of the service account to use
+    # If not set, a name is generated using the fullname template
     name: ""
 
   servicePort: 3005
@@ -355,6 +355,9 @@ otelCollector:
     create: true
     # Annotations to add to the service account
     annotations: {}
+    # The name of the service account to use
+    # If not set, a name is generated using the fullname template
+    name: ""
 
   image:
     repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib
