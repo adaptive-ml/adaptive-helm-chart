@@ -191,15 +191,27 @@ app.kubernetes.io/component: sandkasten
 Service account fullnames for each component
 */}}
 {{- define "adaptive.controlPlane.serviceAccount.fullname" -}}
-{{- printf "%s-sa" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- if .Values.controlPlane.serviceAccount.name -}}
+{{- .Values.controlPlane.serviceAccount.name -}}
+{{- else -}}
+{{- printf "%s-sa" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end }}
 
 {{- define "adaptive.harmony.serviceAccount.fullname" -}}
-{{- printf "%s-sa" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- if .Values.harmony.serviceAccount.name -}}
+{{- .Values.harmony.serviceAccount.name -}}
+{{- else -}}
+{{- printf "%s-sa" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end }}
 
 {{- define "adaptive.sandkasten.serviceAccount.fullname" -}}
-{{- printf "%s-sa" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- if .Values.sandkasten.serviceAccount.name -}}
+{{- .Values.sandkasten.serviceAccount.name -}}
+{{- else -}}
+{{- printf "%s-sa" (include "adaptive.sandkasten.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end }}
 
 {{- define "adaptive.sandkasten.role.fullname" -}}
@@ -510,7 +522,11 @@ app.kubernetes.io/component: otel-collector
 {{- end }}
 
 {{- define "adaptive.otelCollector.serviceAccount.fullname" -}}
-{{- printf "%s-sa" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- if .Values.otelCollector.serviceAccount.name -}}
+{{- .Values.otelCollector.serviceAccount.name -}}
+{{- else -}}
+{{- printf "%s-sa" (include "adaptive.otelCollector.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end }}
 
 {{- define "adaptive.otelCollector.role.fullname" -}}

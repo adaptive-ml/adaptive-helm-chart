@@ -30,7 +30,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.otelCollector.serviceAccount.create }}
+      {{- if or .Values.otelCollector.serviceAccount.create .Values.otelCollector.serviceAccount.name }}
       serviceAccountName: {{ include "adaptive.otelCollector.serviceAccount.fullname" . }}
       {{- end }}
       {{- with .Values.otelCollector.nodeSelector }}
