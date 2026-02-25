@@ -32,7 +32,7 @@ This is done in order to guarantee that the compute plane has access to all the 
 * Nodepools need to have a x86_64 cpu. Adaptive does not currently support ARM architectures.
 * The [maximum pods per node](https://learn.microsoft.com/en-us/azure/aks/concepts-network-ip-address-planning#maximum-pods-per-node) needs to be *at least 50*
 * The CPU nodepool vms should have at least 32GB of memory and at least 8 vCPUs. Our recommended instance type is Standard_D16as_v6 with 16 vCPUs and 64GB of memory
-* NodePool shuld have at least 800GB of os disk size in order to accomodate for adaptive disk usage
+* NodePool should have at least 800GB of os disk size in order to accommodate for adaptive disk usage
 
 
 ## Storage
@@ -143,7 +143,7 @@ Once the add-on is installed you can use these values in the helm chart in order
 You need to replace `<hostname>` with your desired hostname for adaptive
 ```yaml
 controlPlane:
-    rootUrl: https://<hostname>
+  rootUrl: https://<hostname>
 ingress:
   enabled: true
   className: webapprouting.kubernetes.azure.com
