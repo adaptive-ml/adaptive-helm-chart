@@ -59,7 +59,8 @@ auth:
   # List of email addresses for admins; overrides default_role when these users are created
   admins: []
 
-containerRegistry: <aws_account_id>.dkr.ecr.<region>.amazonaws.com   # Add the Adaptive Registry you have been granted access to
+# For ECR: <aws_account_id>.dkr.ecr.<region>.amazonaws.com
+containerRegistry: ""
 
 harmony:
   # Set to false to disable the harmony statefulset deployment (advanced mode only)

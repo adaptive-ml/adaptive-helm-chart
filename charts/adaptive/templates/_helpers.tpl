@@ -332,7 +332,11 @@ Harmony settings
 Build the image URIs from registry, repository, name, and tag
 */}}
 {{- define "adaptive.harmony.imageUri" -}}
-{{- printf "%s/%s:%s" .Values.containerRegistry .Values.harmony.image.repository .Values.harmony.image.tag | trimSuffix "/" }}
+{{- if .Values.containerRegistry -}}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.harmony.image.repository .Values.harmony.image.tag }}
+{{- else -}}
+{{- printf "%s:%s" .Values.harmony.image.repository .Values.harmony.image.tag }}
+{{- end -}}
 {{- end }}
 
 {{/*
@@ -346,16 +350,28 @@ Context: dict with "root" (root context) and "pool" (pool object)
 {{- if and $pool.image $pool.image.tag -}}
 {{- $tag = $pool.image.tag -}}
 {{- end -}}
-{{- printf "%s/%s:%s" $root.Values.containerRegistry $root.Values.harmony.image.repository $tag | trimSuffix "/" }}
+{{- if $root.Values.containerRegistry -}}
+{{- printf "%s/%s:%s" $root.Values.containerRegistry $root.Values.harmony.image.repository $tag }}
+{{- else -}}
+{{- printf "%s:%s" $root.Values.harmony.image.repository $tag }}
+{{- end -}}
 {{- end }}
 {{- define "adaptive.controlPlane.imageUri" -}}
-{{- printf "%s/%s:%s" .Values.containerRegistry .Values.controlPlane.image.repository .Values.controlPlane.image.tag | trimSuffix "/" }}
+{{- if .Values.containerRegistry -}}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.controlPlane.image.repository .Values.controlPlane.image.tag }}
+{{- else -}}
+{{- printf "%s:%s" .Values.controlPlane.image.repository .Values.controlPlane.image.tag }}
+{{- end -}}
 {{- end }}
 {{- define "adaptive.tensorboard.imageUri" -}}
 {{- printf "%s" .Values.tensorboard.imageUri }}
 {{- end }}
 {{- define "adaptive.sandkasten.imageUri" -}}
-{{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository .Values.sandkasten.image.tag | trimSuffix "/" }}
+{{- if .Values.containerRegistry -}}
+{{- printf "%s/%s:%s" .Values.containerRegistry .Values.sandkasten.image.repository .Values.sandkasten.image.tag }}
+{{- else -}}
+{{- printf "%s:%s" .Values.sandkasten.image.repository .Values.sandkasten.image.tag }}
+{{- end -}}
 {{- end }}
 {{- define "adaptive.mlflow.imageUri" -}}
 {{- printf "%s" .Values.mlflow.imageUri }}
