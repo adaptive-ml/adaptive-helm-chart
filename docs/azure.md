@@ -143,7 +143,7 @@ Once the add-on is installed you can use these values in the helm chart in order
 You need to replace `<hostname>` with your desired hostname for adaptive
 ```yaml
 controlPlane:
-    rootUrl: https://<hostname>
+  rootUrl: https://<hostname>
 ingress:
   enabled: true
   className: webapprouting.kubernetes.azure.com
