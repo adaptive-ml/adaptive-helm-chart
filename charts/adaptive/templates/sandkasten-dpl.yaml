@@ -74,7 +74,9 @@ spec:
               mountPath: /working_dir
           env:
             {{- include "adaptive.otelCollector.envVars" . | nindent 12 }}
+            {{- include "adaptive.harmony.secretEnvVars" . | nindent 12 }}
             {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
+            {{- include "adaptive.minio.envVars" . | nindent 12 }}
             - name: K8S_RECIPE_RUNNER_NAMESPACE
               value: {{ .Release.Namespace | quote }}
             - name: K8S_RECIPE_RUNNER_IMAGE
