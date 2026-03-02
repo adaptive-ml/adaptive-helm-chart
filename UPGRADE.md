@@ -2,6 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Upgrade Guide](#upgrade-guide)
+  - [0.37.x to 0.38.0](#037x-to-0380)
+    - [Breaking Change: Monitoring Chart Merged into Adaptive Chart](#breaking-change-monitoring-chart-merged-into-adaptive-chart)
   - [0.29.x to 0.30.0](#029x-to-0300)
     - [Breaking Change: Service Account Split](#breaking-change-service-account-split)
   - [0.24.x to 0.25.0](#024x-to-0250)
@@ -14,6 +16,49 @@
 # Upgrade Guide
 
 This document describes breaking changes between Helm chart versions and how to migrate your configuration.
+
+## 0.37.x to 0.38.0
+
+### Breaking Change: Monitoring Chart Merged into Adaptive Chart
+
+The standalone `monitoring` chart (`charts/monitoring/`) has been removed. Its functionality is now available as an optional component in the main `adaptive` chart under the `lgtm` key.
+
+**What changed:**
+
+- The `monitoring` chart is no longer published as a separate OCI artifact
+- The LGTM observability stack (Grafana, Loki, Tempo, Mimir, Pyroscope) is now deployed via `lgtm.enabled: true` in the adaptive chart
+- When both `lgtm.enabled` and `otelCollector.enabled` are true, the OTel Collector is auto-configured to send telemetry to the LGTM backend, and the Control Plane receives `ADAPTIVE_GRAFANA__URL` and `ADAPTIVE_GRAFANA__LOKI_URL` environment variables
+
+**Migration steps:**
+
+1. Remove the standalone monitoring release:
+   ```bash
+   helm uninstall adaptive-monitoring
+   ```
+
+2. Enable LGTM in your adaptive values file:
+   ```yaml
+   lgtm:
+     enabled: true
+
+     # Optional: carry over any custom settings from your old monitoring values
+     persistence:
+       enabled: true       # if you had persistence enabled
+       size: 10Gi
+       storageClass: ""
+
+     env:
+       GF_AUTH_ANONYMOUS_ENABLED: true
+       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+       GF_AUTH_DISABLE_LOGIN_FORM: true
+   ```
+
+3. Upgrade the adaptive release:
+   ```bash
+   helm upgrade adaptive oci://ghcr.io/adaptive-ml/adaptive -f values.yaml
+   ```
+
+**Note:** If you had persistent data in the old monitoring chart, you will need to manually migrate it — the new LGTM deployment creates its own PVC.
 
 ## 0.29.x to 0.30.0
 
