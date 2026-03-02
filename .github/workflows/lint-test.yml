@@ -158,10 +158,6 @@ jobs:
           echo "All require_email_verified tests passed!"
           echo "::endgroup::"
 
-          echo "::group::Testing monitoring stack"
-          helm install --dry-run --debug adaptive-monitoring ./charts/monitoring
-          echo "::endgroup::"
-
   toc-check:
     runs-on: ubuntu-latest
     steps:

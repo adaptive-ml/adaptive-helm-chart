@@ -1,24 +1,27 @@
+{{- if .Values.lgtm.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "monitoring.fullname" . }}
+  name: {{ include "adaptive.lgtm.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "monitoring.labels" . | nindent 4 }}
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.lgtm.selectorLabels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "monitoring.selectorLabels" . | nindent 6 }}
+      {{- include "adaptive.lgtm.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "monitoring.selectorLabels" . | nindent 8 }}
+        {{- include "adaptive.lgtm.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: {{ include "monitoring.name" . }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- with .Values.env }}
+        - name: lgtm
+          image: "{{ .Values.lgtm.image.repository }}:{{ .Values.lgtm.image.tag }}"
+          imagePullPolicy: {{ .Values.lgtm.image.pullPolicy }}
+          {{- with .Values.lgtm.env }}
           env:
             {{- range $name, $value := . }}
             - name: {{ $name }}
@@ -36,30 +39,27 @@ spec:
               command:
                 - cat
                 - /tmp/ready
-          {{- with .Values.resources }}
+          {{- with .Values.lgtm.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          # NOTE: By default OpenShift does not allow writing the root directory.
-          # That's why the data dirs for grafana, prometheus and loki can not be
-          # created and the pod never becomes ready.
-          # See: https://github.com/grafana/docker-otel-lgtm/issues/132
           volumeMounts:
             - name: data
               mountPath: /data
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.lgtm.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with .Values.lgtm.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
         - name: data
-          {{- if .Values.persistence.enabled }}
+          {{- if .Values.lgtm.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "monitoring.fullname" . }}
+            claimName: {{ include "adaptive.lgtm.pvc.fullname" . }}
           {{- else }}
           emptyDir: {}
           {{- end }}
+{{- end }}

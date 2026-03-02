@@ -134,6 +134,12 @@ spec:
             - name: MLFLOW_TRACKING_URI
               value: "{{ include "adaptive.mlflow.trackingUrl" . }}"
             {{- end }}
+            {{- if and .Values.lgtm.enabled .Values.otelCollector.enabled }}
+            - name: ADAPTIVE_GRAFANA__URL
+              value: "http://{{ include "adaptive.lgtm.service.fullname" . }}:3000"
+            - name: ADAPTIVE_GRAFANA__LOKI_URL
+              value: "http://{{ include "adaptive.lgtm.service.fullname" . }}:3100"
+            {{- end }}
             {{- if .Values.controlPlane.extraEnvVars }}
             {{- range $key, $value := .Values.controlPlane.extraEnvVars }}
             - name: {{ $key }}

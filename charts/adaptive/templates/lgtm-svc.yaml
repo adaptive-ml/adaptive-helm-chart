@@ -1,12 +1,15 @@
+{{- if .Values.lgtm.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "monitoring.fullname" . }}
+  name: {{ include "adaptive.lgtm.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "monitoring.labels" . | nindent 4 }}
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.lgtm.selectorLabels" . | nindent 4 }}
 spec:
   selector:
-    {{- include "monitoring.selectorLabels" . | nindent 4 }}
+    {{- include "adaptive.lgtm.selectorLabels" . | nindent 4 }}
   ports:
     - name: grafana
       protocol: TCP
@@ -32,3 +35,4 @@ spec:
       protocol: TCP
       port: 9090
       targetPort: 9090
+{{- end }}

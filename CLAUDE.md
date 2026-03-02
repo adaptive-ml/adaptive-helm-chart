@@ -12,7 +12,6 @@
     - [Adaptive Chart Structure](#adaptive-chart-structure)
     - [Secrets Management](#secrets-management)
     - [Template Helpers (`_helpers.tpl`)](#template-helpers-_helperstpl)
-    - [Monitoring Chart](#monitoring-chart)
   - [Key Configuration Patterns](#key-configuration-patterns)
     - [Compute Pools (Harmony)](#compute-pools-harmony)
     - [Prometheus Integration](#prometheus-integration)
@@ -27,9 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a Helm chart repository for deploying Adaptive Engine, an ML platform. It contains two charts:
-- **adaptive** - Main chart for deploying Adaptive Engine (control plane, harmony workers, sandkasten sandbox service, MLflow, Redis, optionally PostgreSQL)
-- **monitoring** - Optional addon chart for Grafana/Loki/Promtail monitoring stack
+This is a Helm chart repository for deploying Adaptive Engine, an ML platform. It contains one chart:
+- **adaptive** - Main chart for deploying Adaptive Engine (control plane, harmony workers, sandkasten sandbox service, MLflow, Redis, optionally PostgreSQL, optionally LGTM observability stack)
 
 ## Common Commands
 
@@ -67,7 +65,6 @@ helm template adaptive-test ./charts/adaptive
 
 ```bash
 helm dependency update ./charts/adaptive
-helm dependency update ./charts/monitoring
 ```
 
 ### TOC Generation
@@ -108,6 +105,11 @@ The main chart deploys these components:
 6. **PostgreSQL** (`internal-postgresql-statefulset.yaml`)
    - Optional internal database (disabled by default, external DB recommended)
 
+7. **LGTM Stack** (`lgtm-dpl.yaml`, `lgtm-svc.yaml`, `lgtm-pvc.yaml`)
+   - Optional all-in-one observability stack (Grafana, Loki, Tempo, Mimir, Pyroscope, OTel Collector)
+   - For development/testing only
+   - When enabled with the OTel Collector, auto-configures telemetry export to LGTM and sets `ADAPTIVE_GRAFANA__URL` / `ADAPTIVE_GRAFANA__LOKI_URL` on the Control Plane
+
 ### Secrets Management
 
 The chart supports two secret patterns:
@@ -125,10 +127,6 @@ Contains reusable template functions for:
 - Image URI construction
 - Database and Redis URL generation
 - OIDC provider TOML formatting
-
-### Monitoring Chart
-
-Deploys Grafana with Loki (log aggregation) and Promtail (log collection). Includes pre-built dashboards in `charts/monitoring/dashboards/`.
 
 ## Key Configuration Patterns
 
@@ -152,7 +150,7 @@ harmony:
 
 ### Prometheus Integration
 
-The chart includes Prometheus as a subchart. Adaptive components expose metrics via annotations:
+The OTel Collector scrapes Prometheus metrics from Adaptive components via annotations:
 ```yaml
 prometheus.io/scrape: "adaptive"
 prometheus.io/path: /metrics
@@ -171,4 +169,3 @@ GitHub Actions workflows in `.github/workflows/`:
 
 Chart versions must be bumped when chart content changes (enforced by `ct lint`). Update `version` in:
 - `charts/adaptive/Chart.yaml`
-- `charts/monitoring/Chart.yaml`

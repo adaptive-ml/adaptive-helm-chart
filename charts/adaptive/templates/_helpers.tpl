@@ -567,6 +567,26 @@ Usage: {{ include "adaptive.otelCollector.envVars" . | nindent 12 }}
 {{- end }}
 
 {{/*
+LGTM observability stack helpers
+*/}}
+{{- define "adaptive.lgtm.fullname" -}}
+{{- printf "%s-lgtm" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.lgtm.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.lgtm.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.lgtm.pvc.fullname" -}}
+{{- printf "%s-pvc" (include "adaptive.lgtm.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.lgtm.selectorLabels" -}}
+app.kubernetes.io/component: lgtm
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{/*
 MinIO related helpers
 */}}
 {{- define "adaptive.minio.service.fullname" -}}
