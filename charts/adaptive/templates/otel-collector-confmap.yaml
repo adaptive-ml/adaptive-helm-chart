@@ -82,9 +82,27 @@ data:
 
     exporters:
 {{ .Values.otelCollector.exporters | indent 6 }}
+{{- if .Values.lgtm.enabled }}
+      otlphttp/lgtm:
+        endpoint: http://{{ include "adaptive.lgtm.service.fullname" . }}:4318
+{{- end }}
 
     service:
       extensions: [health_check]
       pipelines:
 {{ .Values.otelCollector.pipelines | indent 8 }}
+{{- if .Values.lgtm.enabled }}
+        traces/lgtm:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/lgtm]
+        metrics/lgtm:
+          receivers: [otlp, prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/lgtm]
+        logs/lgtm:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp/lgtm]
+{{- end }}
 {{- end }}

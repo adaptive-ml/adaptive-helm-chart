@@ -12,7 +12,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [Required](#required)
   - [Optional](#optional)
 - [Installation](#installation)
-  - [1. Install the charts from GitHub OCI Registry](#1-install-the-charts-from-github-oci-registry)
+  - [1. Install the chart from GitHub OCI Registry](#1-install-the-chart-from-github-oci-registry)
   - [2. Get the default values.yaml configuration file](#2-get-the-default-valuesyaml-configuration-file)
   - [3. Edit the `values.yaml` file](#3-edit-the-valuesyaml-file)
   - [4. Deploy the chart](#4-deploy-the-chart)
@@ -25,13 +25,14 @@ A Helm Chart to deploy Adaptive Engine.
   - [Ingress Configuration](#ingress-configuration)
   - [Using External Secret Management](#using-external-secret-management)
 - [Monitoring and Observability](#monitoring-and-observability)
+  - [LGTM Stack (Grafana, Loki, Tempo, Mimir, Pyroscope)](#lgtm-stack-grafana-loki-tempo-mimir-pyroscope)
   - [OpenTelemetry Collector](#opentelemetry-collector)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
 - [Sandboxing service](#sandboxing-service)
 - [Compute Pools](#compute-pools)
   - [Per-Pool Node Selectors](#per-pool-node-selectors)
 - [Storage and Persistence](#storage-and-persistence)
-  - [Monitoring Stack](#monitoring-stack)
+  - [LGTM Stack](#lgtm-stack)
 - [Cloud specific information](#cloud-specific-information)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -62,19 +63,12 @@ A Helm Chart to deploy Adaptive Engine.
 
 ## Installation
 
-The charts are published to GitHub Container Registry (GHCR) as OCI artifacts. There are 2 charts available:
+The chart is published to GitHub Container Registry (GHCR) as an OCI artifact.
 
-- `adaptive` - the main chart to deploy Adaptive Engine
-- `monitoring` - an optional addon chart to monitor Adaptive Engine installing Grafana/Loki stack.
-
-### 1. Install the charts from GitHub OCI Registry
+### 1. Install the chart from GitHub OCI Registry
 
 ```bash
-# Install adaptive chart
 helm install adaptive oci://ghcr.io/adaptive-ml/adaptive
-
-# Install monitoring chart (optional)
-helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring
 ```
 
 > **Note:** You can specify the helm chart version by passing the `--version` argument.
@@ -86,11 +80,9 @@ helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring
 ```bash
 # Pull the chart to inspect values
 helm pull oci://ghcr.io/adaptive-ml/adaptive --untar
-helm pull oci://ghcr.io/adaptive-ml/monitoring --untar
 
 # Or use helm show (requires Helm 3.8+)
 helm show values oci://ghcr.io/adaptive-ml/adaptive > values.yaml
-helm show values oci://ghcr.io/adaptive-ml/monitoring > values.monitoring.yaml
 ```
 
 ### 3. Edit the `values.yaml` file
@@ -101,10 +93,7 @@ Customize the values file for your environment. See the [Configuration](#configu
 
 ```bash
 helm install adaptive oci://ghcr.io/adaptive-ml/adaptive -f ./values.yaml
-helm install adaptive-monitoring oci://ghcr.io/adaptive-ml/monitoring -f ./values.monitoring.yaml
 ```
-
-If you deploy the addon `adaptive-monitoring` chart, make sure to override the default value of `grafana.proxy.domain` in the `values.monitoring.yaml` file; it must match the value of your ingress domain (`controlPlane.rootUrl`) for Adaptive Engine (as a fully qualified domain name, no scheme). Once deployed, you will be able to access the Grafana dashboard for logs monitoring at your ingress domain + `/monitoring/explore`.
 
 ---
 
@@ -703,6 +692,61 @@ Then reference these secrets in your values file as shown above
 
 ## Monitoring and Observability
 
+### LGTM Stack (Grafana, Loki, Tempo, Mimir, Pyroscope)
+
+The chart includes an optional all-in-one LGTM observability stack using [`ghcr.io/grafana/docker-otel-lgtm`](https://github.com/grafana/docker-otel-lgtm). This deploys Grafana, Loki, Tempo, Mimir, Pyroscope, and an OTel Collector in a single pod.
+
+> **Warning:** The LGTM stack is intended for **development and testing** only. For production, use dedicated observability infrastructure and configure the OTel Collector exporters to send data to your backends.
+
+#### Enabling LGTM
+
+```yaml
+lgtm:
+  enabled: true
+```
+
+When both `lgtm.enabled` and `otelCollector.enabled` are true, the chart automatically:
+
+- Adds an `otlphttp/lgtm` exporter to the OTel Collector pointing to the LGTM pod
+- Creates additional `traces/lgtm`, `metrics/lgtm`, and `logs/lgtm` pipelines that fan out telemetry to the LGTM backend (without modifying your existing pipelines)
+- Sets `ADAPTIVE_GRAFANA__URL` and `ADAPTIVE_GRAFANA__LOKI_URL` environment variables on the Control Plane pod
+
+#### Configuration
+
+```yaml
+lgtm:
+  enabled: false  # Set to true to deploy
+
+  image:
+    repository: ghcr.io/grafana/docker-otel-lgtm
+    tag: "v0.17.1"
+    pullPolicy: IfNotPresent
+
+  resources: {}
+
+  persistence:
+    enabled: false    # Set to true to persist data across restarts
+    size: 10Gi
+    storageClass: ""  # Use default storage class if empty
+
+  # Grafana environment variables
+  env:
+    GF_AUTH_ANONYMOUS_ENABLED: true
+    GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    GF_AUTH_DISABLE_LOGIN_FORM: true
+
+  nodeSelector: {}
+  tolerations: []
+```
+
+#### Accessing Grafana
+
+When LGTM is enabled, Grafana is available on port 3000 of the LGTM service. You can port-forward to access it locally:
+
+```bash
+kubectl port-forward svc/<release>-adaptive-lgtm-svc 3000:3000
+```
+
 ### OpenTelemetry Collector
 
 The chart includes an [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) for collecting and exporting telemetry data (traces, metrics, and logs) from Adaptive Engine components.
@@ -1021,14 +1065,16 @@ harmony:
 
 ## Storage and Persistence
 
-### Monitoring Stack
+### LGTM Stack
 
-For the **monitoring** stack helm chart: by default, logs and Grafana data are not persisted. You should enable persistence by setting:
+By default, LGTM data (Grafana dashboards, Loki logs, Tempo traces) is not persisted. Enable persistence to retain data across pod restarts:
 
 ```yaml
-grafana:
-  enablePersistence: true
-  storageClass: "your-storage-class-name"
+lgtm:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: "your-storage-class-name"
 ```
 
 ---

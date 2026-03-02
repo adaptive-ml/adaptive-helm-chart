@@ -739,6 +739,32 @@ global:
   security:
     allowInsecureImages: true
 
+# LGTM observability stack (Grafana, Loki, Tempo, Mimir, Pyroscope, OTel Collector)
+# Deploys an all-in-one monitoring stack for development/testing
+# NOT intended for production use
+lgtm:
+  enabled: false
+
+  image:
+    repository: ghcr.io/grafana/docker-otel-lgtm
+    tag: "v0.17.1"
+    pullPolicy: IfNotPresent
+
+  resources: {}
+
+  persistence:
+    enabled: false
+    size: 10Gi
+    storageClass: ""
+
+  env:
+    GF_AUTH_ANONYMOUS_ENABLED: true
+    GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    GF_AUTH_DISABLE_LOGIN_FORM: true
+
+  nodeSelector: {}
+  tolerations: []
+
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
     # - name: model-registry

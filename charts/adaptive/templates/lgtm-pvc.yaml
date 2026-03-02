@@ -1,0 +1,19 @@
+{{- if and .Values.lgtm.enabled .Values.lgtm.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "adaptive.lgtm.pvc.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.lgtm.selectorLabels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.lgtm.persistence.storageClass }}
+  storageClassName: {{ .Values.lgtm.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.lgtm.persistence.size }}
+{{- end }}
