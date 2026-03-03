@@ -27,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Repository Overview
 
 This is a Helm chart repository for deploying Adaptive Engine, an ML platform. It contains one chart:
-- **adaptive** - Main chart for deploying Adaptive Engine (control plane, harmony workers, sandkasten sandbox service, MLflow, Redis, optionally PostgreSQL, optionally LGTM observability stack)
+- **adaptive** - Main chart for deploying Adaptive Engine (control plane, harmony workers, sandkasten sandbox service, MLflow, Redis, optionally PostgreSQL, optionally ClickHouse, optionally LGTM observability stack)
 
 ## Common Commands
 
@@ -105,7 +105,12 @@ The main chart deploys these components:
 6. **PostgreSQL** (`internal-postgresql-statefulset.yaml`)
    - Optional internal database (disabled by default, external DB recommended)
 
-7. **LGTM Stack** (`lgtm-dpl.yaml`, `lgtm-svc.yaml`, `lgtm-pvc.yaml`)
+7. **ClickHouse** (`clickhouse-statefulset.yaml`, `clickhouse-service.yaml`)
+   - Optional analytics database (disabled by default)
+   - Can use internal deployment or external ClickHouse instance
+   - URL injected into Control Plane via `ADAPTIVE_CLICKHOUSE__URL`
+
+8. **LGTM Stack** (`lgtm-dpl.yaml`, `lgtm-svc.yaml`, `lgtm-pvc.yaml`)
    - Optional all-in-one observability stack (Grafana, Loki, Tempo, Mimir, Pyroscope, OTel Collector)
    - For development/testing only
    - When enabled with the OTel Collector, auto-configures telemetry export to LGTM and sets `ADAPTIVE_GRAFANA__URL` / `ADAPTIVE_GRAFANA__LOKI_URL` on the Control Plane
@@ -114,9 +119,9 @@ The main chart deploys these components:
 
 The chart supports two secret patterns:
 1. **Inline secrets** - Values provided in `values.yaml`, chart creates K8s Secrets
-2. **Existing secrets** - Reference pre-existing secrets via `existingControlPlaneSecret`, `existingHarmonySecret`, `existingRedisSecret`
+2. **Existing secrets** - Reference pre-existing secrets via `existingControlPlaneSecret`, `existingHarmonySecret`, `existingRedisSecret`, `existingClickHouseSecret`
 
-Key secret files: `control-plane-secret.yaml`, `harmony-secret.yaml`, `redis-secret.yaml`
+Key secret files: `control-plane-secret.yaml`, `harmony-secret.yaml`, `redis-secret.yaml`, `clickhouse-secret.yaml`
 
 ### Template Helpers (`_helpers.tpl`)
 
