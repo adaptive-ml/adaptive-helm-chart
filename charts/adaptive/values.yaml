@@ -17,6 +17,8 @@ secrets:
   existingRedisSecret: ""
   # S3 credentials existing secret (all keys are injected as env vars on control-plane, harmony, and sandkasten pods)
   existingS3CredsSecret: ""
+  # ClickHouse existing secret (must contain key: clickhouseUrl)
+  existingClickHouseSecret: ""
 
   # ---------------------------------------------------------------------------
   # Option 2: Inline secret values
@@ -838,6 +840,57 @@ lgtm:
 
   nodeSelector: {}
   tolerations: []
+
+# ClickHouse analytics database
+# OPTIONAL: Set enabled=true to use ClickHouse for analytics
+# Supports either an internal deployment or an external ClickHouse instance
+clickhouse:
+  enabled: false
+
+  # Set to true to deploy an internal ClickHouse instance
+  # Set to false and provide external.url to use an external ClickHouse
+  install:
+    enabled: true
+
+  image:
+    repository: clickhouse/clickhouse-server
+    tag: "24.12-alpine"
+    pullPolicy: IfNotPresent
+
+  httpPort: 8123
+  nativePort: 9000
+
+  auth:
+    username: default
+    password: ""
+
+  database: adaptive
+
+  # Persistence for ClickHouse data (/var/lib/clickhouse)
+  # type: "pvc" uses a PersistentVolumeClaim, "hostPath" mounts a node directory
+  persistence:
+    enabled: true
+    type: pvc
+    # PVC options (used when type=pvc)
+    storageClass: ""  # Use default storage class if empty
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    # hostPath options (used when type=hostPath)
+    hostPath: /var/lib/clickhouse
+
+  resources: {}
+  podAnnotations: {}
+  podLabels: {}
+  extraEnvVars: {}
+  nodeSelector: {}
+  tolerations: []
+
+  # External ClickHouse configuration (used when install.enabled=false)
+  external:
+    # HTTP URL of the external ClickHouse server (e.g., "http://clickhouse.example.com:8123")
+    # Auth and database are configured via clickhouse.auth and clickhouse.database above
+    url: ""
 
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
