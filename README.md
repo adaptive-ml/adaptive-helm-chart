@@ -193,8 +193,10 @@ The `existingRedisSecret` must contain this key:
 - `redisUrl` - Redis connection URL (format: `redis://[username:password@]host:port`)
 
 The `existingClickHouseSecret` (only when `clickhouse.enabled=true`) must contain these keys:
-- `clickhouseUrl` - ClickHouse HTTP connection URL (e.g., `http://user@host:8123/database`)
-- `clickhousePassword` - ClickHouse user password
+- `clickhouseUrl` - ClickHouse HTTP URL (e.g., `http://clickhouse:8123`)
+- `clickhouseUsername` - ClickHouse username
+- `clickhousePassword` - ClickHouse password
+- `clickhouseDatabase` - ClickHouse database name
 - `clickhouseS3Endpoint` - S3 endpoint with bucket path (only when `clickhouse.install.enabled=true`)
 - `clickhouseS3AccessKeyId` - S3 access key (only when `clickhouse.install.enabled=true`)
 - `clickhouseS3SecretAccessKey` - S3 secret key (only when `clickhouse.install.enabled=true`)
@@ -447,7 +449,12 @@ clickhouse:
     enabled: false  # Do not deploy ClickHouse
 
   external:
-    url: "http://clickhouse.example.com:8123/adaptive"
+    url: "http://clickhouse.example.com:8123"
+
+  auth:
+    username: "clickhouse-user"
+    password: "clickhouse-password"
+  database: my_analytics_db
 ```
 
 No S3 configuration is needed for external ClickHouse — the external instance manages its own storage.
@@ -728,9 +735,15 @@ spec:
     - secretKey: clickhouseUrl
       remoteRef:
         key: adaptive/clickhouse-url
+    - secretKey: clickhouseUsername
+      remoteRef:
+        key: adaptive/clickhouse-username
     - secretKey: clickhousePassword
       remoteRef:
         key: adaptive/clickhouse-password
+    - secretKey: clickhouseDatabase
+      remoteRef:
+        key: adaptive/clickhouse-database
     # S3 keys below only needed when clickhouse.install.enabled=true
     - secretKey: clickhouseS3Endpoint
       remoteRef:
@@ -795,8 +808,10 @@ kubectl create secret generic adaptive-redis-secret \
 
 # Create clickhouse secret (only when clickhouse.enabled=true)
 kubectl create secret generic adaptive-clickhouse-secret \
-  --from-literal=clickhouseUrl="http://default@clickhouse:8123/adaptive" \
+  --from-literal=clickhouseUrl="http://clickhouse:8123" \
+  --from-literal=clickhouseUsername="default" \
   --from-literal=clickhousePassword="password" \
+  --from-literal=clickhouseDatabase="adaptive" \
   --from-literal=clickhouseS3Endpoint="http://minio:9000/adaptive/clickhouse/" \
   --from-literal=clickhouseS3AccessKeyId="access-key" \
   --from-literal=clickhouseS3SecretAccessKey="secret-key" \
@@ -839,8 +854,10 @@ kubectl create secret generic adaptive-redis-secret \
 
 # ClickHouse secret (only when clickhouse.enabled=true)
 kubectl create secret generic adaptive-clickhouse-secret \
-  --from-literal=clickhouseUrl="http://default@clickhouse:8123/adaptive" \
+  --from-literal=clickhouseUrl="http://clickhouse:8123" \
+  --from-literal=clickhouseUsername="default" \
   --from-literal=clickhousePassword="password" \
+  --from-literal=clickhouseDatabase="adaptive" \
   --from-literal=clickhouseS3Endpoint="http://minio:9000/adaptive/clickhouse/" \
   --from-literal=clickhouseS3AccessKeyId="access-key" \
   --from-literal=clickhouseS3SecretAccessKey="secret-key"

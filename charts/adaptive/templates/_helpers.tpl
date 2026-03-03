@@ -624,14 +624,7 @@ app.kubernetes.io/component: clickhouse
 {{- else -}}
 {{- $host := include "adaptive.clickhouse.service.fullname" . -}}
 {{- $port := .Values.clickhouse.httpPort | int -}}
-{{- $db := .Values.clickhouse.database -}}
-{{- $user := .Values.clickhouse.auth.username -}}
-{{- $pass := .Values.clickhouse.auth.password -}}
-{{- if $pass -}}
-{{- printf "http://%s:%s@%s:%d/%s" $user $pass $host $port $db -}}
-{{- else -}}
-{{- printf "http://%s@%s:%d/%s" $user $host $port $db -}}
-{{- end -}}
+{{- printf "http://%s:%d" $host $port -}}
 {{- end -}}
 {{- end }}
 
@@ -646,6 +639,21 @@ Usage: {{ include "adaptive.clickhouse.secretEnvVars" . | nindent 12 }}
     secretKeyRef:
       name: {{ include "adaptive.clickhouse.secret.fullname" . }}
       key: clickhouseUrl
+- name: ADAPTIVE_CLICKHOUSE__USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhouseUsername
+- name: ADAPTIVE_CLICKHOUSE__PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhousePassword
+- name: ADAPTIVE_CLICKHOUSE__DATABASE
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhouseDatabase
 {{- end }}
 {{- end }}
 
