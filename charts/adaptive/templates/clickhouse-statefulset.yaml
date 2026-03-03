@@ -1,0 +1,118 @@
+{{- if and .Values.clickhouse.enabled .Values.clickhouse.install.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "adaptive.clickhouse.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.clickhouse.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "adaptive.clickhouse.headless.service.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "adaptive.clickhouse.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.clickhouse.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.clickhouse.selectorLabels" . | nindent 8 }}
+        {{- with .Values.clickhouse.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.clickhouse.nodeSelector }}
+      nodeSelector:
+        {{- with .Values.clickhouse.nodeSelector }}
+        {{ toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.clickhouse.tolerations }}
+      tolerations:
+      {{- with .Values.clickhouse.tolerations }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      automountServiceAccountToken: false
+      containers:
+        - name: clickhouse
+          image: "{{ .Values.clickhouse.image.repository }}:{{ .Values.clickhouse.image.tag }}"
+          imagePullPolicy: {{ .Values.clickhouse.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.clickhouse.httpPort }}
+              name: http
+            - containerPort: {{ .Values.clickhouse.nativePort }}
+              name: native
+          env:
+            - name: CLICKHOUSE_DB
+              value: {{ .Values.clickhouse.database | quote }}
+            - name: CLICKHOUSE_USER
+              value: {{ .Values.clickhouse.auth.username | quote }}
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+                  key: clickhousePassword
+            - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+              value: "1"
+            - name: CLICKHOUSE_S3_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+                  key: clickhouseS3Endpoint
+            - name: CLICKHOUSE_S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+                  key: clickhouseS3AccessKeyId
+            - name: CLICKHOUSE_S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+                  key: clickhouseS3SecretAccessKey
+            {{- if .Values.clickhouse.extraEnvVars }}
+            {{- range $key, $value := .Values.clickhouse.extraEnvVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.clickhouse.resources | nindent 12 }}
+          volumeMounts:
+            - name: clickhouse-data
+              mountPath: /var/lib/clickhouse
+            - name: clickhouse-config
+              mountPath: /etc/clickhouse-server/config.d/storage.xml
+              subPath: storage.xml
+      volumes:
+        - name: clickhouse-data
+          emptyDir: {}
+        - name: clickhouse-config
+          configMap:
+            name: {{ include "adaptive.clickhouse.configMap.fullname" . }}
+{{- end }}

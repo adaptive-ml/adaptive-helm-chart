@@ -603,6 +603,69 @@ app.kubernetes.io/component: lgtm
 {{- end }}
 
 {{/*
+ClickHouse related helpers
+*/}}
+{{- define "adaptive.clickhouse.fullname" -}}
+{{- printf "%s-clickhouse" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.headless.service.fullname" -}}
+{{- printf "%s-headless" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.configMap.fullname" -}}
+{{- printf "%s-config" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.selectorLabels" -}}
+app.kubernetes.io/component: clickhouse
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.secret.fullname" -}}
+{{- if .Values.secrets.existingClickHouseSecret }}
+{{- .Values.secrets.existingClickHouseSecret }}
+{{- else }}
+{{- printf "%s-secret" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.url" -}}
+{{- if not .Values.clickhouse.install.enabled -}}
+{{- required "clickhouse.external.url is required when clickhouse.install.enabled is false" .Values.clickhouse.external.url -}}
+{{- else -}}
+{{- $host := include "adaptive.clickhouse.service.fullname" . -}}
+{{- $port := .Values.clickhouse.httpPort | int -}}
+{{- $db := .Values.clickhouse.database -}}
+{{- $user := .Values.clickhouse.auth.username -}}
+{{- $pass := .Values.clickhouse.auth.password -}}
+{{- if $pass -}}
+{{- printf "http://%s:%s@%s:%d/%s" $user $pass $host $port $db -}}
+{{- else -}}
+{{- printf "http://%s@%s:%d/%s" $user $host $port $db -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Helper to generate ClickHouse secret environment variables
+Usage: {{ include "adaptive.clickhouse.secretEnvVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.clickhouse.secretEnvVars" -}}
+{{- if .Values.clickhouse.enabled }}
+- name: ADAPTIVE_CLICKHOUSE__URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhouseUrl
+{{- end }}
+{{- end }}
+
+{{/*
 MinIO related helpers
 */}}
 {{- define "adaptive.minio.service.fullname" -}}
