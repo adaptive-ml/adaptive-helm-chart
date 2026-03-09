@@ -1,0 +1,91 @@
+{{- if .Values.controlPlane.serviceAccount.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "adaptive.controlPlane.role.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+rules:
+  # batch/v1 Jobs — full lifecycle (create, monitor, cleanup)
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "delete", "watch"]
+  # core/v1 Pods — read-only discovery by label
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  # core/v1 Pods/log — fetch container logs
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  # core/v1 Services — headless services for gang DNS
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["create", "delete"]
+  # core/v1 ConfigMaps — read config data
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  # coordination.k8s.io/v1 Leases — leader election for gang watchdog
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["gang-watchdog-leader"]
+    verbs: ["get", "update"]
+  # coordination.k8s.io/v1 Leases — create (separate rule, resourceNames
+  # cannot restrict create since the object doesn't exist yet)
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "adaptive.controlPlane.roleBinding.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "adaptive.controlPlane.serviceAccount.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "adaptive.controlPlane.role.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "adaptive.controlPlane.clusterRole.fullname" . }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+rules:
+  # core/v1 Nodes — GPU topology discovery (read-only)
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+  # scheduling.run.ai/v2 Queue CRD — KAI scheduler integration
+  - apiGroups: ["scheduling.run.ai"]
+    resources: ["queues"]
+    verbs: ["get", "create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "adaptive.controlPlane.clusterRoleBinding.fullname" . }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "adaptive.controlPlane.serviceAccount.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "adaptive.controlPlane.clusterRole.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
