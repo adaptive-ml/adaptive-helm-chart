@@ -165,6 +165,10 @@ spec:
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
             {{- include "adaptive.minio.envVars" $root | nindent 12 }}
+            {{- if eq $root.Values.controlPlane.sharedDirType "s3" }}
+            - name: HARMONY_SETTING_WORKING_DIR
+              value: "/opt/adaptive/working_dir"
+            {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
             - name: JOB_LOG_DIR
