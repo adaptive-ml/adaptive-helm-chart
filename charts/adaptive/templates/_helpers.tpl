@@ -215,19 +215,19 @@ Service account fullnames for each component
 {{- end }}
 
 {{- define "adaptive.controlPlane.role.fullname" -}}
-{{- printf "%s-role" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-role" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{- define "adaptive.controlPlane.roleBinding.fullname" -}}
-{{- printf "%s-rolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-rolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{- define "adaptive.controlPlane.clusterRole.fullname" -}}
-{{- printf "%s-clusterrole" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-clusterrole" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{- define "adaptive.controlPlane.clusterRoleBinding.fullname" -}}
-{{- printf "%s-clusterrolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-clusterrolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 # MLFlow selector labels
