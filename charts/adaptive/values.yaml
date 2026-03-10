@@ -837,8 +837,21 @@ clickhouse:
 
   database: adaptive
 
+  # Persistence for ClickHouse metadata (/var/lib/clickhouse)
+  # Strongly recommended when using S3-backed storage, otherwise table/database
+  # definitions are lost on pod restart even though data parts remain in S3
+  persistence:
+    enabled: false
+    storageClass: ""  # Use default storage class if empty
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+
   # S3 storage for ClickHouse tables (used when install.enabled=true)
-  # ClickHouse stores table data on S3 and keeps metadata locally (emptyDir)
+  # ClickHouse stores table data on S3 and keeps metadata (table/database
+  # definitions) at /var/lib/clickhouse. Enable persistence above to make
+  # metadata durable across pod restarts; without it, metadata is lost on
+  # every reschedule and tables must be recreated.
   s3:
     # S3 endpoint with bucket and path prefix, trailing slash required
     # MinIO example: "http://minio:9000/adaptive/clickhouse/"
