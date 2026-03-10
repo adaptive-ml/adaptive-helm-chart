@@ -54,9 +54,15 @@ spec:
               name: native
           env:
             - name: CLICKHOUSE_DB
-              value: {{ .Values.clickhouse.database | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+                  key: clickhouseDatabase
             - name: CLICKHOUSE_USER
-              value: {{ .Values.clickhouse.auth.username | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+                  key: clickhouseUsername
             - name: CLICKHOUSE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -110,9 +116,30 @@ spec:
               mountPath: /etc/clickhouse-server/config.d/storage.xml
               subPath: storage.xml
       volumes:
+        {{- if not .Values.clickhouse.persistence.enabled }}
         - name: clickhouse-data
           emptyDir: {}
+        {{- end }}
         - name: clickhouse-config
           configMap:
             name: {{ include "adaptive.clickhouse.configMap.fullname" . }}
+  {{- if .Values.clickhouse.persistence.enabled }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: clickhouse-data
+        labels:
+          {{- include "adaptive.labels" . | nindent 10 }}
+          {{- include "adaptive.clickhouse.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.clickhouse.persistence.accessModes | nindent 10 }}
+        {{- if .Values.clickhouse.persistence.storageClass }}
+        storageClassName: {{ .Values.clickhouse.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.clickhouse.persistence.size | quote }}
+  {{- end }}
 {{- end }}
