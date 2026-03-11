@@ -144,7 +144,7 @@ spec:
             - name: GROUP_CAPABILITIES
               value: {{ $pool.capabilities | default "JOB,INFERENCE" | quote }}
             - name: PARTITION_KEY
-              value: {{ $pool.name | lower | replace " " "-" | replace "_" "-" }}
+              value: "{{ $pool.name | lower | replace " " "-" | replace "_" "-" }}"
             - name: SERVICE_URL
               value: "http://{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
