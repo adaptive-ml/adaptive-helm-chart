@@ -15,7 +15,7 @@ rules:
   # core/v1 Pods — read-only discovery by label
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["get", "list"]
+    verbs: ["get", "list", "watch"]
   # core/v1 Pods/log — fetch container logs
   - apiGroups: [""]
     resources: ["pods/log"]
