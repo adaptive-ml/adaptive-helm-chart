@@ -141,7 +141,7 @@ harmony:
       # image:
       #   tag: harmony:latest  # Override image tag for this pool
       # gpusPerReplica: 8
-      # capabilities: "TRAINING,INFERENCE,EVALUATION"  # Default capabilities
+      # capabilities: "JOB,INFERENCE"  # Default capabilities (TRAINING and EVALUATION are deprecated, use JOB instead)
       # resources:
       #   limits:
       #     cpu: 30
@@ -164,7 +164,7 @@ harmony:
     #   image:
     #     tag: harmony:inference-optimized  # Different image tag for inference pool
     #   gpusPerReplica: 4
-    #   capabilities: "INFERENCE"
+    #   capabilities: "INFERENCE"  # Or use "JOB,INFERENCE" for all workloads
     #   resources:
     #     limits:
     #       cpu: 16
@@ -182,7 +182,7 @@ harmony:
     # - name: training
     #   replicas: 1
     #   gpusPerReplica: 8
-    #   capabilities: "TRAINING,EVALUATION"
+    #   capabilities: "JOB"  # Replaces deprecated TRAINING,EVALUATION
     #   nodeSelector:
     #     eks.amazonaws.com/nodegroup: training-nodes
     #     topology.kubernetes.io/zone: us-east-1a

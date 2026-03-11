@@ -78,21 +78,6 @@ spec:
         {{- end }}
         {{- end }}
       {{- end }}
-      initContainers:
-      - name: init-permissions
-        image: busybox
-        command: ['sh', '-c', 'chown -R  1002:1000 {{ $harmonySettings.working_dir }} {{ $harmonySettings.shared_master_worker_folder }} {{ $harmonySettings.any_path_config.cloud_cache }}']
-        securityContext:
-          runAsUser: 0
-        volumeMounts:
-          - name: workdir-volume
-            mountPath: {{ $harmonySettings.working_dir }}
-          - name: cloud-cache-volume
-            mountPath: {{ $harmonySettings.any_path_config.cloud_cache }}
-          # extra volume Mounts from values.yaml
-          {{- with $root.Values.volumeMounts }}
-          {{- toYaml . | nindent 10 }}
-          {{- end }}
       containers:
         - name: harmony
           image: "{{ include "adaptive.harmony.computePool.imageUri" (dict "root" $root "pool" $pool) }}"
@@ -155,16 +140,20 @@ spec:
               value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" $root }}"
             {{- $extraEnvVars := $pool.extraEnvVars | default $root.Values.harmony.extraEnvVars }}
             - name: GROUP
-              value: {{ $pool.name }}
+              value: {{ $pool.name | quote }}
             - name: GROUP_CAPABILITIES
-              value: {{ $pool.capabilities | default "TRAINING,INFERENCE,EVALUATION" | quote }}
+              value: {{ $pool.capabilities | default "JOB,INFERENCE" | quote }}
             - name: PARTITION_KEY
-              value: {{ $pool.name | lower | replace " " "-" | replace "_" "-" }}
+              value: "{{ $pool.name | lower | replace " " "-" | replace "_" "-" }}"
             - name: SERVICE_URL
               value: "http://{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
             {{- include "adaptive.minio.envVars" $root | nindent 12 }}
+            {{- if eq $root.Values.controlPlane.sharedDirType "s3" }}
+            - name: HARMONY_SETTING_WORKING_DIR
+              value: "/opt/adaptive/working_dir"
+            {{- end }}
             - name: ADAPTIVE_MODE
               value: PROD
             - name: JOB_LOG_DIR
