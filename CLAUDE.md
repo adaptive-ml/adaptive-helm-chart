@@ -139,7 +139,7 @@ harmony:
     - name: training
       replicas: 2
       gpusPerReplica: 8
-      capabilities: "TRAINING,EVALUATION"
+      capabilities: "JOB"
     - name: inference
       replicas: 4
       gpusPerReplica: 4

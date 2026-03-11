@@ -142,7 +142,7 @@ spec:
             - name: GROUP
               value: {{ $pool.name }}
             - name: GROUP_CAPABILITIES
-              value: {{ $pool.capabilities | default "TRAINING,INFERENCE,EVALUATION" | quote }}
+              value: {{ $pool.capabilities | default "JOB,INFERENCE" | quote }}
             - name: PARTITION_KEY
               value: {{ $pool.name | lower | replace " " "-" | replace "_" "-" }}
             - name: SERVICE_URL
