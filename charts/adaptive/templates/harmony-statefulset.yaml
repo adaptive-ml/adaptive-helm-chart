@@ -140,7 +140,7 @@ spec:
               value: "{{ include "adaptive.controlPlane.privateHttpEndpoint" $root }}"
             {{- $extraEnvVars := $pool.extraEnvVars | default $root.Values.harmony.extraEnvVars }}
             - name: GROUP
-              value: {{ $pool.name }}
+              value: {{ $pool.name | quote }}
             - name: GROUP_CAPABILITIES
               value: {{ $pool.capabilities | default "JOB,INFERENCE" | quote }}
             - name: PARTITION_KEY
