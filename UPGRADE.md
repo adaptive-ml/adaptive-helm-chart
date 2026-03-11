@@ -228,7 +228,7 @@ harmony:
       replicas: 1          # Number of replicas for this pool
       gpusPerReplica: 8
       # Optional per-pool overrides:
-      # capabilities: "TRAINING,INFERENCE,EVALUATION"
+      # capabilities: "JOB,INFERENCE"
       # resources: {}
       # nodeSelector: {}
       # tolerations: []
@@ -279,7 +279,7 @@ harmony:
   computePools:
     - name: training
       replicas: 2
-      capabilities: "TRAINING,EVALUATION"
+      capabilities: "JOB"
 
     - name: inference
       replicas: 4
