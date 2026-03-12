@@ -12,10 +12,10 @@ rules:
   - apiGroups: ["batch"]
     resources: ["jobs"]
     verbs: ["create", "get", "list", "delete", "watch"]
-  # core/v1 Pods — read-only discovery by label
+  # core/v1 Pods — create bare pods for gang members, list by label, bulk cleanup
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["create", "get", "list", "watch", "deletecollection"]
   # core/v1 Pods/log — fetch container logs
   - apiGroups: [""]
     resources: ["pods/log"]
@@ -28,6 +28,10 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get"]
+  # scheduling.run.ai/v2alpha2 PodGroups — gang job submission, phase watching, cleanup
+  - apiGroups: ["scheduling.run.ai"]
+    resources: ["podgroups"]
+    verbs: ["create", "get", "list", "watch", "delete"]
   # coordination.k8s.io/v1 Leases — leader election for gang watchdog
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
@@ -68,12 +72,14 @@ rules:
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "watch"]
-  # scheduling.run.ai — KAI scheduler CRDs
-  # Queues (cluster-scoped): full CRUD + reflector
-  # PodGroups (namespaced): job submission + phase watching across namespaces
+  # scheduling.run.ai/v2 Queues (cluster-scoped): full CRUD + reflector
   - apiGroups: ["scheduling.run.ai"]
-    resources: ["queues", "podgroups"]
+    resources: ["queues"]
     verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  # kueue.x-k8s.io — Topology CRD for GPU topology awareness
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["topologies"]
+    verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
