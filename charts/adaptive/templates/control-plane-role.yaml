@@ -38,6 +38,10 @@ rules:
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["create"]
+  # scheduling.run.ai/v2alpha2 PodGroup CRD — KAI job submission + phase watching
+  - apiGroups: ["scheduling.run.ai"]
+    resources: ["podgroups"]
+    verbs: ["create", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -64,14 +68,15 @@ metadata:
     {{- include "adaptive.labels" . | nindent 4 }}
     {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
 rules:
-  # core/v1 Nodes — GPU topology discovery (read-only)
+  # core/v1 Nodes — GPU topology discovery (reflector needs list+watch)
   - apiGroups: [""]
     resources: ["nodes"]
-    verbs: ["get", "list"]
+    verbs: ["get", "list", "watch"]
   # scheduling.run.ai/v2 Queue CRD — KAI scheduler integration
+  # Full lifecycle: create/patch/delete queues, reflector needs list+watch
   - apiGroups: ["scheduling.run.ai"]
     resources: ["queues"]
-    verbs: ["get", "create", "patch"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
