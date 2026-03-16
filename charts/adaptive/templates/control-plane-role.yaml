@@ -76,6 +76,10 @@ rules:
   - apiGroups: ["scheduling.run.ai"]
     resources: ["queues"]
     verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  # scheduling.run.ai Policies — read KAI scheduling policies
+  - apiGroups: ["scheduling.run.ai"]
+    resources: ["policies"]
+    verbs: ["get", "list", "watch"]
   # kueue.x-k8s.io — Topology CRD for GPU topology awareness
   - apiGroups: ["kueue.x-k8s.io"]
     resources: ["topologies"]
