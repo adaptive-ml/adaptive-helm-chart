@@ -9,6 +9,8 @@ secrets:
   existingHarmonySecret: ""
   # Redis existing secret (must contain key: redisUrl)
   existingRedisSecret: ""
+  # ClickHouse existing secret (must contain key: clickhouseUrl)
+  existingClickHouseSecret: ""
   # S3 bucket for model registry
   modelRegistryUrl: s3://bucket-name/model_registry
   # Use same bucket as above and can use a different prefix
@@ -764,6 +766,67 @@ lgtm:
 
   nodeSelector: {}
   tolerations: []
+
+# ClickHouse analytics database
+# OPTIONAL: Set enabled=true to use ClickHouse for analytics
+# Supports either an internal deployment or an external ClickHouse instance
+clickhouse:
+  enabled: false
+
+  # Set to true to deploy an internal ClickHouse instance
+  # Set to false and provide external.url to use an external ClickHouse
+  install:
+    enabled: true
+
+  image:
+    repository: clickhouse/clickhouse-server
+    tag: "24.12-alpine"
+    pullPolicy: IfNotPresent
+
+  httpPort: 8123
+  nativePort: 9000
+
+  auth:
+    username: default
+    password: ""
+
+  database: adaptive
+
+  # Persistence for ClickHouse metadata (/var/lib/clickhouse)
+  # Strongly recommended when using S3-backed storage, otherwise table/database
+  # definitions are lost on pod restart even though data parts remain in S3
+  persistence:
+    enabled: false
+    storageClass: ""  # Use default storage class if empty
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+
+  # S3 storage for ClickHouse tables (used when install.enabled=true)
+  # ClickHouse stores table data on S3 and keeps metadata (table/database
+  # definitions) at /var/lib/clickhouse. Enable persistence above to make
+  # metadata durable across pod restarts; without it, metadata is lost on
+  # every reschedule and tables must be recreated.
+  s3:
+    # S3 endpoint with bucket and path prefix, trailing slash required
+    # MinIO example: "http://minio:9000/adaptive/clickhouse/"
+    # AWS S3 example: "https://s3.us-east-1.amazonaws.com/my-bucket/clickhouse/"
+    endpoint: ""
+    accessKeyId: ""
+    secretAccessKey: ""
+
+  resources: {}
+  podAnnotations: {}
+  podLabels: {}
+  extraEnvVars: {}
+  nodeSelector: {}
+  tolerations: []
+
+  # External ClickHouse configuration (used when install.enabled=false)
+  external:
+    # HTTP URL of the external ClickHouse server (e.g., "http://clickhouse.example.com:8123")
+    # Auth and database are configured via clickhouse.auth and clickhouse.database above
+    url: ""
 
 # Additional volumes/mount for adaptive stack. They don't need to be defined in most of the cases. For cases where model registry is in external nfs mount.
 volumes: []
