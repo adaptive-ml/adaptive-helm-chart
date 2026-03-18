@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "adaptive.labels" . | nindent 4 }}
 data:
-  ADAPTIVE_CONTROL_PLANE_URL_OVERRIDE: {{ include "adaptive.controlPlane.publicHttpEndpoint" . | quote }}
+  ADAPTIVE_CONTROL_PLANE_URL: {{ include "adaptive.controlPlane.publicHttpEndpoint" . | quote }}
   {{- range $key, $value := .Values.adaptiveOperator.extraRecipeRunnerEnvVars }}
   {{ $key }}: {{ $value | quote }}
   {{- end }}
