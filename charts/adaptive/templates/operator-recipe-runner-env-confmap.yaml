@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: recipe-runner-env
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.adaptiveOperator.extraRecipeRunnerEnvVars }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

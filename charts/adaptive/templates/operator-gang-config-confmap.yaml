@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harmony-gang-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+data:
+  {{- if .Values.containerRegistry }}
+  HARMONY_IMAGE_REPO: "{{ .Values.containerRegistry }}/{{ .Values.harmony.image.repository }}"
+  RECIPE_RUNNER_IMAGE_REPO: "{{ .Values.containerRegistry }}/{{ .Values.sandkasten.recipeRunner.repository }}"
+  {{- else }}
+  HARMONY_IMAGE_REPO: {{ .Values.harmony.image.repository | quote }}
+  RECIPE_RUNNER_IMAGE_REPO: {{ .Values.sandkasten.recipeRunner.repository | quote }}
+  {{- end }}
+  COMMON_ENV_CONFIGMAP: "harmony-common-env"
+  RECIPE_RUNNER_ENV_CONFIGMAP: "recipe-runner-env"
+  MANGROVE_RESOURCES_CONFIGMAP: "harmony-mangrove-resources"
+  {{- with (first .Values.imagePullSecrets) }}
+  IMAGE_PULL_SECRET: {{ .name | quote }}
+  {{- end }}
+  DELETE_FAILED_JOBS: {{ .Values.adaptiveOperator.deleteFailedJobs | quote }}
+  CONTROL_PLANE_URL: {{ include "adaptive.controlPlane.privateHttpEndpoint" . | quote }}
+  {{- if .Values.adaptiveOperator.harmonyImageTagsWhitelist }}
+  HARMONY_IMAGE_TAGS_WHITELIST: {{ .Values.adaptiveOperator.harmonyImageTagsWhitelist | quote }}
+  {{- end }}
+  SERVICE_ACCOUNT_NAME: {{ include "adaptive.harmony.serviceAccount.fullname" . | quote }}
+  {{- if .Values.adaptiveOperator.extraVolumes }}
+  EXTRA_VOLUMES: {{ .Values.adaptiveOperator.extraVolumes | quote }}
+  {{- end }}

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harmony-mangrove-resources
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+data:
+  CPU_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.cpu | quote }}
+  MEMORY_REQUESTS_MB: {{ .Values.adaptiveOperator.resources.requests.memoryMB | quote }}
+  CPU_LIMITS: {{ .Values.adaptiveOperator.resources.limits.cpu | quote }}
+  MEMORY_LIMITS_MB: {{ .Values.adaptiveOperator.resources.limits.memoryMB | quote }}

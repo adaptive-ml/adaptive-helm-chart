@@ -187,6 +187,30 @@ harmony:
     #     eks.amazonaws.com/nodegroup: training-nodes
     #     topology.kubernetes.io/zone: us-east-1a
 
+# Adaptive Operator configuration (gang scheduling)
+# Controls the ConfigMaps read by the k8s-operator for spawning gang job pods
+adaptiveOperator:
+  # Resource limits for gang-spawned harmony pods
+  resources:
+    requests:
+      cpu: "1"
+      memoryMB: "1024"
+    limits:
+      cpu: "2"
+      memoryMB: "16384"
+  # Delete failed gang jobs immediately instead of retaining for debugging
+  deleteFailedJobs: false
+  # Comma-separated glob patterns for allowed harmony image tags
+  # Empty means no user choice — the server's own tag is used
+  harmonyImageTagsWhitelist: ""
+  # Extra volumes to mount into gang pods (JSON array)
+  # Example: '[{"name":"models","mount_path":"/models","source":{"type":"pvc","claim_name":"models-pvc"}}]'
+  extraVolumes: ""
+  # Extra environment variables for gang-spawned harmony pods (key-value map)
+  extraHarmonyEnvVars: {}
+  # Extra environment variables for recipe-runner pods (key-value map)
+  extraRecipeRunnerEnvVars: {}
+
 controlPlane:
   sharedDirType: s3
 
