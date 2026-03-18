@@ -11,8 +11,8 @@ rules:
   # batch/v1 Jobs — full lifecycle (create, monitor, cleanup)
   - apiGroups: ["batch"]
     resources: ["jobs"]
-    verbs: ["create", "get", "list", "delete", "watch"]
-  # core/v1 Pods — create bare pods for gang members, list by label, bulk cleanup
+    verbs: ["create", "get", "list", "delete"]
+  # core/v1 Pods — create bare GPU pods, watch gang pods, bulk-delete by label
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["create", "get", "list", "watch", "deletecollection"]
@@ -83,7 +83,7 @@ rules:
   # kueue.x-k8s.io — Topology CRD for GPU topology awareness
   - apiGroups: ["kueue.x-k8s.io"]
     resources: ["topologies"]
-    verbs: ["create", "list", "get"]
+    verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
