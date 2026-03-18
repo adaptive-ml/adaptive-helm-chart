@@ -1,0 +1,103 @@
+{{- if or .Values.controlPlane.serviceAccount.create .Values.controlPlane.serviceAccount.name }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "adaptive.controlPlane.role.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+rules:
+  # batch/v1 Jobs — full lifecycle (create, monitor, cleanup)
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "delete"]
+  # core/v1 Pods — create bare GPU pods, watch gang pods, bulk-delete by label
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "watch", "deletecollection"]
+  # core/v1 Pods/log — fetch container logs
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  # core/v1 Services — headless services for gang DNS
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["create", "delete"]
+  # core/v1 ConfigMaps — read config data
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  # scheduling.run.ai/v2alpha2 PodGroups — gang job submission, phase watching, cleanup
+  - apiGroups: ["scheduling.run.ai"]
+    resources: ["podgroups"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  # coordination.k8s.io/v1 Leases — leader election for gang watchdog
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["gang-watchdog-leader"]
+    verbs: ["get", "update"]
+  # coordination.k8s.io/v1 Leases — create (separate rule, resourceNames
+  # cannot restrict create since the object doesn't exist yet)
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "create", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "adaptive.controlPlane.roleBinding.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "adaptive.controlPlane.serviceAccount.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "adaptive.controlPlane.role.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "adaptive.controlPlane.clusterRole.fullname" . }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+rules:
+  # core/v1 Nodes — GPU topology discovery (reflector needs list+watch)
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  # scheduling.run.ai/v2 Queues (cluster-scoped): full CRUD + reflector
+  - apiGroups: ["scheduling.run.ai"]
+    resources: ["queues"]
+    verbs: ["get", "list", "watch", "create", "patch", "delete"]
+  # scheduling.run.ai Policies — read KAI scheduling policies
+  - apiGroups: ["scheduling.run.ai"]
+    resources: ["policies"]
+    verbs: ["get", "list", "watch"]
+  # kueue.x-k8s.io — Topology CRD for GPU topology awareness
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["topologies"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "adaptive.controlPlane.clusterRoleBinding.fullname" . }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "adaptive.controlPlane.serviceAccount.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "adaptive.controlPlane.clusterRole.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
