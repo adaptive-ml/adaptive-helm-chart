@@ -78,6 +78,10 @@ spec:
         {{- end }}
         {{- end }}
       {{- end }}
+      {{- with $root.Values.harmony.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: harmony
           image: "{{ include "adaptive.harmony.computePool.imageUri" (dict "root" $root "pool" $pool) }}"
