@@ -35,6 +35,10 @@ spec:
       {{- if or .Values.controlPlane.serviceAccount.create .Values.controlPlane.serviceAccount.name }}
       serviceAccountName: {{ include "adaptive.controlPlane.serviceAccount.fullname" . }}
       {{- end }}
+      {{- with .Values.controlPlane.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
         - name: tmp
           emptyDir:
@@ -64,8 +68,10 @@ spec:
         - name: control-plane
           image: "{{ include "adaptive.controlPlane.imageUri" . }}"
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          {{- with .Values.controlPlane.securityContext }}
           securityContext:
-            readOnlyRootFilesystem: {{ .Values.controlPlane.securityContext.readOnlyRootFilesystem }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - containerPort: {{ $ports.http.containerPort }}
           volumeMounts:
