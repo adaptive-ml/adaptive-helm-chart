@@ -60,6 +60,8 @@ spec:
         - name: control-plane
           image: "{{ include "adaptive.controlPlane.imageUri" . }}"
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: true
           ports:
             - containerPort: {{ $ports.http.containerPort }}
           {{- with .Values.volumeMounts }}
