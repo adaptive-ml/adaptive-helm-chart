@@ -35,10 +35,14 @@ spec:
       {{- if or .Values.controlPlane.serviceAccount.create .Values.controlPlane.serviceAccount.name }}
       serviceAccountName: {{ include "adaptive.controlPlane.serviceAccount.fullname" . }}
       {{- end }}
-      {{- with .Values.volumes }}
       volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       nodeSelector:
         {{- with .Values.controlPlane.nodeSelector}}
         {{ toYaml . }}
@@ -60,12 +64,16 @@ spec:
         - name: control-plane
           image: "{{ include "adaptive.controlPlane.imageUri" . }}"
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          securityContext:
+            readOnlyRootFilesystem: {{ .Values.controlPlane.securityContext.readOnlyRootFilesystem }}
           ports:
             - containerPort: {{ $ports.http.containerPort }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
           env:
             - name: K8S_NAMESPACE
               valueFrom:

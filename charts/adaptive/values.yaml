@@ -263,6 +263,9 @@ controlPlane:
     # minAvailable: 1    # Minimum number/percentage of pods that must remain available
     # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
+  securityContext:
+    readOnlyRootFilesystem: true
+
   extraEnvVars: {}
 
   # Resource limits and requests for the control plane
