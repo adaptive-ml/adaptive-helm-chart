@@ -123,6 +123,9 @@ harmony:
       operator: "Exists"
       effect: "NoSchedule"
 
+  podSecurityContext: {}
+  securityContext: {}
+
   # Pod Disruption Budget for harmony compute pools
   # Ensures minimum availability during voluntary disruptions (node drains, upgrades)
   # NOTE: Specify either minAvailable OR maxUnavailable, not both
@@ -287,6 +290,10 @@ controlPlane:
     # minAvailable: 1    # Minimum number/percentage of pods that must remain available
     # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
+  podSecurityContext: {}
+  securityContext:
+    readOnlyRootFilesystem: true
+
   extraEnvVars: {}
 
   # Resource limits and requests for the control plane
@@ -317,6 +324,11 @@ sandkasten:
   podLabels: {}
   nodeSelector: {}
   tolerations: {}
+
+  podSecurityContext: {}
+  securityContext:
+    allowPrivilegeEscalation: true
+    privileged: true
 
   # Pod affinity/anti-affinity rules
   # Example: Schedule sandkasten pods on different nodes for high availability

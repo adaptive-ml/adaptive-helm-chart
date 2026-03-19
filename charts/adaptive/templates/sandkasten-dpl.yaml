@@ -53,13 +53,18 @@ spec:
       topologySpreadConstraints:
         {{- toYaml .Values.sandkasten.topologySpreadConstraints | nindent 8 }}
       {{- end}}
+      {{- with .Values.sandkasten.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: sandkasten
           image: "{{ include "adaptive.sandkasten.imageUri" . }}"
           imagePullPolicy: {{ .Values.sandkasten.image.pullPolicy }}
+          {{- with .Values.sandkasten.securityContext }}
           securityContext:
-            allowPrivilegeEscalation: true
-            privileged: true
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - containerPort: {{ .Values.sandkasten.servicePort }}
           {{- if .Values.sandkasten.resources }}
