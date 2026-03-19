@@ -28,6 +28,10 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get"]
+  # apps/v1 Deployments — inference partition lifecycle (create, resize, annotate, delete)
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["create", "get", "patch", "delete"]
   # scheduling.run.ai/v2alpha2 PodGroups — gang job submission, phase watching, cleanup
   - apiGroups: ["scheduling.run.ai"]
     resources: ["podgroups"]
