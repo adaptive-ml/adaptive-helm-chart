@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harmony-common-env
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+data:
+  {{- if .Values.minio.enabled }}
+  AWS_ENDPOINT_URL_S3: {{ include "adaptive.minio.endpoint" . | quote }}
+  S3_FORCE_PATH_STYLE: "true"
+  AWS_DEFAULT_REGION: "us-east-1"
+  AWS_ACCESS_KEY_ID: {{ .Values.minio.auth.rootUser | quote }}
+  AWS_SECRET_ACCESS_KEY: {{ .Values.minio.auth.rootPassword | quote }}
+  {{- end }}
+  REDIS_URL: {{ include "adaptive.redis.url" . | quote }}
+  ADAPTIVE_REDIS__URL: {{ include "adaptive.redis.url" . | quote }}
+  ADAPTIVE_MODEL_REGISTRY: {{ include "adaptive.modelRegistryUrl" . | quote }}
+  HARMONY_SETTING_MODEL_REGISTRY_ROOT: {{ include "adaptive.modelRegistryUrl" . | quote }}
+  ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL: {{ include "adaptive.sharedDirectoryUrl" . | quote }}
+  HARMONY_SETTING_WORKING_DIR: "/opt/adaptive/working_dir"
+  CONTROL_PLANE_URL: {{ include "adaptive.controlPlane.privateHttpEndpoint" . | quote }}
+  {{- if .Values.otelCollector.enabled }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://{{ include "adaptive.otelCollector.service.fullname" . }}:4318"
+  OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name={{ .Values.otelCollector.resourceAttributes.environmentName | default .Release.Name }}"
+  {{- end }}
+  ADAPTIVE_MODE: "PROD"
+  {{- range $key, $value := .Values.adaptiveOperator.extraHarmonyEnvVars }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
