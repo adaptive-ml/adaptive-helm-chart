@@ -617,10 +617,6 @@ ClickHouse related helpers
 {{- printf "%s-headless" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "adaptive.clickhouse.configMap.fullname" -}}
-{{- printf "%s-config" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
 {{- define "adaptive.clickhouse.selectorLabels" -}}
 app.kubernetes.io/component: clickhouse
 {{ include "adaptive.sharedSelectorLabels" . }}

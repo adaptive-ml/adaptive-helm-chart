@@ -197,9 +197,6 @@ The `existingClickHouseSecret` (only when `clickhouse.enabled=true`) must contai
 - `clickhouseUsername` - ClickHouse username
 - `clickhousePassword` - ClickHouse password
 - `clickhouseDatabase` - ClickHouse database name
-- `clickhouseS3Endpoint` - S3 endpoint with bucket path (only when `clickhouse.install.enabled=true`)
-- `clickhouseS3AccessKeyId` - S3 access key (only when `clickhouse.install.enabled=true`)
-- `clickhouseS3SecretAccessKey` - S3 secret key (only when `clickhouse.install.enabled=true`)
 
 > **Note:** When using `existingRedisSecret`, you should typically set `redis.install.enabled` to `false` (no internal Redis deployment). If you want to deploy Redis internally and manage the secret externally, set `redis.install.enabled=true` **without** specifying `existingRedisSecret`, and manage the Redis authentication values separately. See [Redis Configuration](#redis-configuration) for more details.
 
@@ -396,7 +393,7 @@ For the full list of Bitnami MinIO subchart options, see the [Bitnami MinIO char
 
 The chart can deploy an internal [ClickHouse](https://clickhouse.com/) instance for analytics. ClickHouse is disabled by default and supports three modes:
 
-1. **Internal ClickHouse** - Deploys ClickHouse within the cluster with S3-backed table storage
+1. **Internal ClickHouse** - Deploys ClickHouse within the cluster with local storage (PVC or hostPath)
 2. **External ClickHouse** - Uses an existing external ClickHouse instance
 3. **Disabled** (default) - No ClickHouse
 
@@ -404,7 +401,7 @@ When enabled, the ClickHouse connection URL is injected into the Control Plane v
 
 #### Option 1: Internal ClickHouse
 
-Deploy a ClickHouse instance within your cluster. Table data is stored on S3; local disk (emptyDir) is used only for metadata.
+Deploy a ClickHouse instance within your cluster. Data is stored on a PersistentVolumeClaim by default.
 
 ```yaml
 clickhouse:
@@ -425,18 +422,28 @@ clickhouse:
 
   database: adaptive
 
-  # S3 storage for table data (required for internal ClickHouse)
-  s3:
-    endpoint: "http://minio:9000/adaptive/clickhouse/"  # Trailing slash required
-    accessKeyId: "your-access-key"
-    secretAccessKey: "your-secret-key"
+  # Storage for ClickHouse data
+  persistence:
+    enabled: true
+    type: pvc  # "pvc" or "hostPath"
+    # PVC options
+    storageClass: ""
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    # hostPath option (used when type=hostPath)
+    hostPath: /var/lib/clickhouse
 ```
 
-The `s3.endpoint` must be a full URL with bucket and path prefix, ending with `/`. Examples:
+To use a hostPath volume instead of a PVC:
 
-- **MinIO**: `http://<minio-service>:<port>/<bucket>/clickhouse/`
-- **AWS S3**: `https://s3.<region>.amazonaws.com/<bucket>/clickhouse/`
-- **GCS (S3-compatible)**: `https://storage.googleapis.com/<bucket>/clickhouse/`
+```yaml
+clickhouse:
+  persistence:
+    enabled: true
+    type: hostPath
+    hostPath: /data/clickhouse
+```
 
 #### Option 2: External ClickHouse
 
@@ -457,8 +464,6 @@ clickhouse:
   database: my_analytics_db
 ```
 
-No S3 configuration is needed for external ClickHouse — the external instance manages its own storage.
-
 #### Option 3: Disable ClickHouse (Default)
 
 ```yaml
@@ -472,8 +477,7 @@ clickhouse:
 
 - `clickhouse.install.enabled=true` and `clickhouse.external.url` cannot both be set
 - `clickhouse.install.enabled=false` requires `clickhouse.external.url`
-- `clickhouse.install.enabled=true` requires `clickhouse.s3.endpoint`
-- `existingClickHouseSecret` cannot be used with inline `clickhouse.auth.password` or `clickhouse.s3.*` credentials
+- `existingClickHouseSecret` cannot be used with inline `clickhouse.auth.password`
 
 **Customization:**
 
@@ -744,16 +748,6 @@ spec:
     - secretKey: clickhouseDatabase
       remoteRef:
         key: adaptive/clickhouse-database
-    # S3 keys below only needed when clickhouse.install.enabled=true
-    - secretKey: clickhouseS3Endpoint
-      remoteRef:
-        key: adaptive/clickhouse-s3-endpoint
-    - secretKey: clickhouseS3AccessKeyId
-      remoteRef:
-        key: adaptive/clickhouse-s3-access-key-id
-    - secretKey: clickhouseS3SecretAccessKey
-      remoteRef:
-        key: adaptive/clickhouse-s3-secret-access-key
 ```
 
 **4. Reference the secrets** in your Helm values:
@@ -812,9 +806,6 @@ kubectl create secret generic adaptive-clickhouse-secret \
   --from-literal=clickhouseUsername="default" \
   --from-literal=clickhousePassword="password" \
   --from-literal=clickhouseDatabase="adaptive" \
-  --from-literal=clickhouseS3Endpoint="http://minio:9000/adaptive/clickhouse/" \
-  --from-literal=clickhouseS3AccessKeyId="access-key" \
-  --from-literal=clickhouseS3SecretAccessKey="secret-key" \
   --dry-run=client -o yaml | kubeseal -o yaml > sealed-clickhouse-secret.yaml
 
 # Apply the sealed secrets
@@ -857,10 +848,7 @@ kubectl create secret generic adaptive-clickhouse-secret \
   --from-literal=clickhouseUrl="http://clickhouse:8123" \
   --from-literal=clickhouseUsername="default" \
   --from-literal=clickhousePassword="password" \
-  --from-literal=clickhouseDatabase="adaptive" \
-  --from-literal=clickhouseS3Endpoint="http://minio:9000/adaptive/clickhouse/" \
-  --from-literal=clickhouseS3AccessKeyId="access-key" \
-  --from-literal=clickhouseS3SecretAccessKey="secret-key"
+  --from-literal=clickhouseDatabase="adaptive"
 ```
 
 Then reference these secrets in your values file as shown above

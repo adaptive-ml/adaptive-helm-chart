@@ -70,21 +70,6 @@ spec:
                   key: clickhousePassword
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"
-            - name: CLICKHOUSE_S3_ENDPOINT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
-                  key: clickhouseS3Endpoint
-            - name: CLICKHOUSE_S3_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
-                  key: clickhouseS3AccessKeyId
-            - name: CLICKHOUSE_S3_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "adaptive.clickhouse.secret.fullname" . }}
-                  key: clickhouseS3SecretAccessKey
             {{- if .Values.clickhouse.extraEnvVars }}
             {{- range $key, $value := .Values.clickhouse.extraEnvVars }}
             - name: {{ $key }}
@@ -112,18 +97,18 @@ spec:
           volumeMounts:
             - name: clickhouse-data
               mountPath: /var/lib/clickhouse
-            - name: clickhouse-config
-              mountPath: /etc/clickhouse-server/config.d/storage.xml
-              subPath: storage.xml
+      {{- if not .Values.clickhouse.persistence.enabled }}
       volumes:
-        {{- if not .Values.clickhouse.persistence.enabled }}
         - name: clickhouse-data
           emptyDir: {}
-        {{- end }}
-        - name: clickhouse-config
-          configMap:
-            name: {{ include "adaptive.clickhouse.configMap.fullname" . }}
-  {{- if .Values.clickhouse.persistence.enabled }}
+      {{- else if eq .Values.clickhouse.persistence.type "hostPath" }}
+      volumes:
+        - name: clickhouse-data
+          hostPath:
+            path: {{ .Values.clickhouse.persistence.hostPath }}
+            type: DirectoryOrCreate
+      {{- end }}
+  {{- if and .Values.clickhouse.persistence.enabled (eq .Values.clickhouse.persistence.type "pvc") }}
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
