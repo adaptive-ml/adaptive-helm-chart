@@ -766,8 +766,15 @@ lgtm:
 
   persistence:
     enabled: false
+    # type: pvc | hostPath | memory
+    # pvc - uses a PersistentVolumeClaim (default)
+    # hostPath - mounts a directory from the host node
+    # memory - uses an emptyDir backed by RAM (tmpfs)
+    type: pvc
     size: 10Gi
     storageClass: ""
+    # hostPath - path on the host node (only used when type: hostPath)
+    hostPath: /tmp/lgtm-data
 
   env:
     GF_AUTH_ANONYMOUS_ENABLED: true

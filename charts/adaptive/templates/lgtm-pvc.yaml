@@ -1,4 +1,4 @@
-{{- if and .Values.lgtm.enabled .Values.lgtm.persistence.enabled }}
+{{- if and .Values.lgtm.enabled .Values.lgtm.persistence.enabled (eq (.Values.lgtm.persistence.type | default "pvc") "pvc") }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
