@@ -57,8 +57,18 @@ spec:
       volumes:
         - name: data
           {{- if .Values.lgtm.persistence.enabled }}
+          {{- $type := .Values.lgtm.persistence.type | default "pvc" }}
+          {{- if eq $type "pvc" }}
           persistentVolumeClaim:
             claimName: {{ include "adaptive.lgtm.pvc.fullname" . }}
+          {{- else if eq $type "hostPath" }}
+          hostPath:
+            path: {{ .Values.lgtm.persistence.hostPath }}
+            type: DirectoryOrCreate
+          {{- else if eq $type "memory" }}
+          emptyDir:
+            medium: Memory
+          {{- end }}
           {{- else }}
           emptyDir: {}
           {{- end }}

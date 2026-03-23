@@ -726,8 +726,10 @@ lgtm:
 
   persistence:
     enabled: false    # Set to true to persist data across restarts
+    type: pvc         # pvc | hostPath | memory
     size: 10Gi
     storageClass: ""  # Use default storage class if empty
+    hostPath: /tmp/lgtm-data  # Only used when type: hostPath
 
   # Grafana environment variables
   env:
@@ -1067,14 +1069,39 @@ harmony:
 
 ### LGTM Stack
 
-By default, LGTM data (Grafana dashboards, Loki logs, Tempo traces) is not persisted. Enable persistence to retain data across pod restarts:
+By default, LGTM data (Grafana dashboards, Loki logs, Tempo traces) is not persisted. Enable persistence to retain data across pod restarts.
+
+Three persistence types are available:
+
+- **pvc** (default) — uses a PersistentVolumeClaim
+- **hostPath** — mounts a directory from the host node's filesystem
+- **memory** — uses a RAM-backed tmpfs (fast but lost on pod restart)
 
 ```yaml
+# PVC (default)
 lgtm:
   persistence:
     enabled: true
+    type: pvc
     size: 10Gi
     storageClass: "your-storage-class-name"
+```
+
+```yaml
+# Host path
+lgtm:
+  persistence:
+    enabled: true
+    type: hostPath
+    hostPath: /mnt/data/lgtm
+```
+
+```yaml
+# Memory (tmpfs)
+lgtm:
+  persistence:
+    enabled: true
+    type: memory
 ```
 
 ---
