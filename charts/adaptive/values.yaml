@@ -105,6 +105,12 @@ harmony:
       cpu: 30
       memory: 500Gi
 
+  # Cloud cache volume type: "emptyDir" (default) or "hostPath"
+  # hostPath mounts a directory from the host node's filesystem, which persists across pod restarts
+  cloudCache:
+    type: emptyDir
+    # hostPath: /opt/adaptive/cloud_cache  # Required when type is "hostPath"
+
   # Size of /dev/shm (shared memory) volume for NCCL and other IPC
   # This should not be modified under normal circumstances
   shmSize: 32Gi

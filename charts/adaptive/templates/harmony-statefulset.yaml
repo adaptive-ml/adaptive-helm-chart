@@ -190,7 +190,13 @@ spec:
             {{- end }}
       volumes:
         - name: cloud-cache-volume
+          {{- if eq (($root.Values.harmony.cloudCache).type | default "emptyDir") "hostPath" }}
+          hostPath:
+            path: {{ required "harmony.cloudCache.hostPath is required when type is hostPath" $root.Values.harmony.cloudCache.hostPath }}
+            type: DirectoryOrCreate
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         - name: workdir-volume
           emptyDir: {}
         - name: harmony-settings-volume
