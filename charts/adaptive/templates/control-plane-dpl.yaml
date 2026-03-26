@@ -127,8 +127,6 @@ spec:
             {{- include "adaptive.minio.controlPlaneEnvVars" . | nindent 12 }}
             - name: ADAPTIVE_DB__RUN_MIGRATIONS
               value: {{ .Values.controlPlane.runDbMigrations | default true | quote }}
-            - name: ADAPTIVE_SERVER__BIND
-              value: "0.0.0.0:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_SERVER__ROOT_URL
               value: {{ .Values.controlPlane.rootUrl }}
             - name: ADAPTIVE_SERVER__CLUSTER_ROOT_URL
