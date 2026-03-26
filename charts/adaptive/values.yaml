@@ -300,6 +300,9 @@ controlPlane:
   securityContext:
     readOnlyRootFilesystem: true
 
+  # Size limit for the in-memory /tmp volume (tmpfs)
+  tmpSizeLimit: 1Gi
+
   extraEnvVars: {}
 
   # Resource limits and requests for the control plane
