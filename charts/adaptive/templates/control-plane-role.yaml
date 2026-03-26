@@ -76,6 +76,10 @@ rules:
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "watch"]
+  # core/v1 Pods — cluster-wide list to compute total GPU allocations from pod requests
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list"]
   # scheduling.run.ai/v2 Queues (cluster-scoped): full CRUD + reflector
   - apiGroups: ["scheduling.run.ai"]
     resources: ["queues"]
