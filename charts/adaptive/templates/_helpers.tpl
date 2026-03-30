@@ -308,19 +308,11 @@ Control plane ports
 {{- end }}
 
 {{/*
-Control plane HTTP private endpoint (internal port, used by harmony)
+Control plane HTTP private endpoint
 */}}
 {{- define "adaptive.controlPlane.privateHttpEndpoint" -}}
 {{- $ports := fromJson (include "adaptive.controlPlane.ports" .) -}}
 {{- printf "http://%s:%d" (include "adaptive.controlPlane.service.fullname" .) (int $ports.internal.containerPort) }}
-{{- end }}
-
-{{/*
-Control plane HTTP public endpoint (service port, used by recipe-runner)
-*/}}
-{{- define "adaptive.controlPlane.publicHttpEndpoint" -}}
-{{- $servicePort := .Values.controlPlane.servicePort | default 80 | int -}}
-{{- printf "http://%s:%d" (include "adaptive.controlPlane.service.fullname" .) $servicePort }}
 {{- end }}
 
 
