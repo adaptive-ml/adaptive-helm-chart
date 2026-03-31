@@ -243,9 +243,19 @@ adaptiveOperator:
   # Comma-separated glob patterns for allowed harmony image tags
   # Empty means no user choice — the server's own tag is used
   harmonyImageTagsWhitelist: ""
+  # Extra Kubernetes extended resources to request on gang-spawned harmony pods (JSON array)
+  # Used for device-plugin-managed resources beyond nvidia.com/gpu (which is set automatically)
+  # Example: '[{"name":"nvidia.com/hostdev","value":"1"}]'
+  extraResources: ""
   # Extra volumes to mount into gang pods (JSON array)
   # Example: '[{"name":"models","mount_path":"/models","source":{"type":"pvc","claim_name":"models-pvc"}}]'
   extraVolumes: ""
+  # Custom labels applied to all gang-spawned harmony and recipe-runner pods
+  # Example: {"team": "ml-platform", "env": "production"}
+  customLabels: {}
+  # Custom annotations applied to all gang-spawned harmony and recipe-runner pods
+  # Example: {"iam.amazonaws.com/role": "arn:aws:iam::role/my-role"}
+  customAnnotations: {}
   # Extra environment variables for gang-spawned harmony pods (key-value map)
   extraHarmonyEnvVars: {}
   # Extra environment variables for recipe-runner pods (key-value map)
