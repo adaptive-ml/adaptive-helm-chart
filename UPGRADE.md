@@ -2,6 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Upgrade Guide](#upgrade-guide)
+  - [0.41.x to 0.42.0](#041x-to-0420)
+    - [Breaking Change: S3 Credentials and Secret Defaults](#breaking-change-s3-credentials-and-secret-defaults)
   - [0.37.x to 0.38.0](#037x-to-0380)
     - [Breaking Change: Monitoring Chart Merged into Adaptive Chart](#breaking-change-monitoring-chart-merged-into-adaptive-chart)
   - [0.29.x to 0.30.0](#029x-to-0300)
@@ -16,6 +18,44 @@
 # Upgrade Guide
 
 This document describes breaking changes between Helm chart versions and how to migrate your configuration.
+
+## 0.41.x to 0.42.0
+
+### Breaking Change: S3 Credentials and Secret Defaults
+
+#### S3 credentials moved to `secrets.s3Creds`
+
+S3/MinIO credentials are now managed through a dedicated `secrets.s3Creds` secret instead of being injected as individual environment variables. All keys in `secrets.s3Creds` are loaded as environment variables on control-plane, harmony, and sandkasten pods via `envFrom`.
+
+When `minio.enabled` is true, the following keys are auto-populated (user values take precedence):
+- `AWS_ACCESS_KEY_ID` (from `minio.auth.rootUser`)
+- `AWS_SECRET_ACCESS_KEY` (from `minio.auth.rootPassword`)
+- `AWS_DEFAULT_REGION` (`us-east-1`)
+- `AWS_ENDPOINT_URL_S3` (MinIO service endpoint)
+- `S3_FORCE_PATH_STYLE` (`true`)
+
+You can also reference a pre-existing secret via `secrets.existingS3CredsSecret`.
+
+**If you were relying on `minio.enabled` to inject AWS credentials:** No action needed — the chart now auto-populates `s3Creds` from the MinIO config.
+
+**If you were providing AWS credentials through a different mechanism (e.g., IRSA, pod annotations, extraEnvVars):** No action needed — `s3Creds` defaults to empty and no secret is created.
+
+**If you want to provide S3 credentials inline:**
+
+```yaml
+secrets:
+  s3Creds:
+    AWS_ACCESS_KEY_ID: "AKxxx"
+    AWS_SECRET_ACCESS_KEY: "xxx"
+    AWS_REGION: "us-west-2"
+    AWS_DEFAULT_REGION: "us-west-2"
+```
+
+#### Secret values no longer have placeholder defaults
+
+Inline secret values (`secrets.db.*`, `secrets.cookiesSecret`, `secrets.modelRegistryUrl`, `secrets.sharedDirectoryUrl`, `secrets.auth.oidc.providers`) now default to empty strings/empty list instead of placeholder values like `s3://bucket-name/model_registry` or `username`. This prevents accidentally deploying with placeholder credentials.
+
+**Migration:** If your values file was relying on the chart defaults (not recommended), you must now explicitly set all required secret values.
 
 ## 0.37.x to 0.38.0
 

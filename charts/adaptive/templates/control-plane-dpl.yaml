@@ -80,6 +80,10 @@ spec:
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          {{- if include "adaptive.s3Creds.enabled" . }}
+          envFrom:
+            {{- include "adaptive.s3Creds.envFrom" . | nindent 12 }}
+          {{- end }}
           env:
             - name: K8S_NAMESPACE
               valueFrom:
