@@ -15,7 +15,20 @@ data:
   {{- end }}
   COMMON_ENV_CONFIGMAP: "harmony-common-env"
   RECIPE_RUNNER_ENV_CONFIGMAP: "recipe-runner-env"
-  MANGROVE_RESOURCES_CONFIGMAP: "harmony-mangrove-resources"
+  # Harmony pod resources (CPU/memory requests and limits for gang-spawned pods)
+  CPU_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.cpu | quote }}
+  MEMORY_REQUESTS_MB: {{ .Values.adaptiveOperator.resources.requests.memoryMB | quote }}
+  CPU_LIMITS: {{ .Values.adaptiveOperator.resources.limits.cpu | quote }}
+  MEMORY_LIMITS_MB: {{ .Values.adaptiveOperator.resources.limits.memoryMB | quote }}
+  {{- if .Values.adaptiveOperator.customLabels }}
+  CUSTOM_LABELS: {{ .Values.adaptiveOperator.customLabels | toJson | quote }}
+  {{- end }}
+  {{- if .Values.adaptiveOperator.customAnnotations }}
+  CUSTOM_ANNOTATIONS: {{ .Values.adaptiveOperator.customAnnotations | toJson | quote }}
+  {{- end }}
+  {{- if .Values.adaptiveOperator.extraResources }}
+  EXTRA_RESOURCES: {{ .Values.adaptiveOperator.extraResources | quote }}
+  {{- end }}
   {{- with (first .Values.imagePullSecrets) }}
   IMAGE_PULL_SECRET: {{ .name | quote }}
   {{- end }}

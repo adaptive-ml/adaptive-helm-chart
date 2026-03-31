@@ -81,10 +81,6 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
           env:
-            - name: K8S_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
             - name: ADAPTIVE_K8S__NAMESPACE
               valueFrom:
                 fieldRef:
