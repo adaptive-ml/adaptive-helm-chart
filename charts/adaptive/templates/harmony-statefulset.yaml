@@ -82,6 +82,12 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: set-memlock
+          image: busybox:1.37
+          command: ["sh", "-c", "ulimit -Hl unlimited && ulimit -Sl unlimited"]
+          securityContext:
+            privileged: true
       containers:
         - name: harmony
           image: "{{ include "adaptive.harmony.computePool.imageUri" (dict "root" $root "pool" $pool) }}"
