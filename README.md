@@ -116,6 +116,13 @@ secrets:
   # Use same bucket as above and can use a different prefix
   sharedDirectoryUrl: "s3://bucket-name/shared"
 
+  # S3 credentials (injected as env vars on control-plane, harmony, and sandkasten pods)
+  s3Creds:
+    AWS_ACCESS_KEY_ID: "AKxxx"
+    AWS_SECRET_ACCESS_KEY: "xxx"
+    AWS_REGION: "us-west-2"
+    AWS_DEFAULT_REGION: "us-west-2"
+
   # Postgres database connection configuration
   db:
     username: "username"
@@ -152,9 +159,10 @@ secrets:
   existingControlPlaneSecret: "my-control-plane-secret"
   existingHarmonySecret: "my-harmony-secret"
   existingRedisSecret: "my-redis-secret"
+  existingS3CredsSecret: "my-s3-creds-secret"
 
   # IMPORTANT: Clear inline values to avoid validation errors
-  # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, and auth should not be set
+  # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, s3Creds, and auth should not be set
 ```
 
 > **Note:** The chart validates that you don't accidentally provide both an `existingSecret` reference and inline values. If both are detected, Helm will fail with a clear error message to prevent configuration surprises. Make sure to clear/remove inline secret values when using external secrets.
@@ -186,6 +194,13 @@ The `existingControlPlaneSecret` must contain these keys:
 The `existingHarmonySecret` must contain these keys:
 - `modelRegistryUrl` - S3 bucket URL for model registry
 - `sharedDirectoryUrl` - S3 bucket URL for shared directory
+
+The `existingS3CredsSecret` can contain any keys — all keys are injected as environment variables on control-plane, harmony, and sandkasten pods. Typical keys include:
+- `AWS_ACCESS_KEY_ID` - AWS access key
+- `AWS_SECRET_ACCESS_KEY` - AWS secret key
+- `AWS_DEFAULT_REGION` - AWS region
+- `AWS_ENDPOINT_URL_S3` - Custom S3 endpoint (for S3-compatible storage)
+- `S3_FORCE_PATH_STYLE` - Set to `"true"` for path-style S3 access
 
 The `existingRedisSecret` must contain this key:
 - `redisUrl` - Redis connection URL (format: `redis://[username:password@]host:port`)
@@ -325,9 +340,9 @@ When MinIO is enabled, the chart automatically:
 - Creates a default bucket (configurable via `minio.bucketName`, defaults to `adaptive`)
 - Sets `secrets.modelRegistryUrl` to `s3://<bucketName>/model_registry`
 - Sets `secrets.sharedDirectoryUrl` to `s3://<bucketName>/shared`
-- Configures Harmony and Control Plane pods with the MinIO endpoint and credentials via environment variables
+- Populates the `s3Creds` secret with MinIO credentials and endpoint (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, `AWS_ENDPOINT_URL_S3`, `S3_FORCE_PATH_STYLE`)
 
-You do **not** need to set `secrets.modelRegistryUrl` or `secrets.sharedDirectoryUrl` when MinIO is enabled.
+You do **not** need to set `secrets.modelRegistryUrl`, `secrets.sharedDirectoryUrl`, or `secrets.s3Creds` when MinIO is enabled. Any values you provide in `secrets.s3Creds` take precedence over the auto-populated MinIO defaults.
 
 #### Configuration
 
@@ -526,7 +541,7 @@ spec:
         # Configure authentication to your secret backend
 ```
 
-**3. Create ExternalSecret resources** for Control Plane, Harmony, and Redis:
+**3. Create ExternalSecret resources** for Control Plane, Harmony, S3 credentials, and Redis:
 
 > **Note:** Secret keys match the values.yaml field names for simplicity (e.g., `dbUsername`, `dbPassword`, `cookiesSecret`). The chart handles environment variable mapping internally.
 
@@ -587,6 +602,29 @@ spec:
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
+  name: adaptive-s3-creds-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: SecretStore
+  target:
+    name: adaptive-s3-creds-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: AWS_ACCESS_KEY_ID
+      remoteRef:
+        key: adaptive/aws-access-key-id
+    - secretKey: AWS_SECRET_ACCESS_KEY
+      remoteRef:
+        key: adaptive/aws-secret-access-key
+    - secretKey: AWS_DEFAULT_REGION
+      remoteRef:
+        key: adaptive/aws-region
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
   name: adaptive-redis-secret
 spec:
   refreshInterval: 1h
@@ -608,10 +646,11 @@ spec:
 secrets:
   existingControlPlaneSecret: "adaptive-control-plane-secret"
   existingHarmonySecret: "adaptive-harmony-secret"
+  existingS3CredsSecret: "adaptive-s3-creds-secret"
   existingRedisSecret: "adaptive-redis-secret"
 
   # Do not set inline values when using external secrets
-  # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, and auth should not be set
+  # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, s3Creds, and auth should not be set
 ```
 
 **5. Deploy the Helm chart:**
@@ -646,6 +685,13 @@ kubectl create secret generic adaptive-harmony-secret \
   --from-literal=sharedDirectoryUrl="s3://..." \
   --dry-run=client -o yaml | kubeseal -o yaml > sealed-harmony-secret.yaml
 
+# Create S3 credentials secret
+kubectl create secret generic adaptive-s3-creds-secret \
+  --from-literal=AWS_ACCESS_KEY_ID="AKxxx" \
+  --from-literal=AWS_SECRET_ACCESS_KEY="xxx" \
+  --from-literal=AWS_DEFAULT_REGION="us-west-2" \
+  --dry-run=client -o yaml | kubeseal -o yaml > sealed-s3-creds-secret.yaml
+
 # Create redis secret
 kubectl create secret generic adaptive-redis-secret \
   --from-literal=redisUrl="redis://..." \
@@ -654,6 +700,7 @@ kubectl create secret generic adaptive-redis-secret \
 # Apply the sealed secrets
 kubectl apply -f sealed-control-plane-secret.yaml
 kubectl apply -f sealed-harmony-secret.yaml
+kubectl apply -f sealed-s3-creds-secret.yaml
 kubectl apply -f sealed-redis-secret.yaml
 ```
 
@@ -680,6 +727,12 @@ kubectl create secret generic adaptive-control-plane-secret \
 kubectl create secret generic adaptive-harmony-secret \
   --from-literal=modelRegistryUrl="s3://bucket/models" \
   --from-literal=sharedDirectoryUrl="s3://bucket/shared"
+
+# S3 credentials secret
+kubectl create secret generic adaptive-s3-creds-secret \
+  --from-literal=AWS_ACCESS_KEY_ID="AKxxx" \
+  --from-literal=AWS_SECRET_ACCESS_KEY="xxx" \
+  --from-literal=AWS_DEFAULT_REGION="us-west-2"
 
 # Redis secret
 kubectl create secret generic adaptive-redis-secret \
