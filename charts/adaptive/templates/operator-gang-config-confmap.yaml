@@ -25,7 +25,7 @@ data:
   CUSTOM_ANNOTATIONS: {{ .Values.adaptiveOperator.customAnnotations | toJson | quote }}
   {{- end }}
   {{- if .Values.adaptiveOperator.extraResources }}
-  EXTRA_RESOURCES: {{ .Values.adaptiveOperator.extraResources | quote }}
+  EXTRA_RESOURCES: {{ .Values.adaptiveOperator.extraResources | toJson | quote }}
   {{- end }}
   {{- with (first .Values.imagePullSecrets) }}
   IMAGE_PULL_SECRET: {{ .name | quote }}
@@ -37,7 +37,7 @@ data:
   {{- end }}
   SERVICE_ACCOUNT_NAME: {{ include "adaptive.harmony.serviceAccount.fullname" . | quote }}
   {{- if .Values.adaptiveOperator.extraVolumes }}
-  EXTRA_VOLUMES: {{ .Values.adaptiveOperator.extraVolumes | quote }}
+  EXTRA_VOLUMES: {{ .Values.adaptiveOperator.extraVolumes | toJson | quote }}
   {{- end }}
   # ── Secret env vars (valueFrom.secretKeyRef) ──────────────────────────
   # Auto-populated from helm-managed secrets, then merged with user-provided entries.
