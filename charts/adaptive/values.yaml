@@ -257,9 +257,20 @@ adaptiveOperator:
   # Example: {"iam.amazonaws.com/role": "arn:aws:iam::role/my-role"}
   customAnnotations: {}
   # Extra environment variables for gang-spawned harmony pods (key-value map)
+  # These are merged into HARMONY_ENV_VARS and override built-in values.
   extraHarmonyEnvVars: {}
   # Extra environment variables for recipe-runner pods (key-value map)
+  # These are merged into RECIPE_RUNNER_ENV_VARS and override built-in values.
   extraRecipeRunnerEnvVars: {}
+  # Secret env vars injected into harmony pods via valueFrom.secretKeyRef
+  # List of {env_var, secret_name, secret_key} objects.
+  # Example:
+  #   - env_var: AWS_ACCESS_KEY_ID
+  #     secret_name: aws-creds
+  #     secret_key: access_key_id
+  harmonySecretEnvVars: []
+  # Secret env vars injected into recipe-runner pods via valueFrom.secretKeyRef
+  recipeRunnerSecretEnvVars: []
 
 controlPlane:
   sharedDirType: s3

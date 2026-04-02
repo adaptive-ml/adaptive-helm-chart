@@ -13,8 +13,6 @@ data:
   HARMONY_IMAGE_REPO: {{ .Values.harmony.image.repository | quote }}
   RECIPE_RUNNER_IMAGE_REPO: {{ .Values.sandkasten.recipeRunner.repository | quote }}
   {{- end }}
-  COMMON_ENV_CONFIGMAP: "harmony-common-env"
-  RECIPE_RUNNER_ENV_CONFIGMAP: "recipe-runner-env"
   # Harmony pod resources (CPU/memory requests and limits for gang-spawned pods)
   CPU_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.cpu | quote }}
   MEMORY_REQUESTS_MB: {{ .Values.adaptiveOperator.resources.requests.memoryMB | quote }}
@@ -41,3 +39,50 @@ data:
   {{- if .Values.adaptiveOperator.extraVolumes }}
   EXTRA_VOLUMES: {{ .Values.adaptiveOperator.extraVolumes | quote }}
   {{- end }}
+  # ── Secret env vars (valueFrom.secretKeyRef) ──────────────────────────
+  # Auto-populated from helm-managed secrets, then merged with user-provided entries.
+  {{- /* Shared secrets (S3 + harmony storage URLs) — used by both pod types */}}
+  {{- $sharedSecrets := list }}
+  {{- if include "adaptive.s3Creds.enabled" . }}
+    {{- $s3Secret := include "adaptive.s3Creds.secret.fullname" . }}
+    {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_ACCESS_KEY_ID" "secret_name" $s3Secret "secret_key" "AWS_ACCESS_KEY_ID") }}
+    {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_SECRET_ACCESS_KEY" "secret_name" $s3Secret "secret_key" "AWS_SECRET_ACCESS_KEY") }}
+    {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_DEFAULT_REGION" "secret_name" $s3Secret "secret_key" "AWS_DEFAULT_REGION") }}
+    {{- if .Values.minio.enabled }}
+      {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_ENDPOINT_URL_S3" "secret_name" $s3Secret "secret_key" "AWS_ENDPOINT_URL_S3") }}
+      {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "S3_FORCE_PATH_STYLE" "secret_name" $s3Secret "secret_key" "S3_FORCE_PATH_STYLE") }}
+    {{- end }}
+  {{- end }}
+  {{- $harmonySecret := include "adaptive.harmony.secret.fullname" . }}
+  {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "ADAPTIVE_MODEL_REGISTRY" "secret_name" $harmonySecret "secret_key" "modelRegistryUrl") }}
+  {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "HARMONY_SETTING_MODEL_REGISTRY_ROOT" "secret_name" $harmonySecret "secret_key" "modelRegistryUrl") }}
+  {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL" "secret_name" $harmonySecret "secret_key" "sharedDirectoryUrl") }}
+  {{- /* Harmony pods: shared + redis + user entries */}}
+  {{- $harmonySecrets := mustDeepCopy $sharedSecrets }}
+  {{- $redisSecret := include "adaptive.redis.secret.fullname" . }}
+  {{- $harmonySecrets = append $harmonySecrets (dict "env_var" "REDIS_URL" "secret_name" $redisSecret "secret_key" "redisUrl") }}
+  {{- $harmonySecrets = append $harmonySecrets (dict "env_var" "ADAPTIVE_REDIS__URL" "secret_name" $redisSecret "secret_key" "redisUrl") }}
+  {{- $harmonySecrets = concat $harmonySecrets .Values.adaptiveOperator.harmonySecretEnvVars }}
+  HARMONY_SECRET_ENV_VARS: {{ $harmonySecrets | toJson | quote }}
+  {{- /* Recipe-runner pods: shared + user entries (no redis) */}}
+  {{- $rrSecrets := concat $sharedSecrets .Values.adaptiveOperator.recipeRunnerSecretEnvVars }}
+  RECIPE_RUNNER_SECRET_ENV_VARS: {{ $rrSecrets | toJson | quote }}
+  # ── Plain env vars (key-value) ─────────────────────────────────────────
+  {{- $harmonyEnv := dict }}
+  {{- $_ := set $harmonyEnv "HARMONY_SETTING_WORKING_DIR" "/opt/adaptive/working_dir" }}
+  {{- if .Values.otelCollector.enabled }}
+    {{- $_ := set $harmonyEnv "OTEL_EXPORTER_OTLP_ENDPOINT" (printf "http://%s:4318" (include "adaptive.otelCollector.service.fullname" .)) }}
+    {{- $_ := set $harmonyEnv "OTEL_RESOURCE_ATTRIBUTES" (printf "deployment.environment.name=%s" (.Values.otelCollector.resourceAttributes.environmentName | default .Release.Name)) }}
+  {{- end }}
+  {{- $_ := set $harmonyEnv "ADAPTIVE_MODE" "PROD" }}
+  {{- range $key, $value := .Values.adaptiveOperator.extraHarmonyEnvVars }}
+    {{- $_ := set $harmonyEnv $key $value }}
+  {{- end }}
+  HARMONY_ENV_VARS: {{ $harmonyEnv | toJson | quote }}
+  # Recipe runner env vars (start from harmony env, then override/add)
+  {{- $rrEnv := mustDeepCopy $harmonyEnv }}
+  {{- $_ := set $rrEnv "ADAPTIVE_CONTROL_PLANE_URL" (include "adaptive.controlPlane.publicHttpEndpoint" .) }}
+  {{- range $key, $value := .Values.adaptiveOperator.extraRecipeRunnerEnvVars }}
+    {{- $_ := set $rrEnv $key $value }}
+  {{- end }}
+  RECIPE_RUNNER_ENV_VARS: {{ $rrEnv | toJson | quote }}
