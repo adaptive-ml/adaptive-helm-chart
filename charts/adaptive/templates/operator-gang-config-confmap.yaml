@@ -44,13 +44,23 @@ data:
   {{- /* Shared secrets (S3 + harmony storage URLs) — used by both pod types */}}
   {{- $sharedSecrets := list }}
   {{- if include "adaptive.s3Creds.enabled" . }}
+    {{- /* Map every key from the s3-creds secret (mirrors the envFrom secretRef on non-gang pods) */}}
     {{- $s3Secret := include "adaptive.s3Creds.secret.fullname" . }}
-    {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_ACCESS_KEY_ID" "secret_name" $s3Secret "secret_key" "AWS_ACCESS_KEY_ID") }}
-    {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_SECRET_ACCESS_KEY" "secret_name" $s3Secret "secret_key" "AWS_SECRET_ACCESS_KEY") }}
-    {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_DEFAULT_REGION" "secret_name" $s3Secret "secret_key" "AWS_DEFAULT_REGION") }}
     {{- if .Values.minio.enabled }}
-      {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "AWS_ENDPOINT_URL_S3" "secret_name" $s3Secret "secret_key" "AWS_ENDPOINT_URL_S3") }}
-      {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "S3_FORCE_PATH_STYLE" "secret_name" $s3Secret "secret_key" "S3_FORCE_PATH_STYLE") }}
+      {{- /* Minio defaults merged with user s3Creds — replicate the same key set as s3-creds-secret.yaml */}}
+      {{- $minioKeys := list "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "AWS_DEFAULT_REGION" "AWS_ENDPOINT_URL_S3" "S3_FORCE_PATH_STYLE" }}
+      {{- range $key := $minioKeys }}
+        {{- $sharedSecrets = append $sharedSecrets (dict "env_var" $key "secret_name" $s3Secret "secret_key" $key) }}
+      {{- end }}
+      {{- range $key, $_ := $.Values.secrets.s3Creds }}
+        {{- if not (has $key $minioKeys) }}
+          {{- $sharedSecrets = append $sharedSecrets (dict "env_var" $key "secret_name" $s3Secret "secret_key" $key) }}
+        {{- end }}
+      {{- end }}
+    {{- else }}
+      {{- range $key, $_ := .Values.secrets.s3Creds }}
+        {{- $sharedSecrets = append $sharedSecrets (dict "env_var" $key "secret_name" $s3Secret "secret_key" $key) }}
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- $harmonySecret := include "adaptive.harmony.secret.fullname" . }}
