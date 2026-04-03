@@ -69,6 +69,10 @@ data:
   RECIPE_RUNNER_SECRET_ENV_VARS: {{ $rrSecrets | toJson | quote }}
   # ── Plain env vars (key-value) ─────────────────────────────────────────
   {{- $harmonyEnv := dict }}
+  {{- if .Values.adaptiveOperator.awsRegion }}
+    {{- $_ := set $harmonyEnv "AWS_DEFAULT_REGION" .Values.adaptiveOperator.awsRegion }}
+    {{- $_ := set $harmonyEnv "AWS_REGION" .Values.adaptiveOperator.awsRegion }}
+  {{- end }}
   {{- $_ := set $harmonyEnv "HARMONY_SETTING_WORKING_DIR" "/opt/adaptive/working_dir" }}
   {{- if .Values.otelCollector.enabled }}
     {{- $_ := set $harmonyEnv "OTEL_EXPORTER_OTLP_ENDPOINT" (printf "http://%s:4318" (include "adaptive.otelCollector.service.fullname" .)) }}
