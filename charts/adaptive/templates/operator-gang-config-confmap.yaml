@@ -42,6 +42,9 @@ data:
   {{- end }}
   # ── Secret env vars (valueFrom.secretKeyRef) ──────────────────────────
   # Auto-populated from helm-managed secrets, then merged with user-provided entries.
+  # NOTE: When using existingS3CredsSecret (external secret with unknown keys),
+  # S3 bindings are NOT auto-generated — use harmonySecretEnvVars/recipeRunnerSecretEnvVars
+  # in adaptiveOperator to map the keys explicitly.
   {{- /* Shared secrets (S3 + harmony storage URLs) — used by both pod types */}}
   {{- $sharedSecrets := list }}
   {{- if include "adaptive.s3Creds.enabled" . }}
