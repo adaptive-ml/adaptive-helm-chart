@@ -867,7 +867,7 @@ clickhouse:
   database: adaptive
 
   # Persistence for ClickHouse data (/var/lib/clickhouse)
-  # type: "pvc" uses a PersistentVolumeClaim, "hostPath" mounts a node directory
+  # type: "pvc" uses a PersistentVolumeClaim, "hostPath" mounts a node directory, "memory" uses a RAM-backed tmpfs (emptyDir with medium: Memory)
   persistence:
     enabled: true
     type: pvc
@@ -878,6 +878,8 @@ clickhouse:
       - ReadWriteOnce
     # hostPath options (used when type=hostPath)
     hostPath: /var/lib/clickhouse
+    # memory options (used when type=memory)
+    memorySizeLimit: 4Gi
 
   resources: {}
   podAnnotations: {}

@@ -107,6 +107,12 @@ spec:
           hostPath:
             path: {{ .Values.clickhouse.persistence.hostPath }}
             type: DirectoryOrCreate
+      {{- else if eq .Values.clickhouse.persistence.type "memory" }}
+      volumes:
+        - name: clickhouse-data
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.clickhouse.persistence.memorySizeLimit | default "4Gi" }}
       {{- end }}
   {{- if and .Values.clickhouse.persistence.enabled (eq .Values.clickhouse.persistence.type "pvc") }}
   volumeClaimTemplates:

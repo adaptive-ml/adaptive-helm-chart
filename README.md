@@ -408,7 +408,7 @@ For the full list of Bitnami MinIO subchart options, see the [Bitnami MinIO char
 
 The chart can deploy an internal [ClickHouse](https://clickhouse.com/) instance for analytics. ClickHouse is disabled by default and supports three modes:
 
-1. **Internal ClickHouse** - Deploys ClickHouse within the cluster with local storage (PVC or hostPath)
+1. **Internal ClickHouse** - Deploys ClickHouse within the cluster with local storage (PVC, hostPath, or RAM-backed tmpfs)
 2. **External ClickHouse** - Uses an existing external ClickHouse instance
 3. **Disabled** (default) - No ClickHouse
 
@@ -440,7 +440,7 @@ clickhouse:
   # Storage for ClickHouse data
   persistence:
     enabled: true
-    type: pvc  # "pvc" or "hostPath"
+    type: pvc  # "pvc", "hostPath", or "memory"
     # PVC options
     storageClass: ""
     size: 10Gi
@@ -458,6 +458,16 @@ clickhouse:
     enabled: true
     type: hostPath
     hostPath: /data/clickhouse
+```
+
+To use a RAM-backed tmpfs volume (data is lost on pod restart):
+
+```yaml
+clickhouse:
+  persistence:
+    enabled: true
+    type: memory
+    memorySizeLimit: 4Gi  # size limit for the tmpfs mount
 ```
 
 #### Option 2: External ClickHouse
