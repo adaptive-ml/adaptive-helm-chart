@@ -20,6 +20,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [Secrets Configuration](#secrets-configuration)
   - [Redis Configuration](#redis-configuration)
   - [MinIO Object Storage (Optional)](#minio-object-storage-optional)
+  - [ClickHouse Analytics Database (Optional)](#clickhouse-analytics-database-optional)
   - [Container Images](#container-images)
   - [GPU Resources](#gpu-resources)
   - [Ingress Configuration](#ingress-configuration)
@@ -160,6 +161,7 @@ secrets:
   existingHarmonySecret: "my-harmony-secret"
   existingRedisSecret: "my-redis-secret"
   existingS3CredsSecret: "my-s3-creds-secret"
+  existingClickHouseSecret: "my-clickhouse-secret"  # Only needed when clickhouse.enabled=true
 
   # IMPORTANT: Clear inline values to avoid validation errors
   # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, s3Creds, and auth should not be set
@@ -204,6 +206,12 @@ The `existingS3CredsSecret` can contain any keys — all keys are injected as en
 
 The `existingRedisSecret` must contain this key:
 - `redisUrl` - Redis connection URL (format: `redis://[username:password@]host:port`)
+
+The `existingClickHouseSecret` (only when `clickhouse.enabled=true`) must contain these keys:
+- `clickhouseUrl` - ClickHouse HTTP URL (e.g., `http://clickhouse:8123`)
+- `clickhouseUsername` - ClickHouse username
+- `clickhousePassword` - ClickHouse password
+- `clickhouseDatabase` - ClickHouse database name
 
 > **Note:** When using `existingRedisSecret`, you should typically set `redis.install.enabled` to `false` (no internal Redis deployment). If you want to deploy Redis internally and manage the secret externally, set `redis.install.enabled=true` **without** specifying `existingRedisSecret`, and manage the Redis authentication values separately. See [Redis Configuration](#redis-configuration) for more details.
 
@@ -396,6 +404,129 @@ minio:
 
 For the full list of Bitnami MinIO subchart options, see the [Bitnami MinIO chart documentation](https://github.com/bitnami/charts/tree/main/bitnami/minio).
 
+### ClickHouse Analytics Database (Optional)
+
+The chart can deploy an internal [ClickHouse](https://clickhouse.com/) instance for analytics. ClickHouse is disabled by default and supports three modes:
+
+1. **Internal ClickHouse** - Deploys ClickHouse within the cluster with local storage (PVC, hostPath, or RAM-backed tmpfs)
+2. **External ClickHouse** - Uses an existing external ClickHouse instance
+3. **Disabled** (default) - No ClickHouse
+
+When enabled, the ClickHouse connection URL is injected into the Control Plane via `ADAPTIVE_CLICKHOUSE__URL`.
+
+#### Option 1: Internal ClickHouse
+
+Deploy a ClickHouse instance within your cluster. Data is stored on a PersistentVolumeClaim by default.
+
+```yaml
+clickhouse:
+  enabled: true
+  install:
+    enabled: true  # Deploy ClickHouse in-cluster
+
+  image:
+    repository: clickhouse/clickhouse-server
+    tag: "24.12-alpine"
+
+  httpPort: 8123
+  nativePort: 9000
+
+  auth:
+    username: default
+    password: "your-clickhouse-password"
+
+  database: adaptive
+
+  # Storage for ClickHouse data
+  persistence:
+    enabled: true
+    type: pvc  # "pvc", "hostPath", or "memory"
+    # PVC options
+    storageClass: ""
+    size: 10Gi
+    accessModes:
+      - ReadWriteOnce
+    # hostPath option (used when type=hostPath)
+    hostPath: /var/lib/clickhouse
+```
+
+To use a hostPath volume instead of a PVC:
+
+```yaml
+clickhouse:
+  persistence:
+    enabled: true
+    type: hostPath
+    hostPath: /data/clickhouse
+```
+
+To use a RAM-backed tmpfs volume (data is lost on pod restart):
+
+```yaml
+clickhouse:
+  persistence:
+    enabled: true
+    type: memory
+    memorySizeLimit: 4Gi  # size limit for the tmpfs mount
+```
+
+#### Option 2: External ClickHouse
+
+To use an existing external ClickHouse instance:
+
+```yaml
+clickhouse:
+  enabled: true
+  install:
+    enabled: false  # Do not deploy ClickHouse
+
+  external:
+    url: "http://clickhouse.example.com:8123"
+
+  auth:
+    username: "clickhouse-user"
+    password: "clickhouse-password"
+  database: my_analytics_db
+```
+
+#### Option 3: Disable ClickHouse (Default)
+
+```yaml
+clickhouse:
+  enabled: false
+```
+
+#### Configuration Options
+
+**Mutual Exclusivity:**
+
+- `clickhouse.install.enabled=true` and `clickhouse.external.url` cannot both be set
+- `clickhouse.install.enabled=false` requires `clickhouse.external.url`
+- `existingClickHouseSecret` cannot be used with inline `clickhouse.auth.password`
+
+**Customization:**
+
+```yaml
+clickhouse:
+  enabled: true
+  install:
+    enabled: true
+
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 1000m
+      memory: 4Gi
+
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  extraEnvVars: {}
+```
+
 ### Container Images
 
 Configure the Adaptive container registry and image tags:
@@ -541,7 +672,7 @@ spec:
         # Configure authentication to your secret backend
 ```
 
-**3. Create ExternalSecret resources** for Control Plane, Harmony, S3 credentials, and Redis:
+**3. Create ExternalSecret resources** for Control Plane, Harmony, S3 credentials, Redis, and optionally ClickHouse:
 
 > **Note:** Secret keys match the values.yaml field names for simplicity (e.g., `dbUsername`, `dbPassword`, `cookiesSecret`). The chart handles environment variable mapping internally.
 
@@ -638,6 +769,33 @@ spec:
     - secretKey: redisUrl
       remoteRef:
         key: adaptive/redis-url
+---
+# ClickHouse secret (only needed when clickhouse.enabled=true)
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: adaptive-clickhouse-secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: SecretStore
+  target:
+    name: adaptive-clickhouse-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: clickhouseUrl
+      remoteRef:
+        key: adaptive/clickhouse-url
+    - secretKey: clickhouseUsername
+      remoteRef:
+        key: adaptive/clickhouse-username
+    - secretKey: clickhousePassword
+      remoteRef:
+        key: adaptive/clickhouse-password
+    - secretKey: clickhouseDatabase
+      remoteRef:
+        key: adaptive/clickhouse-database
 ```
 
 **4. Reference the secrets** in your Helm values:
@@ -648,6 +806,7 @@ secrets:
   existingHarmonySecret: "adaptive-harmony-secret"
   existingS3CredsSecret: "adaptive-s3-creds-secret"
   existingRedisSecret: "adaptive-redis-secret"
+  existingClickHouseSecret: "adaptive-clickhouse-secret"  # Only when clickhouse.enabled=true
 
   # Do not set inline values when using external secrets
   # db, cookiesSecret, modelRegistryUrl, sharedDirectoryUrl, s3Creds, and auth should not be set
@@ -697,11 +856,20 @@ kubectl create secret generic adaptive-redis-secret \
   --from-literal=redisUrl="redis://..." \
   --dry-run=client -o yaml | kubeseal -o yaml > sealed-redis-secret.yaml
 
+# Create clickhouse secret (only when clickhouse.enabled=true)
+kubectl create secret generic adaptive-clickhouse-secret \
+  --from-literal=clickhouseUrl="http://clickhouse:8123" \
+  --from-literal=clickhouseUsername="default" \
+  --from-literal=clickhousePassword="password" \
+  --from-literal=clickhouseDatabase="adaptive" \
+  --dry-run=client -o yaml | kubeseal -o yaml > sealed-clickhouse-secret.yaml
+
 # Apply the sealed secrets
 kubectl apply -f sealed-control-plane-secret.yaml
 kubectl apply -f sealed-harmony-secret.yaml
 kubectl apply -f sealed-s3-creds-secret.yaml
 kubectl apply -f sealed-redis-secret.yaml
+kubectl apply -f sealed-clickhouse-secret.yaml  # Only when clickhouse.enabled=true
 ```
 
 **2. Reference the secrets** in your Helm values as shown above.
@@ -737,6 +905,13 @@ kubectl create secret generic adaptive-s3-creds-secret \
 # Redis secret
 kubectl create secret generic adaptive-redis-secret \
   --from-literal=redisUrl="redis://redis-host:6379"
+
+# ClickHouse secret (only when clickhouse.enabled=true)
+kubectl create secret generic adaptive-clickhouse-secret \
+  --from-literal=clickhouseUrl="http://clickhouse:8123" \
+  --from-literal=clickhouseUsername="default" \
+  --from-literal=clickhousePassword="password" \
+  --from-literal=clickhouseDatabase="adaptive"
 ```
 
 Then reference these secrets in your values file as shown above
