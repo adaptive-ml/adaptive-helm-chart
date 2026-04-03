@@ -238,8 +238,6 @@ adaptiveOperator:
     limits:
       cpu: "2"
       memoryMB: "16384"
-  # AWS region for gang-spawned pods (required when not using IMDS/Pod Identity for region discovery)
-  awsRegion: ""
   # Delete failed gang jobs immediately instead of retaining for debugging
   deleteFailedJobs: false
   # Comma-separated glob patterns for allowed harmony image tags
