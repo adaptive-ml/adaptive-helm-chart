@@ -32,6 +32,7 @@ data:
   {{- end }}
   DELETE_FAILED_JOBS: {{ .Values.adaptiveOperator.deleteFailedJobs | quote }}
   CONTROL_PLANE_URL: {{ include "adaptive.controlPlane.privateHttpEndpoint" . | quote }}
+  RECIPE_RUNNER_CONTROL_PLANE_URL: {{ include "adaptive.controlPlane.publicHttpEndpoint" . | quote }}
   {{- if .Values.adaptiveOperator.harmonyImageTagsWhitelist }}
   HARMONY_IMAGE_TAGS_WHITELIST: {{ .Values.adaptiveOperator.harmonyImageTagsWhitelist | quote }}
   {{- end }}
