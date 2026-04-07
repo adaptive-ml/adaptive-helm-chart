@@ -1,0 +1,6 @@
+[files]
+extend-exclude = ["charts/**/charts/"]
+
+[default.extend-words]
+# Azure Kubernetes Service
+AKS = "AKS"
