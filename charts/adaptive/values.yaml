@@ -230,20 +230,20 @@ harmony:
 # Adaptive Operator configuration (gang scheduling)
 # Controls the ConfigMaps read by the k8s-operator for spawning gang job pods
 adaptiveOperator:
-  # Resource limits for gang-spawned harmony pods
+  # Resource limits per GPU for gang-spawned harmony pods (values are per GPU, not total per pod)
   resources:
     requests:
       cpu: "1"
-      memoryMB: "1024"
+      memory: "1Gi"
     limits:
       cpu: "2"
-      memoryMB: "16384"
+      memory: "16Gi"
   # Delete failed gang jobs immediately instead of retaining for debugging
   deleteFailedJobs: false
   # Comma-separated glob patterns for allowed harmony image tags
   # Empty means no user choice — the server's own tag is used
   harmonyImageTagsWhitelist: ""
-  # Extra Kubernetes extended resources to request on gang-spawned harmony pods (JSON array)
+  # Extra Kubernetes extended resources to request per GPU on gang-spawned harmony pods (JSON array)
   # Used for device-plugin-managed resources beyond nvidia.com/gpu (which is set automatically)
   # Example: '[{"name":"nvidia.com/hostdev","value":"1"}]'
   extraResources: ""

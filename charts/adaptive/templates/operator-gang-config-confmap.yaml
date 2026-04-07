@@ -17,9 +17,9 @@ data:
   RECIPE_RUNNER_ENV_CONFIGMAP: "recipe-runner-env"
   # Harmony pod resources (CPU/memory requests and limits for gang-spawned pods)
   CPU_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.cpu | quote }}
-  MEMORY_REQUESTS_MB: {{ .Values.adaptiveOperator.resources.requests.memoryMB | quote }}
+  MEMORY_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.memory | quote }}
   CPU_LIMITS: {{ .Values.adaptiveOperator.resources.limits.cpu | quote }}
-  MEMORY_LIMITS_MB: {{ .Values.adaptiveOperator.resources.limits.memoryMB | quote }}
+  MEMORY_LIMITS: {{ .Values.adaptiveOperator.resources.limits.memory | quote }}
   {{- if .Values.adaptiveOperator.customLabels }}
   CUSTOM_LABELS: {{ .Values.adaptiveOperator.customLabels | toJson | quote }}
   {{- end }}
