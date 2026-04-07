@@ -13,8 +13,6 @@ data:
   HARMONY_IMAGE_REPO: {{ .Values.harmony.image.repository | quote }}
   RECIPE_RUNNER_IMAGE_REPO: {{ .Values.sandkasten.recipeRunner.repository | quote }}
   {{- end }}
-  COMMON_ENV_CONFIGMAP: "harmony-common-env"
-  RECIPE_RUNNER_ENV_CONFIGMAP: "recipe-runner-env"
   # Harmony pod resources (CPU/memory requests and limits for gang-spawned pods)
   CPU_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.cpu | quote }}
   MEMORY_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.memory | quote }}
@@ -27,17 +25,78 @@ data:
   CUSTOM_ANNOTATIONS: {{ .Values.adaptiveOperator.customAnnotations | toJson | quote }}
   {{- end }}
   {{- if .Values.adaptiveOperator.extraResources }}
-  EXTRA_RESOURCES: {{ .Values.adaptiveOperator.extraResources | quote }}
+  EXTRA_RESOURCES: {{ .Values.adaptiveOperator.extraResources | toJson | quote }}
   {{- end }}
   {{- with (first .Values.imagePullSecrets) }}
   IMAGE_PULL_SECRET: {{ .name | quote }}
   {{- end }}
   DELETE_FAILED_JOBS: {{ .Values.adaptiveOperator.deleteFailedJobs | quote }}
   CONTROL_PLANE_URL: {{ include "adaptive.controlPlane.privateHttpEndpoint" . | quote }}
+  RECIPE_RUNNER_CONTROL_PLANE_URL: {{ include "adaptive.controlPlane.publicHttpEndpoint" . | quote }}
   {{- if .Values.adaptiveOperator.harmonyImageTagsWhitelist }}
   HARMONY_IMAGE_TAGS_WHITELIST: {{ .Values.adaptiveOperator.harmonyImageTagsWhitelist | quote }}
   {{- end }}
   SERVICE_ACCOUNT_NAME: {{ include "adaptive.harmony.serviceAccount.fullname" . | quote }}
   {{- if .Values.adaptiveOperator.extraVolumes }}
-  EXTRA_VOLUMES: {{ .Values.adaptiveOperator.extraVolumes | quote }}
+  EXTRA_VOLUMES: {{ .Values.adaptiveOperator.extraVolumes | toJson | quote }}
   {{- end }}
+  # ── Secret env vars (valueFrom.secretKeyRef) ──────────────────────────
+  # Auto-populated from helm-managed secrets, then merged with user-provided entries.
+  # NOTE: When using existingS3CredsSecret (external secret with unknown keys),
+  # S3 bindings are NOT auto-generated — use harmonySecretEnvVars/recipeRunnerSecretEnvVars
+  # in adaptiveOperator to map the keys explicitly.
+  {{- /* Shared secrets (S3 + harmony storage URLs) — used by both pod types */}}
+  {{- $sharedSecrets := list }}
+  {{- if include "adaptive.s3Creds.enabled" . }}
+    {{- /* Map every key from the s3-creds secret (mirrors the envFrom secretRef on non-gang pods) */}}
+    {{- $s3Secret := include "adaptive.s3Creds.secret.fullname" . }}
+    {{- if .Values.minio.enabled }}
+      {{- /* Minio defaults merged with user s3Creds — replicate the same key set as s3-creds-secret.yaml */}}
+      {{- $minioKeys := list "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "AWS_DEFAULT_REGION" "AWS_ENDPOINT_URL_S3" "S3_FORCE_PATH_STYLE" }}
+      {{- range $key := $minioKeys }}
+        {{- $sharedSecrets = append $sharedSecrets (dict "env_var" $key "secret_name" $s3Secret "secret_key" $key) }}
+      {{- end }}
+      {{- range $key, $_ := $.Values.secrets.s3Creds }}
+        {{- if not (has $key $minioKeys) }}
+          {{- $sharedSecrets = append $sharedSecrets (dict "env_var" $key "secret_name" $s3Secret "secret_key" $key) }}
+        {{- end }}
+      {{- end }}
+    {{- else }}
+      {{- range $key, $_ := .Values.secrets.s3Creds }}
+        {{- $sharedSecrets = append $sharedSecrets (dict "env_var" $key "secret_name" $s3Secret "secret_key" $key) }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- $harmonySecret := include "adaptive.harmony.secret.fullname" . }}
+  {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "ADAPTIVE_MODEL_REGISTRY" "secret_name" $harmonySecret "secret_key" "modelRegistryUrl") }}
+  {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "HARMONY_SETTING_MODEL_REGISTRY_ROOT" "secret_name" $harmonySecret "secret_key" "modelRegistryUrl") }}
+  {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL" "secret_name" $harmonySecret "secret_key" "sharedDirectoryUrl") }}
+  {{- /* Harmony pods: shared + redis + user entries */}}
+  {{- $harmonySecrets := mustDeepCopy $sharedSecrets }}
+  {{- $redisSecret := include "adaptive.redis.secret.fullname" . }}
+  {{- $harmonySecrets = append $harmonySecrets (dict "env_var" "REDIS_URL" "secret_name" $redisSecret "secret_key" "redisUrl") }}
+  {{- $harmonySecrets = append $harmonySecrets (dict "env_var" "ADAPTIVE_REDIS__URL" "secret_name" $redisSecret "secret_key" "redisUrl") }}
+  {{- $harmonySecrets = concat $harmonySecrets .Values.adaptiveOperator.harmonySecretEnvVars }}
+  HARMONY_SECRET_ENV_VARS: {{ $harmonySecrets | toJson | quote }}
+  {{- /* Recipe-runner pods: shared + user entries (no redis) */}}
+  {{- $rrSecrets := concat $sharedSecrets .Values.adaptiveOperator.recipeRunnerSecretEnvVars }}
+  RECIPE_RUNNER_SECRET_ENV_VARS: {{ $rrSecrets | toJson | quote }}
+  # ── Plain env vars (key-value) ─────────────────────────────────────────
+  {{- $harmonyEnv := dict }}
+  {{- $_ := set $harmonyEnv "HARMONY_SETTING_WORKING_DIR" "/opt/adaptive/working_dir" }}
+  {{- if .Values.otelCollector.enabled }}
+    {{- $_ := set $harmonyEnv "OTEL_EXPORTER_OTLP_ENDPOINT" (printf "http://%s:4318" (include "adaptive.otelCollector.service.fullname" .)) }}
+    {{- $_ := set $harmonyEnv "OTEL_RESOURCE_ATTRIBUTES" (printf "deployment.environment.name=%s" (.Values.otelCollector.resourceAttributes.environmentName | default .Release.Name)) }}
+  {{- end }}
+  {{- $_ := set $harmonyEnv "ADAPTIVE_MODE" "PROD" }}
+  {{- range $key, $value := .Values.adaptiveOperator.extraHarmonyEnvVars }}
+    {{- $_ := set $harmonyEnv $key $value }}
+  {{- end }}
+  HARMONY_ENV_VARS: {{ $harmonyEnv | toJson | quote }}
+  # Recipe runner env vars (start from harmony env, then override/add)
+  {{- $rrEnv := mustDeepCopy $harmonyEnv }}
+  {{- $_ := set $rrEnv "ADAPTIVE_CONTROL_PLANE_URL" (include "adaptive.controlPlane.publicHttpEndpoint" .) }}
+  {{- range $key, $value := .Values.adaptiveOperator.extraRecipeRunnerEnvVars }}
+    {{- $_ := set $rrEnv $key $value }}
+  {{- end }}
+  RECIPE_RUNNER_ENV_VARS: {{ $rrEnv | toJson | quote }}

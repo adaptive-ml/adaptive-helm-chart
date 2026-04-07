@@ -243,13 +243,20 @@ adaptiveOperator:
   # Comma-separated glob patterns for allowed harmony image tags
   # Empty means no user choice — the server's own tag is used
   harmonyImageTagsWhitelist: ""
-  # Extra Kubernetes extended resources to request per GPU on gang-spawned harmony pods (JSON array)
+  # Extra Kubernetes extended resources to request per GPU on gang-spawned harmony pods
   # Used for device-plugin-managed resources beyond nvidia.com/gpu (which is set automatically)
-  # Example: '[{"name":"nvidia.com/hostdev","value":"1"}]'
-  extraResources: ""
-  # Extra volumes to mount into gang pods (JSON array)
-  # Example: '[{"name":"models","mount_path":"/models","source":{"type":"pvc","claim_name":"models-pvc"}}]'
-  extraVolumes: ""
+  # Example:
+  #   - name: nvidia.com/hostdev
+  #     value: "1"
+  extraResources: []
+  # Extra volumes to mount into gang pods
+  # Example:
+  #   - name: models
+  #     mount_path: /models
+  #     source:
+  #       type: pvc
+  #       claim_name: models-pvc
+  extraVolumes: []
   # Custom labels applied to all gang-spawned harmony and recipe-runner pods
   # Example: {"team": "ml-platform", "env": "production"}
   customLabels: {}
@@ -257,9 +264,20 @@ adaptiveOperator:
   # Example: {"iam.amazonaws.com/role": "arn:aws:iam::role/my-role"}
   customAnnotations: {}
   # Extra environment variables for gang-spawned harmony pods (key-value map)
+  # These are merged into HARMONY_ENV_VARS and override built-in values.
   extraHarmonyEnvVars: {}
   # Extra environment variables for recipe-runner pods (key-value map)
+  # These are merged into RECIPE_RUNNER_ENV_VARS and override built-in values.
   extraRecipeRunnerEnvVars: {}
+  # Secret env vars injected into harmony pods via valueFrom.secretKeyRef
+  # List of {env_var, secret_name, secret_key} objects.
+  # Example:
+  #   - env_var: AWS_ACCESS_KEY_ID
+  #     secret_name: aws-creds
+  #     secret_key: access_key_id
+  harmonySecretEnvVars: []
+  # Secret env vars injected into recipe-runner pods via valueFrom.secretKeyRef
+  recipeRunnerSecretEnvVars: []
 
 controlPlane:
   sharedDirType: s3
