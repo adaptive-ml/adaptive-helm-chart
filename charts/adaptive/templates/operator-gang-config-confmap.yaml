@@ -8,7 +8,8 @@ metadata:
 data:
   {{- if .Values.containerRegistry }}
   HARMONY_IMAGE_REPO: "{{ .Values.containerRegistry }}/{{ .Values.harmony.image.repository }}"
-  RECIPE_RUNNER_IMAGE_REPO: "{{ .Values.containerRegistry }}/{{ .Values.sandkasten.recipeRunner.repository }}"
+HARMONY_IMAGE_REPO: ""{{ include "adaptive.harmony.computePool.imageUri" . }}""
+RECIPE_RUNNER_IMAGE_REPO: ""{{ include "adaptive.sandkasten.imageUri" . }}""
   {{- else }}
   HARMONY_IMAGE_REPO: {{ .Values.harmony.image.repository | quote }}
   RECIPE_RUNNER_IMAGE_REPO: {{ .Values.sandkasten.recipeRunner.repository | quote }}
