@@ -238,8 +238,6 @@ adaptiveOperator:
     limits:
       cpu: "2"
       memory: "16Gi"
-  # Delete failed gang jobs immediately instead of retaining for debugging
-  deleteFailedJobs: false
   # Comma-separated glob patterns for allowed harmony image tags
   # Empty means no user choice — the server's own tag is used
   harmonyImageTagsWhitelist: ""
