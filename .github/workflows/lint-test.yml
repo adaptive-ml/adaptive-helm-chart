@@ -68,15 +68,15 @@ jobs:
           helm repo update
 
           echo "::group::Testing adaptive default install"
-          helm install --dry-run --debug adaptive-stack ./charts/adaptive
+          helm install --dry-run --debug adaptive-stack ./charts/adaptive -f .github/test-values-base.yaml
           echo "::endgroup::"
 
           echo "::group::Testing adaptive with mlflow enabled"
-          helm install --dry-run --debug adaptive-stack-mlflow ./charts/adaptive --set mlflow.enabled=true
+          helm install --dry-run --debug adaptive-stack-mlflow ./charts/adaptive -f .github/test-values-base.yaml --set mlflow.enabled=true
           echo "::endgroup::"
 
           echo "::group::Testing adaptive with postgres installed option enabled"
-          helm install --dry-run --debug adaptive-stack-postgres ./charts/adaptive --set installPostgres.enabled=true
+          helm install --dry-run --debug adaptive-stack-postgres ./charts/adaptive -f .github/test-values-base.yaml --set installPostgres.enabled=true
           echo "::endgroup::"
 
           echo "::group::Testing adaptive with external URL and external Redis"

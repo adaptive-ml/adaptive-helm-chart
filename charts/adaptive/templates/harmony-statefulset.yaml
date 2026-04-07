@@ -112,6 +112,10 @@ spec:
               name: {{ $ports.torch.name }}
             - containerPort: {{ $ports.tcpstore.containerPort }}
               name: {{ $ports.tcpstore.name }}
+          {{- if include "adaptive.s3Creds.enabled" $root }}
+          envFrom:
+            {{- include "adaptive.s3Creds.envFrom" $root | nindent 12 }}
+          {{- end }}
           env:
             {{- include "adaptive.otelCollector.envVars" $root | nindent 12 }}
             {{- include "adaptive.harmony.secretEnvVars" $root | nindent 12 }}
@@ -153,7 +157,6 @@ spec:
               value: "http://{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
-            {{- include "adaptive.minio.envVars" $root | nindent 12 }}
             {{- if eq $root.Values.controlPlane.sharedDirType "s3" }}
             - name: HARMONY_SETTING_WORKING_DIR
               value: "/opt/adaptive/working_dir"

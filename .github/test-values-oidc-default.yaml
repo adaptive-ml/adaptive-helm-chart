@@ -1,4 +1,6 @@
 secrets:
+  modelRegistryUrl: s3://test-bucket/model_registry
+  sharedDirectoryUrl: s3://test-bucket/shared
   db:
     username: test
     password: test

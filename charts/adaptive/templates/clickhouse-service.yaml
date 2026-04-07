@@ -1,0 +1,41 @@
+{{- if and .Values.clickhouse.enabled .Values.clickhouse.install.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.clickhouse.headless.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.clickhouse.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "adaptive.clickhouse.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.clickhouse.httpPort }}
+      targetPort: {{ .Values.clickhouse.httpPort }}
+    - name: native
+      port: {{ .Values.clickhouse.nativePort }}
+      targetPort: {{ .Values.clickhouse.nativePort }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.clickhouse.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.clickhouse.selectorLabels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "adaptive.clickhouse.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.clickhouse.httpPort }}
+      targetPort: {{ .Values.clickhouse.httpPort }}
+    - name: native
+      port: {{ .Values.clickhouse.nativePort }}
+      targetPort: {{ .Values.clickhouse.nativePort }}
+{{- end }}

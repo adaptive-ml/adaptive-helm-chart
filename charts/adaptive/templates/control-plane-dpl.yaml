@@ -80,6 +80,10 @@ spec:
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          {{- if include "adaptive.s3Creds.enabled" . }}
+          envFrom:
+            {{- include "adaptive.s3Creds.envFrom" . | nindent 12 }}
+          {{- end }}
           env:
             - name: ADAPTIVE_K8S__NAMESPACE
               valueFrom:
@@ -88,6 +92,7 @@ spec:
             {{- include "adaptive.otelCollector.envVars" . | nindent 12 }}
             {{- include "adaptive.harmony.secretEnvVars" . | nindent 12 }}
             {{- include "adaptive.redis.secretEnvVars" . | nindent 12 }}
+            {{- include "adaptive.clickhouse.secretEnvVars" . | nindent 12 }}
             - name: ADAPTIVE_DB__USERNAME
               valueFrom:
                 secretKeyRef:
@@ -142,6 +147,10 @@ spec:
             - name: ADAPTIVE_AUTH__ADMINS
               value: {{ .Values.auth.admins | toJson |  default "[]" | squote }}
             {{- $harmonyPorts := include "adaptive.harmony.ports" . | fromJson }}
+            {{- if .Values.clickhouse.enabled }}
+            - name: ADAPTIVE_CLICKHOUSE__ENABLED
+              value: "true"
+            {{- end }}
             {{- if .Values.mlflow.enabled }}
             - name: ADAPTIVE_MLFLOW__ENABLED
               value: "true"

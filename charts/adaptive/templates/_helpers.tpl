@@ -143,6 +143,13 @@ Secret related fullnames
 {{- printf "%s-secret" (include "adaptive.harmony.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end}}
+{{- define "adaptive.s3Creds.secret.fullname"}}
+{{- if .Values.secrets.existingS3CredsSecret }}
+{{- .Values.secrets.existingS3CredsSecret }}
+{{- else }}
+{{- printf "%s-s3-creds" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end}}
 
 
 
@@ -603,6 +610,73 @@ app.kubernetes.io/component: lgtm
 {{- end }}
 
 {{/*
+ClickHouse related helpers
+*/}}
+{{- define "adaptive.clickhouse.fullname" -}}
+{{- printf "%s-clickhouse" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.headless.service.fullname" -}}
+{{- printf "%s-headless" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.selectorLabels" -}}
+app.kubernetes.io/component: clickhouse
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.secret.fullname" -}}
+{{- if .Values.secrets.existingClickHouseSecret }}
+{{- .Values.secrets.existingClickHouseSecret }}
+{{- else }}
+{{- printf "%s-secret" (include "adaptive.clickhouse.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{- define "adaptive.clickhouse.url" -}}
+{{- if not .Values.clickhouse.install.enabled -}}
+{{- required "clickhouse.external.url is required when clickhouse.install.enabled is false" .Values.clickhouse.external.url -}}
+{{- else -}}
+{{- $host := include "adaptive.clickhouse.service.fullname" . -}}
+{{- $port := .Values.clickhouse.httpPort | int -}}
+{{- printf "http://%s:%d" $host $port -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Helper to generate ClickHouse secret environment variables
+Usage: {{ include "adaptive.clickhouse.secretEnvVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.clickhouse.secretEnvVars" -}}
+{{- if .Values.clickhouse.enabled }}
+- name: ADAPTIVE_CLICKHOUSE__URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhouseUrl
+- name: ADAPTIVE_CLICKHOUSE__USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhouseUsername
+- name: ADAPTIVE_CLICKHOUSE__PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhousePassword
+- name: ADAPTIVE_CLICKHOUSE__DATABASE
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "adaptive.clickhouse.secret.fullname" . }}
+      key: clickhouseDatabase
+{{- end }}
+{{- end }}
+
+{{/*
 MinIO related helpers
 */}}
 {{- define "adaptive.minio.service.fullname" -}}
@@ -655,35 +729,30 @@ Generate S3 URLs - uses MinIO if enabled, otherwise uses values from secrets
 {{- end }}
 
 {{/*
-Helper to generate S3/MinIO environment variables for harmony components
-Usage: {{ include "adaptive.minio.envVars" . | nindent 12 }}
-Returns environment variables for AWS_ENDPOINT_URL_S3, S3_FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+Helper to check if s3Creds secret should be mounted
+Returns "true" when there are s3Creds values, minio is enabled, or an existing secret is referenced
 */}}
-{{- define "adaptive.minio.envVars" -}}
-{{- if .Values.minio.enabled }}
-- name: AWS_ENDPOINT_URL_S3
-  value: {{ include "adaptive.minio.endpoint" . }}
-- name: S3_FORCE_PATH_STYLE
-  value: "true"
-- name: AWS_DEFAULT_REGION
-  value: "us-east-1"
-- name: AWS_ACCESS_KEY_ID
-  valueFrom:
-    secretKeyRef:
-      name: {{ printf "%s-minio" .Release.Name }}
-      key: root-user
-- name: AWS_SECRET_ACCESS_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ printf "%s-minio" .Release.Name }}
-      key: root-password
+{{- define "adaptive.s3Creds.enabled" -}}
+{{- if or .Values.secrets.existingS3CredsSecret (gt (len .Values.secrets.s3Creds) 0) .Values.minio.enabled -}}
+true
+{{- end -}}
+{{- end }}
+
+{{/*
+Helper to generate envFrom entry for s3Creds secret
+Usage: {{ include "adaptive.s3Creds.envFrom" . | nindent 12 }}
+*/}}
+{{- define "adaptive.s3Creds.envFrom" -}}
+{{- if include "adaptive.s3Creds.enabled" . }}
+- secretRef:
+    name: {{ include "adaptive.s3Creds.secret.fullname" . }}
 {{- end }}
 {{- end }}
 
 {{/*
-Helper to generate S3/MinIO environment variables for control plane
+Helper to generate S3/MinIO environment variables specific to the control plane
 Usage: {{ include "adaptive.minio.controlPlaneEnvVars" . | nindent 12 }}
-Returns environment variables for ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT, ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+Returns ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT and FORCE_PATH_STYLE (credentials come from s3Creds)
 */}}
 {{- define "adaptive.minio.controlPlaneEnvVars" -}}
 {{- if .Values.minio.enabled }}
@@ -691,17 +760,5 @@ Returns environment variables for ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT, 
   value: {{ include "adaptive.minio.endpoint" . }}
 - name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
   value: "true"
-- name: AWS_DEFAULT_REGION
-  value: "us-east-1"
-- name: AWS_ACCESS_KEY_ID
-  valueFrom:
-    secretKeyRef:
-      name: {{ printf "%s-minio" .Release.Name }}
-      key: root-user
-- name: AWS_SECRET_ACCESS_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ printf "%s-minio" .Release.Name }}
-      key: root-password
 {{- end }}
 {{- end }}
