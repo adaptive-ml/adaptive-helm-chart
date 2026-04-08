@@ -944,3 +944,22 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+# Create extra Kubernetes manifests via values.
+# Each item is passed through `tpl` so Helm template expressions are supported.
+# Items can be YAML objects or multiline strings (useful for templating field names).
+extraObjects: []
+# - apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: extra-config
+#   data:
+#     key: value
+# - |
+#     apiVersion: v1
+#     kind: Secret
+#     type: Opaque
+#     metadata:
+#       name: extra-secret
+#     data:
+#       password: {{ "secret" | b64enc | quote }}

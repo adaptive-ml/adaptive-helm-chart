@@ -34,6 +34,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [Per-Pool Node Selectors](#per-pool-node-selectors)
 - [Storage and Persistence](#storage-and-persistence)
   - [LGTM Stack](#lgtm-stack)
+- [Extra Objects](#extra-objects)
 - [Cloud specific information](#cloud-specific-information)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -1303,6 +1304,30 @@ lgtm:
     enabled: true
     size: 10Gi
     storageClass: "your-storage-class-name"
+```
+
+---
+
+## Extra Objects
+
+You can create arbitrary Kubernetes resources by adding them to the `extraObjects` list. Each item is passed through `tpl`, so Helm template expressions are supported. Items can be YAML objects or multiline strings (useful for templating field names).
+
+```yaml
+extraObjects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: my-extra-config
+    data:
+      key: value
+  - |
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: my-extra-secret
+      data:
+        password: {{ "secret" | b64enc | quote }}
 ```
 
 ---
