@@ -1,0 +1,10 @@
+{{- range .Values.extraObjects }}
+{{- if . }}
+---
+{{- if typeIs "string" . }}
+{{ tpl . $ }}
+{{- else }}
+{{ tpl (toYaml .) $ }}
+{{- end }}
+{{- end }}
+{{- end }}
