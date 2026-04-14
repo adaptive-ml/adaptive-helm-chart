@@ -37,84 +37,37 @@ This is done in order to guarantee that the compute plane has access to all the 
 
 ## Storage
 
-The recommendation for Azure is to use PVC backed by [Azure Files](https://azure.microsoft.com/en-us/products/storage/files) in order to store the model registry and working directory.
+The chart can deploy an [s3proxy](https://github.com/gaul/s3proxy) instance that translates S3 API calls into [Azure Blob Storage](https://azure.microsoft.com/en-us/products/storage/blobs) operations, allowing Adaptive components to use their standard S3 client code.
 
-This is done for the following reasons:
-* Native integration with Azure. The lifecycle of Azure Files is fully managed on Azure side without having to pass credentials.
-* Easy resize. By just changing the PVC you can increase the amount of storage available.
-* Shared State. Since this storage class is ReadWriteMany all of the pods of adaptive can share state
-
-In order to do that you will need to create an adaptive specific Storage Class and the 2 PVCs that will store the data
-```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  labels:
-    kubernetes.io/cluster-service: "true"
-  name: azurefile-csi-premium-adaptive
-allowVolumeExpansion: true
-mountOptions:
-- mfsymlinks
-- actimeo=30
-- nosharesock
-- uid=1002
-- gid=1002
-- nobrl
-parameters:
-  skuName: PremiumV2_ZRS
-provisioner: file.csi.azure.com
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
-```
+**Prerequisites:**
+- An Azure Storage Account
+- A Blob container created in the storage account (e.g., `adaptive`)
+- The storage account name and access key
 
 ```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: adaptive-model-registry
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: azurefile-csi-premium-adaptive
-  resources:
-    requests:
-      storage: 1500Gi
+s3proxy:
+  enabled: true
+  azure:
+    storageAccountName: "mystorageaccount"
+    storageAccountKey: "your-storage-account-key"
+    containerName: adaptive  # Must already exist
 ```
 
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: adaptive-workdir
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: azurefile-csi-premium-adaptive
-  resources:
-    requests:
-      storage: 1500Gi
-```
+When s3proxy is enabled, you do **not** need to set `secrets.modelRegistryUrl`, `secrets.sharedDirectoryUrl`, or `secrets.s3Creds` — they are auto-populated to point to the s3proxy service.
 
-Then you will need to make sure that you have the following values for the helm chart
+To manage Azure credentials externally (e.g., via External Secrets Operator or Azure Key Vault), use `secrets.existingS3ProxySecret` to reference a pre-existing Kubernetes secret containing the `JCLOUDS_*` keys:
+
 ```yaml
 secrets:
-  modelRegistryUrl: /model_registry
-  sharedDirectoryUrl: /workdir
-controlPlane:
-  sharedDirType: local
-volumeMounts:
-  - name: model-registry
-    mountPath: /model_registry
-  - name: working-directory
-    mountPath: /workdir
-volumes:
-  - name: model-registry
-    persistentVolumeClaim:
-      claimName: adaptive-model-registry
-  - name: working-directory
-    persistentVolumeClaim:
-      claimName: adaptive-workdir
+  existingS3ProxySecret: "my-s3proxy-secret"
+
+s3proxy:
+  enabled: true
+  azure:
+    containerName: adaptive
 ```
+
+For full configuration options and required secret keys, see the [S3 Proxy for Azure Blob Storage](../README.md#s3-proxy-for-azure-blob-storage-optional) section in the main README.
 
 ## Networking
 

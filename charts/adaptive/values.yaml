@@ -19,6 +19,8 @@ secrets:
   existingS3CredsSecret: ""
   # ClickHouse existing secret (must contain key: clickhouseUrl)
   existingClickHouseSecret: ""
+  # S3 Proxy existing secret (must contain keys: JCLOUDS_PROVIDER, JCLOUDS_IDENTITY, JCLOUDS_CREDENTIAL, JCLOUDS_ENDPOINT)
+  existingS3ProxySecret: ""
 
   # ---------------------------------------------------------------------------
   # Option 2: Inline secret values
@@ -832,6 +834,46 @@ minio:
 
   extraEnvVars: []
 
+# S3 Proxy for Azure Blob Storage (github.com/gaul/s3proxy)
+# Deploys an s3proxy instance that translates S3 API calls to Azure Blob Storage.
+# Use this when running Adaptive on Azure and you need S3-compatible object storage.
+# s3proxy sits between Adaptive components and Azure Blob Storage, presenting an S3 API
+# that Adaptive's control-plane, harmony, and sandkasten pods consume transparently.
+#
+# When enabled:
+#   - An s3proxy Deployment + Service are created in the cluster
+#   - The S3 credentials secret is auto-populated to point to the s3proxy endpoint
+#   - modelRegistryUrl and sharedDirectoryUrl default to s3://<containerName>/model_registry
+#     and s3://<containerName>/shared respectively
+#
+# IMPORTANT: This is only for Azure Blob Storage. For AWS S3, configure secrets.s3Creds
+s3proxy:
+  enabled: false
+
+  image:
+    repository: andrewgaul/s3proxy
+    tag: "3.1.0"
+    pullPolicy: IfNotPresent
+
+  # Azure Blob Storage backend configuration (ignored when secrets.existingS3ProxySecret is set)
+  azure:
+    storageAccountName: ""  # REQUIRED when s3proxy is enabled and existingSecret is not set
+    storageAccountKey: ""   # REQUIRED when s3proxy is enabled and existingSecret is not set
+    # Optional custom endpoint (defaults to https://<storageAccountName>.blob.core.windows.net)
+    endpoint: ""
+    # Name of the Azure Blob container (must already exist in the storage account)
+    containerName: adaptive
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  resources: {}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+
 # Bitnami image registry validation bypass (used by the MinIO subchart)
 # The Bitnami MinIO subchart verifies that images are pulled from a known Bitnami registry.
 # This is ONLY needed if you override minio.image.registry to a private mirror.
@@ -907,7 +949,13 @@ clickhouse:
     # memory options (used when type=memory)
     memorySizeLimit: 4Gi
 
-  resources: {}
+  # Default requests may need to be adjusted for large deployments
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      memory: 1Gi
   podAnnotations: {}
   podLabels: {}
   extraEnvVars: {}

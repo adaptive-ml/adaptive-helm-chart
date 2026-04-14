@@ -1,0 +1,18 @@
+{{- if .Values.s3proxy.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "adaptive.s3proxy.service.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.s3proxy.selectorLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.s3proxy.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "adaptive.s3proxy.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.s3proxy.service.port | default 80 }}
+      targetPort: 8080
+{{- end }}

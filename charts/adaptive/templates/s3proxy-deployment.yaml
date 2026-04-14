@@ -1,0 +1,77 @@
+{{- if .Values.s3proxy.enabled }}
+{{- if .Values.minio.enabled }}
+  {{- fail "Error: both 's3proxy.enabled' and 'minio.enabled' are true. These options are mutually exclusive — enable only one." }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "adaptive.s3proxy.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.s3proxy.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "adaptive.s3proxy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.s3proxy.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.s3proxy.selectorLabels" . | nindent 8 }}
+        {{- with .Values.s3proxy.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      {{- if .Values.s3proxy.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.s3proxy.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.s3proxy.tolerations }}
+      tolerations:
+        {{- toYaml .Values.s3proxy.tolerations | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: s3proxy
+          image: "{{ .Values.s3proxy.image.repository }}:{{ .Values.s3proxy.image.tag }}"
+          imagePullPolicy: {{ .Values.s3proxy.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - secretRef:
+                name: {{ include "adaptive.s3proxy.secret.fullname" . }}
+          env:
+            - name: S3PROXY_AUTHORIZATION
+              value: "aws-v2-or-v4"
+            - name: S3PROXY_ENDPOINT
+              value: "http://0.0.0.0:8080"
+            - name: S3PROXY_IDENTITY
+              value: "adaptive-s3proxy"
+            - name: S3PROXY_CREDENTIAL
+              value: "adaptive-s3proxy-credential"
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          {{- with .Values.s3proxy.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

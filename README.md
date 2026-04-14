@@ -20,6 +20,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [Secrets Configuration](#secrets-configuration)
   - [Redis Configuration](#redis-configuration)
   - [MinIO Object Storage (Optional)](#minio-object-storage-optional)
+  - [S3 Proxy for Azure Blob Storage (Optional)](#s3-proxy-for-azure-blob-storage-optional)
   - [ClickHouse Analytics Database (Optional)](#clickhouse-analytics-database-optional)
   - [Container Images](#container-images)
   - [GPU Resources](#gpu-resources)
@@ -404,6 +405,118 @@ minio:
 ```
 
 For the full list of Bitnami MinIO subchart options, see the [Bitnami MinIO chart documentation](https://github.com/bitnami/charts/tree/main/bitnami/minio).
+
+### S3 Proxy for Azure Blob Storage (Optional)
+
+When running Adaptive Engine on **Azure**, you can use [s3proxy](https://github.com/gaul/s3proxy) to expose Azure Blob Storage through an S3-compatible API. The chart deploys an s3proxy instance inside the cluster that translates S3 API calls from Adaptive components into Azure Blob Storage operations.
+
+> **Note:** This option is only for Azure Blob Storage. For AWS S3, configure `secrets.s3Creds` directly. For self-hosted S3-compatible storage, use `minio.enabled` instead.
+
+> **Important:** `s3proxy.enabled` and `minio.enabled` are mutually exclusive — the chart will fail if both are set to `true`.
+
+#### How it works
+
+When `s3proxy.enabled=true`, the chart:
+
+- Deploys an s3proxy Deployment and Service in the cluster
+- Creates a secret with Azure Blob Storage credentials for the s3proxy pod (unless `secrets.existingS3ProxySecret` is set)
+- Auto-populates the `s3Creds` secret with S3 credentials pointing to the s3proxy endpoint (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, `AWS_ENDPOINT_URL_S3`, `S3_FORCE_PATH_STYLE`)
+- Sets `modelRegistryUrl` to `s3://<containerName>/model_registry` and `sharedDirectoryUrl` to `s3://<containerName>/shared`
+- Configures the Control Plane with the s3proxy endpoint for shared directory access
+
+You do **not** need to set `secrets.modelRegistryUrl`, `secrets.sharedDirectoryUrl`, or `secrets.s3Creds` when s3proxy is enabled. Any values you provide in `secrets.s3Creds` take precedence over the auto-populated defaults.
+
+#### Prerequisites
+
+The Azure Blob Storage container specified in `s3proxy.azure.containerName` must already exist in your storage account before deploying. The chart does not create it automatically.
+
+#### Option 1: Inline Credentials
+
+Provide Azure credentials directly in your values file:
+
+```yaml
+s3proxy:
+  enabled: true
+
+  azure:
+    storageAccountName: "mystorageaccount"       # REQUIRED
+    storageAccountKey: "base64-encoded-key..."    # REQUIRED
+    containerName: adaptive                       # Must exist in the storage account
+```
+
+#### Option 2: Existing Secret
+
+If you manage secrets externally (using External Secrets Operator, Sealed Secrets, Azure Key Vault, etc.), you can reference a pre-existing Kubernetes secret instead of providing inline Azure credentials:
+
+```yaml
+secrets:
+  existingS3ProxySecret: "my-s3proxy-secret"
+
+s3proxy:
+  enabled: true
+
+  azure:
+    containerName: adaptive  # Still needed — controls the S3 bucket URLs
+```
+
+When `secrets.existingS3ProxySecret` is set, the chart does **not** create the s3proxy secret — it mounts the referenced secret on the s3proxy pod instead. The existing secret must contain these keys:
+
+| Key | Description |
+|-----|-------------|
+| `JCLOUDS_PROVIDER` | Backend provider (use `azureblob-sdk`) |
+| `JCLOUDS_IDENTITY` | Azure storage account name |
+| `JCLOUDS_CREDENTIAL` | Azure storage account key |
+| `JCLOUDS_ENDPOINT` | Azure Blob endpoint (e.g., `https://myaccount.blob.core.windows.net`) |
+
+> **Note:** S3 authentication between Adaptive components and s3proxy uses fixed credentials managed by the chart (`S3PROXY_IDENTITY`, `S3PROXY_CREDENTIAL`, etc.). These are injected as env vars on the s3proxy pod and into the `s3Creds` secret automatically — do not include them in your existing secret.
+
+#### Configuration
+
+```yaml
+secrets:
+  existingS3ProxySecret: ""  # Reference a pre-existing secret for s3proxy (optional)
+
+s3proxy:
+  enabled: false  # Set to true to deploy s3proxy
+
+  image:
+    repository: andrewgaul/s3proxy
+    tag: "sha-97e07e9"
+    pullPolicy: IfNotPresent
+
+  # Azure Blob Storage backend (ignored when secrets.existingS3ProxySecret is set)
+  azure:
+    storageAccountName: ""  # REQUIRED when existingS3ProxySecret is not set
+    storageAccountKey: ""   # REQUIRED when existingS3ProxySecret is not set
+    endpoint: ""            # Optional (defaults to https://<storageAccountName>.blob.core.windows.net)
+    containerName: adaptive # Azure Blob container name (must already exist)
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+
+  # Resources
+  resources: {}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+```
+
+#### Custom Azure Endpoint
+
+To use a custom Azure Blob Storage endpoint (e.g., Azure Government or Azure China):
+
+```yaml
+s3proxy:
+  azure:
+    storageAccountName: "mystorageaccount"
+    storageAccountKey: "key..."
+    endpoint: "https://mystorageaccount.blob.core.usgovcloudapi.net"
+```
+
+When `endpoint` is not set, it defaults to `https://<storageAccountName>.blob.core.windows.net`.
 
 ### ClickHouse Analytics Database (Optional)
 
