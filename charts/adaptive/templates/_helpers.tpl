@@ -677,6 +677,75 @@ Usage: {{ include "adaptive.clickhouse.secretEnvVars" . | nindent 12 }}
 {{- end }}
 
 {{/*
+S3 Proxy related helpers
+*/}}
+{{- define "adaptive.s3proxy.fullname" -}}
+{{- printf "%s-s3proxy" (include "adaptive.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.s3proxy.service.fullname" -}}
+{{- printf "%s-svc" (include "adaptive.s3proxy.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "adaptive.s3proxy.selectorLabels" -}}
+app.kubernetes.io/component: s3proxy
+{{ include "adaptive.sharedSelectorLabels" . }}
+{{- end }}
+
+{{- define "adaptive.s3proxy.secret.fullname" -}}
+{{- if .Values.secrets.existingS3ProxySecret -}}
+{{- .Values.secrets.existingS3ProxySecret -}}
+{{- else -}}
+{{- printf "%s-secret" (include "adaptive.s3proxy.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end }}
+
+{{- define "adaptive.s3proxy.port" -}}
+{{- .Values.s3proxy.service.port | default 80 -}}
+{{- end }}
+
+{{- define "adaptive.s3proxy.endpoint" -}}
+{{- $host := include "adaptive.s3proxy.service.fullname" . -}}
+{{- $port := include "adaptive.s3proxy.port" . | int -}}
+{{- printf "http://%s:%d" $host $port -}}
+{{- end }}
+
+{{- define "adaptive.s3proxy.containerName" -}}
+{{- .Values.s3proxy.azure.containerName | default "adaptive" -}}
+{{- end }}
+
+{{- define "adaptive.s3proxy.modelRegistryUrl" -}}
+{{- $container := include "adaptive.s3proxy.containerName" . -}}
+{{- printf "s3://%s/model_registry" $container -}}
+{{- end }}
+
+{{- define "adaptive.s3proxy.sharedDirectoryUrl" -}}
+{{- $container := include "adaptive.s3proxy.containerName" . -}}
+{{- printf "s3://%s/shared" $container -}}
+{{- end }}
+
+{{- define "adaptive.s3proxy.azureEndpoint" -}}
+{{- if .Values.s3proxy.azure.endpoint -}}
+{{- .Values.s3proxy.azure.endpoint -}}
+{{- else -}}
+{{- printf "https://%s.blob.core.windows.net" (required "s3proxy.azure.storageAccountName is required when s3proxy.enabled is true" .Values.s3proxy.azure.storageAccountName) -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Helper to generate S3 Proxy environment variables specific to the control plane
+Usage: {{ include "adaptive.s3proxy.controlPlaneEnvVars" . | nindent 12 }}
+*/}}
+{{- define "adaptive.s3proxy.controlPlaneEnvVars" -}}
+{{- if .Values.s3proxy.enabled }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT
+  value: {{ include "adaptive.s3proxy.endpoint" . }}
+- name: ADAPTIVE_HARMONY__SHARED_DIRECTORY__FORCE_PATH_STYLE
+  value: "true"
+{{- end }}
+{{- end }}
+
+{{/*
 MinIO related helpers
 */}}
 {{- define "adaptive.minio.service.fullname" -}}
@@ -715,16 +784,20 @@ Generate S3 URLs - uses MinIO if enabled, otherwise uses values from secrets
 {{- define "adaptive.modelRegistryUrl" -}}
 {{- if .Values.minio.enabled -}}
 {{- include "adaptive.minio.modelRegistryUrl" . -}}
+{{- else if .Values.s3proxy.enabled -}}
+{{- include "adaptive.s3proxy.modelRegistryUrl" . -}}
 {{- else -}}
-{{- required "secrets.modelRegistryUrl is required when minio.enabled is false!" .Values.secrets.modelRegistryUrl -}}
+{{- required "secrets.modelRegistryUrl is required when minio.enabled and s3proxy.enabled are both false!" .Values.secrets.modelRegistryUrl -}}
 {{- end -}}
 {{- end }}
 
 {{- define "adaptive.sharedDirectoryUrl" -}}
 {{- if .Values.minio.enabled -}}
 {{- include "adaptive.minio.sharedDirectoryUrl" . -}}
+{{- else if .Values.s3proxy.enabled -}}
+{{- include "adaptive.s3proxy.sharedDirectoryUrl" . -}}
 {{- else -}}
-{{- required "secrets.sharedDirectoryUrl is required when minio.enabled is false!" .Values.secrets.sharedDirectoryUrl -}}
+{{- required "secrets.sharedDirectoryUrl is required when minio.enabled and s3proxy.enabled are both false!" .Values.secrets.sharedDirectoryUrl -}}
 {{- end -}}
 {{- end }}
 
@@ -733,7 +806,7 @@ Helper to check if s3Creds secret should be mounted
 Returns "true" when there are s3Creds values, minio is enabled, or an existing secret is referenced
 */}}
 {{- define "adaptive.s3Creds.enabled" -}}
-{{- if or .Values.secrets.existingS3CredsSecret (gt (len .Values.secrets.s3Creds) 0) .Values.minio.enabled -}}
+{{- if or .Values.secrets.existingS3CredsSecret (gt (len .Values.secrets.s3Creds) 0) .Values.minio.enabled .Values.s3proxy.enabled -}}
 true
 {{- end -}}
 {{- end }}
