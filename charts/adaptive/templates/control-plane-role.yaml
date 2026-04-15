@@ -88,8 +88,9 @@ rules:
   - apiGroups: ["scheduling.run.ai"]
     resources: ["policies"]
     verbs: ["get", "list", "watch"]
-  # kueue.x-k8s.io — Topology CRD for GPU topology awareness
-  - apiGroups: ["kueue.x-k8s.io"]
+  # kai.scheduler — Topology CRD for GPU topology awareness
+  # (KAI v0.14+ ships its own Topology CRD; earlier versions reused Kueue's at kueue.x-k8s.io)
+  - apiGroups: ["kai.scheduler"]
     resources: ["topologies"]
     verbs: ["create"]
 ---
