@@ -278,6 +278,27 @@ adaptiveOperator:
   harmonySecretEnvVars: []
   # Secret env vars injected into recipe-runner pods via valueFrom.secretKeyRef
   recipeRunnerSecretEnvVars: []
+  # Node selector applied to gang-spawned harmony (GPU) pods when num_gpus > 0.
+  # Used to pin GPU workloads to specific nodes (e.g. a particular GPU model
+  # or a dedicated node pool). Not applied to the CPU-only fallback pod
+  # spawned when num_gpus == 0, nor to recipe-runner pods.
+  # Example:
+  #   nvidia.com/gpu.product: NVIDIA-H100-80GB-HBM3
+  #   node-pool: gpu
+  #   karpenter.sh/capacity-type: reserved
+  harmonyNodeSelector: {}
+  # Tolerations applied to gang-spawned harmony (GPU) pods when num_gpus > 0.
+  # Required to schedule on tainted GPU nodes (e.g. AWS Capacity Block pools
+  # tainted with nvidia.com/gpu:NoSchedule). Not applied to the CPU-only
+  # fallback pod spawned when num_gpus == 0, nor to recipe-runner pods.
+  # Example:
+  #   - key: nvidia.com/gpu
+  #     operator: Exists
+  #     effect: NoSchedule
+  #   - key: adaptive.com/gpu-capacity-block
+  #     operator: Exists
+  #     effect: NoSchedule
+  harmonyTolerations: []
 
 controlPlane:
   sharedDirType: s3

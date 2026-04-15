@@ -27,6 +27,12 @@ data:
   {{- if .Values.adaptiveOperator.extraResources }}
   EXTRA_RESOURCES: {{ .Values.adaptiveOperator.extraResources | toJson | quote }}
   {{- end }}
+  {{- if .Values.adaptiveOperator.harmonyNodeSelector }}
+  HARMONY_NODE_SELECTOR: {{ .Values.adaptiveOperator.harmonyNodeSelector | toJson | quote }}
+  {{- end }}
+  {{- if .Values.adaptiveOperator.harmonyTolerations }}
+  HARMONY_TOLERATIONS: {{ .Values.adaptiveOperator.harmonyTolerations | toJson | quote }}
+  {{- end }}
   {{- with (first .Values.imagePullSecrets) }}
   IMAGE_PULL_SECRET: {{ .name | quote }}
   {{- end }}
