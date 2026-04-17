@@ -9,7 +9,7 @@ secrets:
   # When set, the corresponding inline values below are ignored.
   # ---------------------------------------------------------------------------
 
-  # Control Plane existing secret (must contain keys: dbUsername, dbPassword, dbHost, dbName, cookiesSecret, oidcProviders)
+  # Control Plane existing secret (must contain keys: dbUsername, dbPassword, dbHost, dbName, cookiesSecret, oidcProviders, internalJwtPrivateKeyV4Base64)
   existingControlPlaneSecret: ""
   # Harmony existing secret (must contain keys: modelRegistryUrl, sharedDirectoryUrl)
   existingHarmonySecret: ""
@@ -80,6 +80,9 @@ secrets:
         #   pkce: true                                        # true if your provider supports PKCE (recommended)
         #   allow_sign_up: true                               # if true, accounts are created on first login
         #   require_email_verified: true                      # if true, email must be verified (default true)
+    # Base64-encoded private key used to sign internal API JWTs.
+    # Must be the same on all servers of a cluster.
+    internalJwtPrivateKeyV4Base64: ""
 
 auth:
   # One of [admin, read-only, inference, annotator]

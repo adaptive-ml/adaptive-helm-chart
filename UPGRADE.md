@@ -2,6 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Upgrade Guide](#upgrade-guide)
+  - [0.47.x to 0.48.0](#047x-to-0480)
+    - [Breaking Change: Internal API JWT Private Key Required](#breaking-change-internal-api-jwt-private-key-required)
   - [0.41.x to 0.42.0](#041x-to-0420)
     - [Breaking Change: S3 Credentials and Secret Defaults](#breaking-change-s3-credentials-and-secret-defaults)
   - [0.37.x to 0.38.0](#037x-to-0380)
@@ -18,6 +20,26 @@
 # Upgrade Guide
 
 This document describes breaking changes between Helm chart versions and how to migrate your configuration.
+
+## 0.47.x to 0.48.0
+
+### Breaking Change: Internal API JWT Private Key Required
+
+A new required secret value, `secrets.auth.internalJwtPrivateKeyV4Base64`, has been added to the Control Plane. It is loaded as the `ADAPTIVE_AUTH__INTERNAL_API_JWT__PRIVATE_KEY_V4_BASE64` environment variable and is used to sign internal API JWTs. The chart deployment will fail if it is not provided.
+
+**Migration:**
+
+If you are using inline secret values, add the new key under `secrets.auth`:
+
+```yaml
+secrets:
+  auth:
+    internalJwtPrivateKeyV4Base64: "<base64-encoded-private-key>"
+```
+
+If you are using `secrets.existingControlPlaneSecret`, add an `internalJwtPrivateKeyV4Base64` key to your pre-existing secret. The full list of required keys is now: `dbUsername`, `dbPassword`, `dbHost`, `dbName`, `cookiesSecret`, `oidcProviders`, `internalJwtPrivateKeyV4Base64`.
+
+The value must be the same on all servers of a cluster.
 
 ## 0.41.x to 0.42.0
 
