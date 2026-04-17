@@ -8,6 +8,7 @@ secrets:
     database: test
   cookiesSecret: test-secret-1234567890123456789012345678901234567890123456789012345678901234
   auth:
+    internalJwtPrivateKeyV4Base64: dGVzdC1pbnRlcm5hbC1qd3QtcHJpdmF0ZS1rZXk=
     oidc:
       providers:
         - name: "Google"
