@@ -136,6 +136,11 @@ secrets:
   cookiesSecret: "change-me-secret-db40431e-c2fd-48a6-acd6-854232c2ed94-01dd4d01-dr7b-4315" # Must be >= 64 chars
 
   auth:
+    # Base64-encoded PASETO V4 (Ed25519) private key used to sign internal API JWTs.
+    # Must be the same on all servers of a cluster. Generate with
+    # ./scripts/generate-internal-jwt-key.sh (see scripts/README.md).
+    internalJwtPrivateKeyV4Base64: "<base64-encoded-private-key>"
+
     oidc:
       providers:
         # Name of your OpenId provider displayed in the ui
@@ -181,6 +186,7 @@ The `existingControlPlaneSecret` must contain these keys:
 - `dbHost` - Database host and port (e.g., `db_address:5432`)
 - `dbName` - Database name
 - `cookiesSecret` - Cookie signing secret (>= 64 chars)
+- `internalJwtPrivateKeyV4Base64` - Base64-encoded PASETO V4 (Ed25519) private key used to sign internal API JWTs. Must be the same on all servers of a cluster. Generate with `./scripts/generate-internal-jwt-key.sh` (see [`scripts/README.md`](./scripts/README.md#generate-internal-jwt-keysh) for requirements and the raw OpenSSL equivalent).
 - `oidcProviders` - OIDC configuration in TOML array format (example below):
   ```toml
   [{
@@ -823,6 +829,9 @@ spec:
     - secretKey: oidcProviders  # Value must be in TOML array format
       remoteRef:
         key: adaptive/oidc-providers  # Store the TOML array in your secret backend
+    - secretKey: internalJwtPrivateKeyV4Base64  # Generated with scripts/generate-internal-jwt-key.sh
+      remoteRef:
+        key: adaptive/internal-jwt-private-key-v4-base64
 ---
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
@@ -950,6 +959,7 @@ kubectl create secret generic adaptive-control-plane-secret \
   --from-literal=dbName="db_name" \
   --from-literal=cookiesSecret="..." \
   --from-literal=oidcProviders='[{key=google,name=Google,issuer_url="https://accounts.google.com",client_id="...",client_secret="...",scopes=["email","profile"],pkce=true,allow_sign_up=true},]' \
+  --from-literal=internalJwtPrivateKeyV4Base64="$(./scripts/generate-internal-jwt-key.sh | awk -F': ' '/Private key/ {print $2}')" \
   --dry-run=client -o yaml | kubeseal -o yaml > sealed-control-plane-secret.yaml
 
 # Create harmony secret
@@ -1003,7 +1013,8 @@ kubectl create secret generic adaptive-control-plane-secret \
   --from-literal=dbHost="host:5432" \
   --from-literal=dbName="db_name" \
   --from-literal=cookiesSecret="your-64-char-secret" \
-  --from-literal=oidcProviders='[{key="google",name="Google",issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true}]'
+  --from-literal=oidcProviders='[{key="google",name="Google",issuer_url="https://accounts.google.com",client_id="your_client_id",client_secret="your_client_secret",scopes=["email","profile"],pkce=true,allow_sign_up=true}]' \
+  --from-literal=internalJwtPrivateKeyV4Base64="$(./scripts/generate-internal-jwt-key.sh | awk -F': ' '/Private key/ {print $2}')"
 
 # Harmony secret
 kubectl create secret generic adaptive-harmony-secret \

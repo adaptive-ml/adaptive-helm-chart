@@ -27,6 +27,16 @@ This document describes breaking changes between Helm chart versions and how to 
 
 A new required secret value, `secrets.auth.internalJwtPrivateKeyV4Base64`, has been added to the Control Plane. It is loaded as the `ADAPTIVE_AUTH__INTERNAL_API_JWT__PRIVATE_KEY_V4_BASE64` environment variable and is used to sign internal API JWTs. The chart deployment will fail if it is not provided.
 
+**Generating the key:**
+
+Use the helper script shipped in this repo:
+
+```bash
+./scripts/generate-internal-jwt-key.sh
+```
+
+See [`scripts/README.md`](./scripts/README.md#generate-internal-jwt-keysh) for requirements and the equivalent raw OpenSSL commands for environments where the script cannot be run.
+
 **Migration:**
 
 If you are using inline secret values, add the new key under `secrets.auth`:
