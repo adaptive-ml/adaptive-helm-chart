@@ -294,6 +294,7 @@ Harmony service ws endpoint
     scopes={{ .scopes | toJson }},
     pkce={{ .pkce }},
     allow_sign_up={{ .allow_sign_up }},
+    allowed_domains={{ .allowed_domains | default list | toJson }},
     {{- if hasKey . "require_email_verified" }}
     require_email_verified={{ .require_email_verified }}
     {{- else }}
