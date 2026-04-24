@@ -683,19 +683,20 @@ This describes how to deploy Adaptive Engine on a cluster that has **no GPU node
 Setting `harmony.requireGpu: false` changes two things in the rendered harmony StatefulSet:
 
 1. The `nvidia.com/gpu` resource is **not** added to `resources.requests` / `resources.limits` on the harmony container, so the pod can schedule on any node that meets the CPU / memory requests.
-2. The default `nvidia.com/gpu` toleration is **filtered out** of the pod spec. Other tolerations you configure are preserved.
+2. Any pod toleration with `key: nvidia.com/gpu` is **filtered out** of the pod spec. Tolerations with other keys are preserved. If filtering out `nvidia.com/gpu` would leave no tolerations, set `harmony.tolerations: []` explicitly (or include at least one non-GPU toleration) to avoid rendering `tolerations:` with no list items.
 
 #### Minimal `values.yaml` override
 
 ```yaml
 harmony:
-  # Disable GPU resource requests and filter the nvidia.com/gpu toleration
+  # Disable GPU resource requests and filter any toleration with key nvidia.com/gpu
   requireGpu: false
 
   # Clear the default GPU node selector (if any)
   nodeSelector: {}
 
-  # Clear tolerations — harmony is expected to run on generic CPU nodes
+  # Explicitly set an empty list so the rendered pod spec does not end up with
+  # `tolerations:` and no list items after nvidia.com/gpu tolerations are filtered out
   tolerations: []
 
   # Shrink default resource requests so the pod fits on a small preview node
