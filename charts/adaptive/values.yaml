@@ -80,6 +80,7 @@ secrets:
         #   pkce: true                                        # true if your provider supports PKCE (recommended)
         #   allow_sign_up: true                               # if true, accounts are created on first login
         #   require_email_verified: true                      # if true, email must be verified (default true)
+        #   allowed_domains: ["example.com"]                  # if non-empty, restrict sign-in to users whose email domain is in this list (default [])
     # Base64-encoded private key used to sign internal API JWTs.
     # Must be the same on all servers of a cluster.
     internalJwtPrivateKeyV4Base64: ""
