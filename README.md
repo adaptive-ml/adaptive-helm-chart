@@ -24,6 +24,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [ClickHouse Analytics Database (Optional)](#clickhouse-analytics-database-optional)
   - [Container Images](#container-images)
   - [GPU Resources](#gpu-resources)
+  - [CPU-Only Harmony Deployment](#cpu-only-harmony-deployment)
   - [Ingress Configuration](#ingress-configuration)
   - [Using External Secret Management](#using-external-secret-management)
 - [Monitoring and Observability](#monitoring-and-observability)
@@ -669,6 +670,93 @@ harmony:
   # Should be equal to, or a divisor of the # of GPUs on each node
   gpusPerReplica: 8
 ```
+
+### CPU-Only Harmony Deployment
+
+This describes how to deploy Adaptive Engine on a cluster that has **no GPU nodes available**. It is useful when you are only evaluating Adaptive against **external LLM providers** (e.g. OpenAI, Anthropic, Azure OpenAI, Bedrock) — harmony does not need local GPUs to route requests to an external model endpoint. It is also handy for preview or smoke-test clusters that stand up the stack before GPU capacity has been provisioned.
+
+> [!WARNING]
+> Any workload that runs a model **locally** in harmony — training, evaluation, local inference — requires NVIDIA GPUs and will not progress on a CPU-only cluster. Use this configuration only for external-LLM evaluation or for validating chart rendering and control-plane startup.
+
+#### What the toggle does
+
+Setting `harmony.requireGpu: false` changes two things in the rendered harmony StatefulSet:
+
+1. The `nvidia.com/gpu` resource is **not** added to `resources.requests` / `resources.limits` on the harmony container, so the pod can schedule on any node that meets the CPU / memory requests.
+2. Any pod toleration with `key: nvidia.com/gpu` is **filtered out** of the pod spec. Tolerations with other keys are preserved. If filtering out `nvidia.com/gpu` would leave no tolerations, set `harmony.tolerations: []` explicitly (or include at least one non-GPU toleration) to avoid rendering `tolerations:` with no list items.
+
+#### Minimal `values.yaml` override
+
+```yaml
+harmony:
+  # Disable GPU resource requests and filter any toleration with key nvidia.com/gpu
+  requireGpu: false
+
+  # Clear the default GPU node selector (if any)
+  nodeSelector: {}
+
+  # Explicitly set an empty list so the rendered pod spec does not end up with
+  # `tolerations:` and no list items after nvidia.com/gpu tolerations are filtered out
+  tolerations: []
+
+  # Shrink default resource requests so the pod fits on a small preview node
+  # (the chart defaults assume a GPU box with 30 vCPU / 500Gi RAM)
+  resources:
+    limits:
+      cpu: 2
+      memory: 8Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+
+  # Shrink /dev/shm too — NCCL isn't doing anything here
+  shmSize: 1Gi
+
+  computePools:
+    - name: default
+      replicas: 1
+```
+
+`harmony.gpusPerReplica` can be left at its default value. When `requireGpu` is false, it is ignored for rendering the `nvidia.com/gpu` resource requests/limits (see `charts/adaptive/templates/harmony-statefulset.yaml:98`), but `GPU_COUNT` in the harmony container may still reflect `gpusPerReplica` unless you override it separately.
+
+#### Per-compute-pool override
+
+`requireGpu` can also be set per compute pool, which is useful if you want a mixed setup (a real GPU pool plus a CPU-only pool for debugging):
+
+```yaml
+harmony:
+  requireGpu: true     # cluster default
+
+  computePools:
+    - name: default
+      replicas: 1
+    - name: preview
+      replicas: 1
+      requireGpu: false
+      resources:
+        limits:
+          cpu: 2
+          memory: 8Gi
+        requests:
+          cpu: 500m
+          memory: 2Gi
+```
+
+#### What still works vs. what doesn't
+
+Works on a CPU-only cluster:
+
+- All chart templating, rendering, and `helm install` / `helm upgrade` flows.
+- Control plane, sandkasten, redis, mlflow, clickhouse, s3proxy, LGTM stack — none of these need GPUs.
+- Harmony pod scheduling, startup, and its readiness probes.
+- Login, UI, API, database migrations, OIDC / SSO flows.
+- Evaluation and inference workflows that target **external LLM providers** (OpenAI, Anthropic, Azure OpenAI, Bedrock, etc.).
+
+Does **not** work on a CPU-only cluster:
+
+- Local training, evaluation, or inference jobs (any workload that runs a model inside harmony).
+
+When the cluster later gets GPU nodes, flip `harmony.requireGpu` back to `true` (or remove the override) and run `helm upgrade` — no other chart-level migration is required.
 
 
 ### Ingress Configuration
