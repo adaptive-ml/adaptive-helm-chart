@@ -716,7 +716,7 @@ harmony:
       replicas: 1
 ```
 
-`harmony.gpusPerReplica` can be left at its default value. When `requireGpu` is false, it is ignored at render time (see `charts/adaptive/templates/harmony-statefulset.yaml:98`).
+`harmony.gpusPerReplica` can be left at its default value. When `requireGpu` is false, it is ignored for rendering the `nvidia.com/gpu` resource requests/limits (see `charts/adaptive/templates/harmony-statefulset.yaml:98`), but `GPU_COUNT` in the harmony container may still reflect `gpusPerReplica` unless you override it separately.
 
 #### Per-compute-pool override
 
