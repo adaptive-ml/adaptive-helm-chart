@@ -2,6 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Upgrade Guide](#upgrade-guide)
+  - [0.48.x to 0.49.0](#048x-to-0490)
+    - [Breaking Change: Sandkasten NetworkPolicy Enabled by Default](#breaking-change-sandkasten-networkpolicy-enabled-by-default)
   - [0.47.x to 0.48.0](#047x-to-0480)
     - [Breaking Change: Internal API JWT Private Key Required](#breaking-change-internal-api-jwt-private-key-required)
   - [0.41.x to 0.42.0](#041x-to-0420)
@@ -20,6 +22,56 @@
 # Upgrade Guide
 
 This document describes breaking changes between Helm chart versions and how to migrate your configuration.
+
+## 0.48.x to 0.49.0
+
+### Breaking Change: Sandkasten NetworkPolicy Enabled by Default
+
+`sandkasten.networkPolicy.enabled` now defaults to `true`. When the chart is upgraded, a Kubernetes `NetworkPolicy` is created that restricts sandkasten egress to the control-plane, harmony and OTel Collector pods, plus the rules listed in `sandkasten.networkPolicy.additionalEgressRules` (DNS and Redis by default).
+
+The default egress rules previously hard-coded in the template (DNS resolution and Redis access) have been moved to `sandkasten.networkPolicy.additionalEgressRules` so they can be overridden or extended without forking the chart.
+
+**Migration:**
+
+- If your CNI does not enforce `NetworkPolicy` (e.g. some managed Kubernetes flavors), or if sandkasten needs egress beyond the defaults, either disable the policy:
+
+  ```yaml
+  sandkasten:
+    networkPolicy:
+      enabled: false
+  ```
+
+  or extend it with the destinations sandkasten needs to reach:
+
+  ```yaml
+  sandkasten:
+    networkPolicy:
+      additionalEgressRules:
+        # Keep the defaults (DNS + Redis) and add an external secrets manager
+        - to:
+            - ipBlock:
+                cidr: 169.254.25.10/32
+            - ipBlock:
+                cidr: 0.0.0.0/0
+          ports:
+            - protocol: UDP
+              port: 53
+            - protocol: TCP
+              port: 53
+        - to:
+            - namespaceSelector: {}
+          ports:
+            - protocol: TCP
+              port: 6379
+        - to:
+            - ipBlock:
+                cidr: 10.0.0.0/8
+          ports:
+            - protocol: TCP
+              port: 443
+  ```
+
+  Setting `additionalEgressRules` replaces the defaults entirely — copy the DNS and Redis rules in if you still need them.
 
 ## 0.47.x to 0.48.0
 

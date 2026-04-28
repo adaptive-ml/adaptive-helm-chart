@@ -32,6 +32,7 @@ A Helm Chart to deploy Adaptive Engine.
   - [OpenTelemetry Collector](#opentelemetry-collector)
   - [MLflow Experiment Tracking](#mlflow-experiment-tracking)
 - [Sandboxing service](#sandboxing-service)
+  - [NetworkPolicy](#networkpolicy)
 - [Compute Pools](#compute-pools)
   - [Per-Pool Node Selectors](#per-pool-node-selectors)
 - [Storage and Persistence](#storage-and-persistence)
@@ -1449,6 +1450,52 @@ sandkasten:
 ```
 
 **Note:** Sandkasten requires access to the Harmony service and artifacts storage, it uses the same service account as other Adaptive components for authentication.
+
+### NetworkPolicy
+
+Sandkasten can be deployed with a Kubernetes `NetworkPolicy` that restricts its
+egress traffic. When enabled, sandkasten pods are only allowed to reach the
+control-plane, harmony and OTel Collector pods, plus any rules listed under
+`sandkasten.networkPolicy.additionalEgressRules`.
+
+The default `additionalEgressRules` allow:
+- **DNS** — required to resolve the control-plane and harmony Service names.
+- **Redis** (TCP/6379) — required so sandkasten can pull new jobs.
+
+Enabling and customizing the policy:
+
+```yaml
+sandkasten:
+  networkPolicy:
+    enabled: true
+    # Override or extend the default DNS + Redis rules. The list below replaces
+    # the defaults entirely — copy them in if you still need them.
+    additionalEgressRules:
+      - to:
+          - ipBlock:
+              cidr: 169.254.25.10/32
+          - ipBlock:
+              cidr: 0.0.0.0/0
+        ports:
+          - protocol: UDP
+            port: 53
+          - protocol: TCP
+            port: 53
+      - to:
+          - namespaceSelector: {}
+        ports:
+          - protocol: TCP
+            port: 6379
+      # Example: allow egress to an external secrets manager
+      - to:
+          - ipBlock:
+              cidr: 10.0.0.0/8
+        ports:
+          - protocol: TCP
+            port: 443
+```
+
+> **Note:** Requires a CNI that enforces `NetworkPolicy` (Calico, Cilium, etc.).
 
 ---
 
