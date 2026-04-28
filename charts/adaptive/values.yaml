@@ -455,6 +455,35 @@ sandkasten:
     # minAvailable: 1    # Minimum number/percentage of pods that must remain available
     # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
+  # NetworkPolicy that restricts sandkasten egress to control-plane and harmony
+  # pods only (plus cluster DNS, required to resolve their Service names).
+  # Requires a CNI that enforces NetworkPolicy (Calico, Cilium, etc.).
+  networkPolicy:
+    enabled: true
+    # Additional egress rules appended to the NetworkPolicy. The defaults below
+    # allow DNS resolution (required to resolve the control-plane and harmony
+    # Service names) and Redis access (required so sandkasten can pull jobs).
+    # Override this value to add or replace rules (e.g. to allow access to an
+    # external secrets manager, object storage, etc.).
+    additionalEgressRules:
+      # DNS is required so sandkasten can resolve the control-plane and harmony Service names.
+      - to:
+          - ipBlock:
+              cidr: 169.254.25.10/32
+          - ipBlock:
+              cidr: 0.0.0.0/0
+        ports:
+          - protocol: UDP
+            port: 53
+          - protocol: TCP
+            port: 53
+      # Redis is required so sandkasten can get new jobs.
+      - to:
+          - namespaceSelector: {}
+        ports:
+          - protocol: TCP
+            port: 6379
+
   extraEnvVars: {}
   replicaCount: 2
   image:
