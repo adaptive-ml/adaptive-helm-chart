@@ -153,7 +153,11 @@ spec:
               value: {{ $pool.capabilities | default "JOB,INFERENCE" | quote }}
             - name: PARTITION_KEY
               value: "{{ $pool.name | lower | replace " " "-" | replace "_" "-" }}"
-            - name: SERVICE_URL
+            # Stable per-pod DNS for the cadence-master pod (ordinal 0). Concorde
+            # stores this in `harmony_group.info.url` and recipes derive their
+            # harmony WS endpoint from it; pinning to a Service-managed name
+            # instead of the peer pod IP keeps it valid across pod restarts.
+            - name: ADVERTISED_URL
               value: "http://{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
