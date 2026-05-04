@@ -1,0 +1,32 @@
+{{- if .Values.sandkasten.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "adaptive.sandkasten.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sandkasten.selectorLabels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "adaptive.sandkasten.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.controlPlane.selectorLabels" . | nindent 14 }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
+    {{- with .Values.sandkasten.networkPolicy.additionalEgressRules }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
