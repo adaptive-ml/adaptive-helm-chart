@@ -503,6 +503,17 @@ sandkasten:
       cpu: 2000m
       memory: 32Gi
 
+  # Additional volumes/volumeMounts mounted only on sandkasten pods (not on
+  # control-plane or harmony). Use the top-level `volumes`/`volumeMounts` keys
+  # to mount on every component instead.
+  volumes: []
+    # - name: recipe-cache
+    #   persistentVolumeClaim:
+    #     claimName: recipe-cache-pvc
+  volumeMounts: []
+    # - name: recipe-cache
+    #   mountPath: /recipe-cache
+
 # OpenTelemetry Collector configuration
 otelCollector:
   # Set to false to disable the OpenTelemetry Collector

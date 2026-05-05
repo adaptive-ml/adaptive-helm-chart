@@ -37,6 +37,9 @@ spec:
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        {{- with .Values.sandkasten.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       nodeSelector:
         {{- with .Values.sandkasten.nodeSelector}}
         {{ toYaml . }}
@@ -73,6 +76,9 @@ spec:
           {{- end }}
           volumeMounts:
             {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.sandkasten.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
             - name: working-dir
