@@ -597,19 +597,21 @@ otelCollector:
   # Available processors: [memory_limiter, batch, resource]
   # Note: The 'resource' processor is only available when resourceAttributes.extra is configured
   # Note: deployment.environment.name is now set via OTEL_RESOURCE_ATTRIBUTES env var on application pods
-  pipelines: |
-    traces:
-      receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [debug]
-    metrics:
-      receivers: [otlp, prometheus]
-      processors: [memory_limiter, batch]
-      exporters: [debug]
-    logs:
-      receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [debug]
+  # Example (sends everything to the debug exporter):
+  # pipelines: |
+  #   traces:
+  #     receivers: [otlp]
+  #     processors: [memory_limiter, batch]
+  #     exporters: [debug]
+  #   metrics:
+  #     receivers: [otlp, prometheus]
+  #     processors: [memory_limiter, batch]
+  #     exporters: [debug]
+  #   logs:
+  #     receivers: [otlp]
+  #     processors: [memory_limiter, batch]
+  #     exporters: [debug]
+  pipelines: ""
 
 mlflow:
   # If set to true, jobs will use MLflow for experiment tracking
