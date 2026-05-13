@@ -33,6 +33,15 @@ jobs:
         id: sha
         run: echo "short=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
 
+      - name: Copy README and UPGRADE into chart
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          CHART_NAME: ${{ matrix.chart.name }}
+        run: |
+          cp README.md UPGRADE.md "charts/${CHART_NAME}/"
+          mkdir -p "charts/${CHART_NAME}/docs"
+          cp docs/azure.md "charts/${CHART_NAME}/docs/azure.md"
+
       - name: Publish Chart
         if: steps.changes.outputs.changed == 'true'
         uses: appany/helm-oci-chart-releaser@v0.5.0

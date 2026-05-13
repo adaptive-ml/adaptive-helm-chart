@@ -42,9 +42,20 @@ jobs:
       - name: Read Chart Version
         if: steps.changes.outputs.changed == 'true'
         id: chart_version
+        env:
+          CHART_NAME: ${{ matrix.chart.name }}
         run: |
-          VERSION=$(yq eval '.version' charts/${{ matrix.chart.name }}/Chart.yaml)
+          VERSION=$(yq eval '.version' "charts/${CHART_NAME}/Chart.yaml")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Copy README and UPGRADE into chart
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          CHART_NAME: ${{ matrix.chart.name }}
+        run: |
+          cp README.md UPGRADE.md "charts/${CHART_NAME}/"
+          mkdir -p "charts/${CHART_NAME}/docs"
+          cp docs/azure.md "charts/${CHART_NAME}/docs/azure.md"
 
       - name: Publish Chart
         if: steps.changes.outputs.changed == 'true'
