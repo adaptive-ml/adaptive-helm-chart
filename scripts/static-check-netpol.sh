@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# Static reachability check for the chart's NetworkPolicies. Renders the
+# chart, then runs np-guard/netpol-analyzer's `netpolicy list` over the
+# rendered manifests to compute who-can-reach-whom and asserts a subset
+# of the expected allow/deny matrix.
+#
+# Runs without a cluster — pure static analysis. Catches policy bugs
+# (selectors that match nothing, unreachable pods, etc.) before the
+# dynamic CNI matrix runs. Vanilla NP semantics, so any deviation from
+# this matrix on a real CNI indicates a CNI-specific quirk worth
+# documenting.
+
+set -euo pipefail
+
+CHART_DIR="${CHART_DIR:-./charts/adaptive}"
+RELEASE="${RELEASE:-adaptive-test}"
+NS="${NS:-netpol-test}"
+VALUES_BASE="${VALUES_BASE:-.github/test-values-base.yaml}"
+VALUES_NETPOL="${VALUES_NETPOL:-.github/test-values-netpol.yaml}"
+NETPOLICY_BIN="${NETPOLICY_BIN:-netpolicy}"
+
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
+
+group()    { printf '\n::group::%s\n' "$*"; }
+endgroup() { printf '::endgroup::\n'; }
+
+group "Render chart"
+helm template "$RELEASE" "$CHART_DIR" \
+  -f "$VALUES_BASE" -f "$VALUES_NETPOL" \
+  --namespace "$NS" \
+  > "$WORKDIR/manifests.yaml"
+echo "rendered $(wc -l < "$WORKDIR/manifests.yaml") lines"
+endgroup
+
+group "Compute reachability (netpolicy list)"
+"$NETPOLICY_BIN" list --dirpath "$WORKDIR" -o txt > "$WORKDIR/connlist.txt"
+cat "$WORKDIR/connlist.txt"
+endgroup
+
+CONN="$WORKDIR/connlist.txt"
+NS_PREFIX="$NS/$RELEASE"
+
+has_edge() {
+  local src="$1" dst="$2"
+  grep -qE "${NS_PREFIX}-${src}\b.* => ${NS_PREFIX}-${dst}\b" "$CONN"
+}
+
+# "Internet" = a non-RFC1918 ipBlock destination. netpolicy decomposes
+# `ipBlock 0.0.0.0/0 except [RFC1918...]` into a contiguous list of
+# allowed CIDRs starting with `0.0.0.0-9.255.255.255` (i.e. < 10.x).
+has_internet() {
+  local src="$1"
+  grep -qE "${NS_PREFIX}-${src}\b.* => 0\.0\.0\.0-9\." "$CONN"
+}
+
+assert_allow() {
+  local src="$1" dst="$2"
+  printf '  [allow] %-22s => %-22s ... ' "$src" "$dst"
+  if has_edge "$src" "$dst"; then printf 'ok\n'
+  else printf 'FAIL (no edge found)\n'; return 1
+  fi
+}
+
+assert_deny() {
+  local src="$1" dst="$2"
+  printf '  [deny ] %-22s => %-22s ... ' "$src" "$dst"
+  if has_edge "$src" "$dst"; then printf 'FAIL (unexpected edge)\n'; return 1
+  else printf 'ok\n'
+  fi
+}
+
+assert_internet_allow() {
+  local src="$1"
+  printf '  [allow] %-22s => %-22s ... ' "$src" "internet"
+  if has_internet "$src"; then printf 'ok\n'
+  else printf 'FAIL (no internet edge)\n'; return 1
+  fi
+}
+
+failed=0
+
+group "sandkasten egress"
+assert_allow         sandkasten      controlplane    || failed=1
+assert_allow         sandkasten      harmony-default || failed=1
+assert_allow         sandkasten      otel-collector  || failed=1
+assert_allow         sandkasten      redis           || failed=1
+assert_allow         sandkasten      mlflow          || failed=1
+assert_internet_allow sandkasten                     || failed=1
+assert_deny          sandkasten      postgresql      || failed=1
+endgroup
+
+group "control-plane egress"
+assert_allow         controlplane    sandkasten      || failed=1
+assert_allow         controlplane    redis           || failed=1
+assert_allow         controlplane    postgresql      || failed=1
+assert_allow         controlplane    otel-collector  || failed=1
+assert_allow         controlplane    mlflow          || failed=1
+assert_internet_allow controlplane                   || failed=1
+assert_deny          controlplane    harmony-default || failed=1
+endgroup
+
+group "harmony egress"
+assert_allow         harmony-default controlplane    || failed=1
+assert_allow         harmony-default redis           || failed=1
+assert_allow         harmony-default otel-collector  || failed=1
+assert_internet_allow harmony-default                || failed=1
+assert_deny          harmony-default sandkasten      || failed=1
+assert_deny          harmony-default mlflow          || failed=1
+assert_deny          harmony-default postgresql      || failed=1
+endgroup
+
+group "otel-collector egress"
+assert_allow         otel-collector  controlplane    || failed=1
+assert_allow         otel-collector  harmony-default || failed=1
+assert_internet_allow otel-collector                 || failed=1
+assert_deny          otel-collector  sandkasten      || failed=1
+assert_deny          otel-collector  redis           || failed=1
+assert_deny          otel-collector  mlflow          || failed=1
+assert_deny          otel-collector  postgresql      || failed=1
+endgroup
+
+if [[ $failed -ne 0 ]]; then
+  printf '\n✗ static reachability check failed\n' >&2
+  exit 1
+fi
+printf '\nAll static reachability assertions passed.\n'

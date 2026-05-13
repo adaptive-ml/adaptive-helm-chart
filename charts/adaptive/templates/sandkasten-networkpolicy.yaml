@@ -14,6 +14,10 @@ spec:
   policyTypes:
     - Egress
   egress:
+    # Cluster DNS — needed both for in-cluster Service names and for resolving
+    # external hostnames (pypi.org, github.com, ...) from inside recipes.
+    {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
+    # In-cluster components sandkasten needs to call.
     - to:
         - podSelector:
             matchLabels:
@@ -22,10 +26,40 @@ spec:
         - podSelector:
             matchLabels:
               {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
+    {{- if .Values.otelCollector.enabled }}
     - to:
         - podSelector:
             matchLabels:
               {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    # TODO(fessenheim): drop this rule once sandkasten stops pulling jobs from
+    # redis. Until then sandkasten reads the queue directly.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- if .Values.mlflow.enabled }}
+    # MLflow — recipes running inside sandkasten log experiments / metrics here.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.sandkasten.networkPolicy.allowInternetEgress }}
+    # External egress — required so recipes can `pip install` and fetch
+    # remote datasets / model weights. RFC1918 + link-local + CGNAT ranges
+    # are carved out so this rule does NOT silently widen access to other
+    # in-cluster pods; only the explicit allow rules above grant intra-
+    # cluster reachability.
+    #
+    # IMPORTANT: tune `sandkasten.networkPolicy.internetEgressExcept` to your
+    # cluster's pod and service CIDRs. The defaults cover standard private
+    # ranges; clusters with non-RFC1918 pod CIDRs (e.g. AWS VPC CNI with a
+    # public VPC) need extra entries.
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "exceptCidrs" .Values.sandkasten.networkPolicy.internetEgressExcept)
+        | nindent 4 }}
+    {{- end }}
     {{- with .Values.sandkasten.networkPolicy.additionalEgressRules }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

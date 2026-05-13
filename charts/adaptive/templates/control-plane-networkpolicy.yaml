@@ -1,0 +1,114 @@
+{{- if .Values.controlPlane.networkPolicy.enabled }}
+{{- $np := .Values.controlPlane.networkPolicy }}
+{{- $hasRestrictive := gt (len $np.restrictiveEgressRules) 0 }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "adaptive.controlPlane.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "adaptive.controlPlane.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Cluster DNS.
+    {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
+    # Self: control-plane pods talk to one another via ADAPTIVE_SERVER__CLUSTER_ROOT_URL.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.controlPlane.selectorLabels" . | nindent 14 }}
+    # Sandkasten — control-plane POSTs to ADAPTIVE_SANDBOX__URL to run recipes.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.sandkasten.selectorLabels" . | nindent 14 }}
+    # Redis — caching / session store.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- if .Values.installPostgres.enabled }}
+    # Internal PostgreSQL — only emitted when the chart deploys it. External
+    # databases must be allowed via restrictiveEgressRules (their IPs/CIDRs).
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.postgresql.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.otelCollector.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.mlflow.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.clickhouse.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.clickhouse.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.lgtm.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.lgtm.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if $np.kubeApiServerCIDR }}
+    # Specific kube-apiserver allow — when set, this REPLACES the broad
+    # TCP/443-anywhere fallback below. Use this to scope control-plane
+    # down to just the managed control plane IPs / CIDR for your cluster.
+    # Required on Cilium, which treats the apiserver as a distinct identity
+    # that is NOT covered by ipBlock 0.0.0.0/0 (see fallback note below).
+    # We don't restrict port here because the rendered CIDR may target
+    # either the Service IP (port 443) or the apiserver endpoint IP (port
+    # 6443 on kubeadm / kind, varies on managed control planes) — and
+    # policy enforcement may happen pre- or post-DNAT depending on whether
+    # the CNI replaces kube-proxy. An unrestricted port matches both.
+    - to:
+        - ipBlock:
+            cidr: {{ $np.kubeApiServerCIDR | quote }}
+    {{- else if not $hasRestrictive }}
+    # No specific apiserver CIDR provided — allow TCP/443 to anywhere so
+    # the control-plane can reach the k8s API regardless of which IP/CIDR
+    # it lives at. Matches the pre-NetworkPolicy behavior on CNIs that
+    # honor a 0.0.0.0/0 ipBlock for the apiserver (Calico, Weave, ...).
+    #
+    # IMPORTANT: Cilium treats the kube-apiserver as a distinct identity
+    # that is NOT included in ipBlock 0.0.0.0/0 — Cilium users MUST set
+    # kubeApiServerCIDR to the apiserver IP/CIDR or the control-plane
+    # will be unable to reach the API server. See:
+    # https://docs.cilium.io/en/stable/network/concepts/kube-apiserver/
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+    {{- if $hasRestrictive }}
+    # restrictiveEgressRules is set — the user is taking control of the
+    # control-plane's external egress. The default permissive internet rule
+    # is suppressed; only the rules below (and the in-cluster allows above)
+    # apply.
+    {{- toYaml $np.restrictiveEgressRules | nindent 4 }}
+    {{- else if $np.allowInternetEgress }}
+    # Default permissive external egress. RFC1918 + link-local + CGNAT are
+    # carved out so this rule does not silently widen access to in-cluster
+    # pods that aren't in the explicit allow list above.
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "exceptCidrs" $np.internetEgressExcept)
+        | nindent 4 }}
+    {{- end }}
+{{- end }}

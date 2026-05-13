@@ -1,0 +1,21 @@
+# Values used by scripts/test-sandkasten-netpol.sh.
+# All four NetworkPolicies are on (their defaults), and installPostgres is
+# enabled so the control-plane policy renders its postgres egress rule.
+installPostgres:
+  enabled: true
+
+sandkasten:
+  networkPolicy:
+    enabled: true
+
+controlPlane:
+  networkPolicy:
+    enabled: true
+
+harmony:
+  networkPolicy:
+    enabled: true
+
+otelCollector:
+  networkPolicy:
+    enabled: true

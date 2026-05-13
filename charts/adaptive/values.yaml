@@ -189,6 +189,28 @@ harmony:
     # minAvailable: 1    # Minimum number/percentage of pods that must remain available
     # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
+  # NetworkPolicy for harmony workers. Always renders allow rules for cluster
+  # DNS, control-plane, otel-collector, and self (peer pods in the same
+  # compute pool). External egress is permissive by default so workers can
+  # pull base models from Huggingface and other external registries.
+  # Requires a CNI that enforces NetworkPolicy.
+  networkPolicy:
+    enabled: true
+    # When true (the default), render `ipBlock 0.0.0.0/0` minus the
+    # `internetEgressExcept` ranges below so workers can reach external
+    # model registries. Suppressed when restrictiveEgressRules is non-empty.
+    allowInternetEgress: true
+    internetEgressExcept:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 169.254.0.0/16
+      - 100.64.0.0/10
+    # When non-empty, replaces the default permissive internet egress with
+    # this explicit list — e.g. only an internal Huggingface mirror, or an
+    # egress proxy CIDR. In-cluster allow rules are not affected.
+    restrictiveEgressRules: []
+
   # List of compute pools - each creates a separate StatefulSet and headless Service
   # Pool-specific values override the defaults above
   computePools:
@@ -443,6 +465,41 @@ controlPlane:
 
   extraEnvVars: {}
 
+  # NetworkPolicy that restricts control-plane egress. The chart always
+  # renders allow rules for cluster DNS, sandkasten, redis, otel-collector,
+  # postgres (when installPostgres.enabled), and mlflow / clickhouse / lgtm
+  # (when those are enabled). External egress is permissive by default so
+  # the control-plane can reach OIDC IdPs, S3, and an external Postgres
+  # without per-environment CIDR config. Requires a CNI that enforces
+  # NetworkPolicy.
+  networkPolicy:
+    enabled: true
+    # When true (the default), render `ipBlock 0.0.0.0/0` minus the
+    # `internetEgressExcept` ranges below so the control-plane can reach
+    # public services (OIDC, S3, ...). Suppressed when restrictiveEgressRules
+    # is non-empty.
+    allowInternetEgress: true
+    internetEgressExcept:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 169.254.0.0/16
+      - 100.64.0.0/10
+    # CIDR for the cluster's kube-apiserver. When set, the chart renders a
+    # specific TCP/443 allow rule for this CIDR — control-plane can only
+    # reach the apiserver via the listed IPs. When empty (the default), the
+    # chart renders a TCP/443-to-anywhere fallback so the apiserver remains
+    # reachable regardless of where it lives (managed control planes, kind,
+    # on-prem). The fallback is suppressed when restrictiveEgressRules is
+    # non-empty (the user is taking full control of external egress).
+    kubeApiServerCIDR: ""
+    # When non-empty, replaces the default permissive internet egress with
+    # this explicit list — use this to scope control-plane egress down to
+    # specific external destinations (e.g. only a specific OIDC IdP CIDR
+    # and S3 prefix list). The in-cluster allow rules above and the
+    # kubeApiServerCIDR rule (if set) are NOT affected.
+    restrictiveEgressRules: []
+
   # Resource limits and requests for the control plane
   # Uncomment and adjust based on your workload requirements
   # resources:
@@ -509,34 +566,32 @@ sandkasten:
     # minAvailable: 1    # Minimum number/percentage of pods that must remain available
     # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
-  # NetworkPolicy that restricts sandkasten egress to control-plane and harmony
-  # pods only (plus cluster DNS, required to resolve their Service names).
-  # Requires a CNI that enforces NetworkPolicy (Calico, Cilium, etc.).
+  # NetworkPolicy for sandkasten. The chart renders allow rules for cluster
+  # DNS, control-plane, harmony, otel-collector (when enabled), redis, and —
+  # by default — egress to the public internet so recipes can `pip install`
+  # and pull remote datasets. Requires a CNI that enforces NetworkPolicy.
   networkPolicy:
     enabled: true
-    # Additional egress rules appended to the NetworkPolicy. The defaults below
-    # allow DNS resolution (required to resolve the control-plane and harmony
-    # Service names) and Redis access (required so sandkasten can pull jobs).
-    # Override this value to add or replace rules (e.g. to allow access to an
-    # external secrets manager, object storage, etc.).
+    # Set to false to drop the public-internet egress rule. When true (the
+    # default), recipes can reach pypi.org, github.com, S3, etc., but the
+    # `internetEgressExcept` CIDRs below are still blocked so the rule does
+    # not silently widen access to in-cluster pods that aren't in the explicit
+    # allow list.
+    allowInternetEgress: true
+    # CIDRs excluded from the public-internet egress rule. Defaults cover the
+    # standard RFC1918 private ranges plus link-local and carrier-grade NAT.
+    # Tune this list if your cluster's pod or service CIDR sits outside these
+    # (e.g. AWS VPC CNI with a non-RFC1918 VPC).
+    internetEgressExcept:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 169.254.0.0/16
+      - 100.64.0.0/10
+    # Additional egress rules appended verbatim to the policy. Use this for
+    # environment-specific allow rules (e.g. an external secrets manager, a
+    # specific S3 endpoint, an OIDC provider's IP range).
     additionalEgressRules: []
-      # DNS is required so sandkasten can resolve the control-plane and harmony Service names.
-      # - to:
-      #     - ipBlock:
-      #         cidr: 169.254.25.10/32
-      #     - ipBlock:
-      #         cidr: 0.0.0.0/0
-      #   ports:
-      #     - protocol: UDP
-      #       port: 53
-      #     - protocol: TCP
-      #       port: 53
-      # # Redis is required so sandkasten can get new jobs.
-      # - to:
-      #     - namespaceSelector: {}
-      #   ports:
-      #     - protocol: TCP
-      #       port: 6379
 
   extraEnvVars: {}
   replicaCount: 2
@@ -608,6 +663,30 @@ otelCollector:
     enabled: true
     minAvailable: 1
     # maxUnavailable: 1
+
+  # NetworkPolicy for the otel-collector. Always renders allow rules for its
+  # Prometheus scrape targets (control-plane :9009, harmony :50053), cluster
+  # DNS, and the in-cluster LGTM stack on :4318 when enabled. External
+  # egress is permissive by default so the collector can ship telemetry to
+  # remote observability backends (Datadog, Grafana Cloud, ...) without
+  # per-environment CIDR config. Requires a CNI that enforces NetworkPolicy.
+  networkPolicy:
+    enabled: true
+    # When true (the default), render `ipBlock 0.0.0.0/0` minus the
+    # `internetEgressExcept` ranges below so the collector can reach remote
+    # observability backends. Suppressed when restrictiveEgressRules is
+    # non-empty.
+    allowInternetEgress: true
+    internetEgressExcept:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 169.254.0.0/16
+      - 100.64.0.0/10
+    # When non-empty, replaces the default permissive internet egress with
+    # this explicit list — e.g. only the IP range of your observability
+    # backend. In-cluster allow rules are not affected.
+    restrictiveEgressRules: []
 
   # Prometheus scraping configuration
   # Scrapes metrics from pods with annotation: prometheus.io/scrape: "adaptive"

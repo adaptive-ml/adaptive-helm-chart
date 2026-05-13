@@ -854,3 +854,60 @@ Returns ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT and FORCE_PATH_STYLE (crede
   value: "true"
 {{- end }}
 {{- end }}
+
+{{/*
+DNS egress rules shared by every NetworkPolicy. Without these, no Service
+name in the cluster will resolve from a pod the policy applies to.
+
+We render TWO rules to cover both common cluster shapes:
+  1. Pod-IP CoreDNS: clusters where /etc/resolv.conf points pods directly at
+     the kube-dns Service IP, which round-robins to CoreDNS pods labelled
+     `k8s-app: kube-dns` in kube-system (kubeadm default, kind, EKS, GKE, AKS).
+  2. Node-local DNS cache: clusters running `node-local-dns` as a DaemonSet
+     bound to a link-local IP (typically 169.254.20.10 for kubeadm, .25.10
+     for Kubespray). Pods talk to the cache via the host IP, not a pod IP,
+     so `podSelector` can't reach it — we need an `ipBlock` over the
+     link-local range, restricted to port 53.
+*/}}
+{{- define "adaptive.networkPolicy.dnsEgress" -}}
+- to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+  ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+- to:
+    - ipBlock:
+        cidr: 169.254.0.0/16
+  ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+{{- end }}
+
+{{/*
+Public-internet egress rule shared by sandkasten and harmony. Renders an
+`ipBlock: 0.0.0.0/0` with the caller's RFC1918 + link-local + CGNAT carve-outs,
+so the rule does NOT silently widen access to in-cluster pods.
+
+Usage:
+  {{- include "adaptive.networkPolicy.internetEgress"
+        (dict "exceptCidrs" .Values.sandkasten.networkPolicy.internetEgressExcept)
+      | nindent 4 }}
+*/}}
+{{- define "adaptive.networkPolicy.internetEgress" -}}
+- to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+          {{- range .exceptCidrs }}
+          - {{ . | quote }}
+          {{- end }}
+{{- end }}
