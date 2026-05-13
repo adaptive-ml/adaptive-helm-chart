@@ -39,6 +39,8 @@ jobs:
           CHART_NAME: ${{ matrix.chart.name }}
         run: |
           cp README.md UPGRADE.md "charts/${CHART_NAME}/"
+          mkdir -p "charts/${CHART_NAME}/docs"
+          cp docs/azure.md "charts/${CHART_NAME}/docs/azure.md"
 
       - name: Publish Chart
         if: steps.changes.outputs.changed == 'true'
