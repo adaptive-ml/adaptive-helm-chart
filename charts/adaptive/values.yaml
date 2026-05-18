@@ -194,6 +194,12 @@ harmony:
   # compute pool). External egress is permissive by default so workers can
   # pull base models from Huggingface and other external registries.
   # Requires a CNI that enforces NetworkPolicy.
+  #
+  # NOTE on the default posture: the chart intentionally ships a
+  # permissive default (allowInternetEgress=true) rather than the tightest
+  # possible policy so workers can reach Huggingface / external model
+  # registries without per-environment CIDR config. Set
+  # restrictiveEgressRules to an explicit allow list to lock egress down.
   networkPolicy:
     enabled: true
     # When true (the default), render `ipBlock 0.0.0.0/0` minus the
@@ -472,6 +478,16 @@ controlPlane:
   # the control-plane can reach OIDC IdPs, S3, and an external Postgres
   # without per-environment CIDR config. Requires a CNI that enforces
   # NetworkPolicy.
+  #
+  # NOTE on the default posture: the chart intentionally ships a
+  # permissive default (allowInternetEgress=true, TCP/443 to anywhere
+  # for the kube-apiserver fallback) instead of the tightest possible
+  # policy. This is a deliberate tradeoff: cluster operators don't have
+  # to know their pod CIDR, apiserver IP, S3 prefix list, OIDC IdP IPs,
+  # etc. to get a working install. For a stricter posture, set
+  # restrictiveEgressRules (replaces the internet rule with an explicit
+  # allow list) and kubeApiServerCIDR (scopes the apiserver allow to a
+  # specific CIDR).
   networkPolicy:
     enabled: true
     # When true (the default), render `ipBlock 0.0.0.0/0` minus the
@@ -570,6 +586,12 @@ sandkasten:
   # DNS, control-plane, harmony, otel-collector (when enabled), redis, and —
   # by default — egress to the public internet so recipes can `pip install`
   # and pull remote datasets. Requires a CNI that enforces NetworkPolicy.
+  #
+  # NOTE on the default posture: the default is deliberately permissive so
+  # recipes can install Python dependencies and fetch datasets without
+  # the operator having to enumerate every external IP/CIDR in
+  # additionalEgressRules. Set allowInternetEgress=false (or replace the
+  # rule via additionalEgressRules) for a stricter sandbox.
   networkPolicy:
     enabled: true
     # Set to false to drop the public-internet egress rule. When true (the
@@ -670,6 +692,12 @@ otelCollector:
   # egress is permissive by default so the collector can ship telemetry to
   # remote observability backends (Datadog, Grafana Cloud, ...) without
   # per-environment CIDR config. Requires a CNI that enforces NetworkPolicy.
+  #
+  # NOTE on the default posture: the chart intentionally ships a
+  # permissive default (allowInternetEgress=true) so the collector can
+  # reach a remote backend out of the box. Set restrictiveEgressRules to
+  # an explicit allow list (e.g. only the IP range of your observability
+  # backend) for a stricter posture.
   networkPolicy:
     enabled: true
     # When true (the default), render `ipBlock 0.0.0.0/0` minus the

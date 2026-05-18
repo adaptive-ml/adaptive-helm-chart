@@ -32,12 +32,17 @@ spec:
             matchLabels:
               {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
     {{- end }}
-    # TODO(fessenheim): drop this rule once sandkasten stops pulling jobs from
-    # redis. Until then sandkasten reads the queue directly.
+    {{- if .Values.redis.install.enabled }}
+    # Redis — sandkasten pulls jobs from the queue. Only emitted when the
+    # chart deploys internal Redis. For external Redis, allow its IP/CIDR
+    # via additionalEgressRules.
+    # TODO(fessenheim): drop this rule once sandkasten stops pulling jobs
+    # from redis. Until then sandkasten reads the queue directly.
     - to:
         - podSelector:
             matchLabels:
               {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.mlflow.enabled }}
     # MLflow — recipes running inside sandkasten log experiments / metrics here.
     - to:

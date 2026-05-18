@@ -28,11 +28,16 @@ spec:
         - podSelector:
             matchLabels:
               {{- include "adaptive.sandkasten.selectorLabels" . | nindent 14 }}
-    # Redis — caching / session store.
+    {{- if .Values.redis.install.enabled }}
+    # Redis — caching / session store. Only emitted when the chart deploys
+    # internal Redis. For external Redis (redis.install.enabled=false) the
+    # operator allow its IP/CIDR via restrictiveEgressRules instead, since
+    # the chart can't know the endpoint at template time.
     - to:
         - podSelector:
             matchLabels:
               {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.installPostgres.enabled }}
     # Internal PostgreSQL — only emitted when the chart deploys it. External
     # databases must be allowed via restrictiveEgressRules (their IPs/CIDRs).

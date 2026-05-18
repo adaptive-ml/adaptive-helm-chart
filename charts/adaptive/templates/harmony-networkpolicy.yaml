@@ -28,12 +28,16 @@ spec:
         - podSelector:
             matchLabels:
               {{- include "adaptive.controlPlane.selectorLabels" . | nindent 14 }}
-    # Redis — workers hit it during preflight (mangrove::preflight Redis check)
-    # and at runtime for inter-worker coordination on gang-spawned jobs.
+    {{- if .Values.redis.install.enabled }}
+    # Redis — workers hit it during preflight (mangrove::preflight Redis
+    # check) and at runtime for inter-worker coordination on gang-spawned
+    # jobs. Only emitted when the chart deploys internal Redis. For
+    # external Redis, allow its IP/CIDR via restrictiveEgressRules.
     - to:
         - podSelector:
             matchLabels:
               {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.otelCollector.enabled }}
     - to:
         - podSelector:
