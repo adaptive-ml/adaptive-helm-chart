@@ -247,8 +247,35 @@ adaptiveOperator:
   # Comma-separated glob patterns for allowed harmony image tags
   # Empty means no user choice — the server's own tag is used
   harmonyImageTagsWhitelist: ""
+  # ── Gang bin-packing & inter-node fabric ──────────────────────────────
+  # Drives how the operator packs N-GPU gangs into pods. With these set,
+  # multi-node gangs use full-node pods so NVLink works intra-pod and the
+  # inter-node fabric (EFA / Infiniband) is requested only when actually
+  # spanning nodes.
+  #
+  # Packing rule for a job requesting N GPUs total:
+  #   - N <= gpusPerNode  → one pod with all N GPUs (no fabric resource)
+  #   - N >  gpusPerNode  → ceil(N/gpusPerNode) pods of size gpusPerNode
+  #                         (last pod takes the remainder), fabric attached
+  #                         to every pod
+  #
+  # GPUs per node in the target cluster (default 8: p4d/p5/p4de/A100/H100/H200 nodes).
+  gpusPerNode: 8
+  # Inter-node fabric. One of: "none" | "efa" | "infiniband"
+  #   - none        — no extra resource requested (NCCL falls back to TCP)
+  #   - efa         — requests vpc.amazonaws.com/efa, scaled per pod
+  #                   (requires efasPerNode below; AWS p4d=4, p5=32)
+  #   - infiniband  — requests nvidia.com/hostdev (one HCA per GPU in the pod)
+  interconnect: "none"
+  # EFAs per node (required iff interconnect=efa). The operator allocates
+  # ceil(podGpus * efasPerNode / gpusPerNode) per pod, so full-node pods get
+  # the full count and remainder pods get a proportional share.
+  efasPerNode: 0
   # Extra Kubernetes extended resources to request per GPU on gang-spawned harmony pods
-  # Used for device-plugin-managed resources beyond nvidia.com/gpu (which is set automatically)
+  # Used for device-plugin-managed resources beyond nvidia.com/gpu (which is set automatically).
+  # Note: when interconnect is "efa" or "infiniband", the corresponding fabric resource
+  # (vpc.amazonaws.com/efa or nvidia.com/hostdev) is computed automatically. Any entry
+  # listed here overrides the computed value for the same key.
   # Example:
   #   - name: nvidia.com/hostdev
   #     value: "1"
