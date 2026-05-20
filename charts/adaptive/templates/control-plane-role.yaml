@@ -24,10 +24,13 @@ rules:
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["create", "delete"]
-  # core/v1 ConfigMaps — read config data
+  # core/v1 ConfigMaps — read config data + live-watch harmony-gang-config
+  # (PS-4618). `list` is required by kube-rs' list-then-watch; RBAC does not
+  # honor `resourceNames` for list, so the rule grants list/watch on
+  # configmaps in this namespace.
   - apiGroups: [""]
     resources: ["configmaps"]
-    verbs: ["get"]
+    verbs: ["get", "list", "watch"]
   # apps/v1 Deployments — inference partition lifecycle (create, resize, annotate, delete)
   - apiGroups: ["apps"]
     resources: ["deployments"]
