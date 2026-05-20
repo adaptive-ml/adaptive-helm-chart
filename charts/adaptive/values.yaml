@@ -330,6 +330,13 @@ adaptiveOperator:
   #     operator: Exists
   #     effect: NoSchedule
   harmonyTolerations: []
+  # `sizeLimit` for the `/dev/shm` tmpfs (emptyDir, medium=Memory) mounted into
+  # harmony gang pods and inference replicas. NCCL inter-process rings and
+  # large tensor IPC live here, so the default is generous; tune down on small
+  # clusters or up for very large multi-GPU jobs. The tmpfs counts against the
+  # pod's MEMORY_LIMITS — bumping this requires headroom in adaptiveOperator.resources.limits.memory.
+  # Leave empty ("") to fall back to the operator's built-in default (32Gi).
+  harmonyDshmSize: "32Gi"
 
 controlPlane:
   sharedDirType: s3
