@@ -859,7 +859,7 @@ Returns ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT and FORCE_PATH_STYLE (crede
 DNS egress rules shared by every NetworkPolicy. Without these, no Service
 name in the cluster will resolve from a pod the policy applies to.
 
-We render TWO rules to cover both common cluster shapes:
+We render THREE rules to cover the common cluster shapes:
   1. Pod-IP CoreDNS: clusters where /etc/resolv.conf points pods directly at
      the kube-dns Service IP, which round-robins to CoreDNS pods labelled
      `k8s-app: kube-dns` in kube-system (kubeadm default, kind, EKS, GKE, AKS).
@@ -868,6 +868,12 @@ We render TWO rules to cover both common cluster shapes:
      for Kubespray). Pods talk to the cache via the host IP, not a pod IP,
      so `podSelector` can't reach it — we need an `ipBlock` over the
      link-local range, restricted to port 53.
+  3. Managed-CNI fallback: clusters where DNS is fully managed and the
+     `k8s-app: kube-dns` pod is not visible to NetworkPolicy selectors
+     (EKS Auto Mode hides the DNS pod; the resolved nameserver lives in
+     the service CIDR, e.g. 172.20.0.10). Selector (1) matches nothing
+     and link-local (2) doesn't apply, so we add a permissive port-53-only
+     `ipBlock 0.0.0.0/0` rule. This widens DNS but not arbitrary egress.
 */}}
 {{- define "adaptive.networkPolicy.dnsEgress" -}}
 - to:
@@ -885,6 +891,18 @@ We render TWO rules to cover both common cluster shapes:
 - to:
     - ipBlock:
         cidr: 169.254.0.0/16
+  ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+# Fallback for managed CNIs (EKS Auto Mode, AKS Azure CNI Powered by Cilium, ...)
+# where the cluster DNS service IP lives in the service CIDR (e.g. 172.20.0.10)
+# and the kube-dns pod is not visible to the cluster (selector matches nothing).
+# Scoped to port 53 so it only widens DNS, not arbitrary egress.
+- to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
   ports:
     - protocol: UDP
       port: 53
