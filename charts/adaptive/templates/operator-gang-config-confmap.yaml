@@ -54,6 +54,9 @@ data:
   {{- if .Values.adaptiveOperator.harmonyTolerations }}
   HARMONY_TOLERATIONS: {{ .Values.adaptiveOperator.harmonyTolerations | toJson | quote }}
   {{- end }}
+  {{- if .Values.adaptiveOperator.harmonyDshmSize }}
+  HARMONY_DSHM_SIZE: {{ .Values.adaptiveOperator.harmonyDshmSize | quote }}
+  {{- end }}
   {{- with (first .Values.imagePullSecrets) }}
   IMAGE_PULL_SECRET: {{ .name | quote }}
   {{- end }}
