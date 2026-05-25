@@ -50,6 +50,15 @@ spec:
             matchLabels:
               {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
     {{- end }}
+    {{- if .Values.minio.enabled }}
+    # Internal MinIO — recipes write artifacts to the shared S3 bucket. Only
+    # emitted when the chart deploys it. For external S3, allow the endpoint
+    # via additionalEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.sandkasten.networkPolicy.allowInternetEgress }}
     # External egress — required so recipes can `pip install` and fetch
     # remote datasets / model weights. RFC1918 + link-local + CGNAT ranges

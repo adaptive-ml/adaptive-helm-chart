@@ -58,6 +58,15 @@ spec:
             matchLabels:
               {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
     {{- end }}
+    {{- if .Values.minio.enabled }}
+    # Internal MinIO — control-plane reads/writes the shared S3 bucket
+    # (file storage, model registry) on startup. Only emitted when the chart
+    # deploys it. For external S3, allow the endpoint via restrictiveEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.clickhouse.enabled }}
     - to:
         - podSelector:

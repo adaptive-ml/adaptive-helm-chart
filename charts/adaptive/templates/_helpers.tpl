@@ -772,6 +772,17 @@ MinIO related helpers
 {{- printf "%s-minio" .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/*
+Selector labels for MinIO pods deployed by the Bitnami subchart. The subchart
+uses `app.kubernetes.io/name: minio` (NOT the parent chart's name), so we
+cannot reuse adaptive.sharedSelectorLabels here.
+*/}}
+{{- define "adaptive.minio.selectorLabels" -}}
+app.kubernetes.io/component: minio
+app.kubernetes.io/name: minio
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
 {{- define "adaptive.minio.port" -}}
 {{- .Values.minio.service.ports.api | default 9000 -}}
 {{- end }}
