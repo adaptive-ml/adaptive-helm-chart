@@ -37,9 +37,10 @@ spec:
       {{- include "adaptive.harmony.computePool.selectorLabels" (dict "root" $root "pool" $pool) | nindent 6 }}
   template:
     metadata:
-      {{- with ($pool.podAnnotations | default $root.Values.harmony.podAnnotations) }}
+      {{- $poolAnnotations := $pool.podAnnotations | default $root.Values.harmony.podAnnotations }}
+      {{- with (include "adaptive.podAnnotations" (dict "root" $root "component" $poolAnnotations)) }}
       annotations:
-        {{- toYaml . | nindent 8 }}
+        {{- . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "adaptive.labels" $root | nindent 8 }}

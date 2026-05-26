@@ -154,6 +154,24 @@ Secret related fullnames
 
 
 {{/*
+Merge .Values.commonPodAnnotations with a component-specific podAnnotations dict.
+Component values win on key conflicts. Returns the empty string when both are empty.
+Usage:
+  {{- with (include "adaptive.podAnnotations" (dict "root" $ "component" .Values.controlPlane.podAnnotations)) }}
+  annotations:
+    {{- . | nindent 8 }}
+  {{- end }}
+*/}}
+{{- define "adaptive.podAnnotations" -}}
+{{- $common := .root.Values.commonPodAnnotations | default dict -}}
+{{- $component := .component | default dict -}}
+{{- $merged := mergeOverwrite (deepCopy $common) $component -}}
+{{- if gt (len $merged) 0 -}}
+{{ toYaml $merged }}
+{{- end -}}
+{{- end }}
+
+{{/*
 Common labels
 */}}
 {{- define "adaptive.labels" -}}
