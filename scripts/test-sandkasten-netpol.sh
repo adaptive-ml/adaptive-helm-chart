@@ -35,12 +35,24 @@ POLICIES=(
   otel-collector-networkpolicy.yaml
 )
 
+# Detect Cilium: include the chart's CiliumNetworkPolicy for cp -> apiserver
+# and pass `--api-versions cilium.io/v2` so the template's
+# `.Capabilities.APIVersions.Has` gate evaluates true.
+HELM_API_ARGS=()
+if kubectl api-resources --api-group=cilium.io 2>/dev/null \
+    | grep -q CiliumNetworkPolicy; then
+  HELM_API_ARGS+=(--api-versions cilium.io/v2)
+  POLICIES+=(control-plane-cilium-networkpolicy.yaml)
+  echo "  Cilium CRDs detected -> also rendering control-plane-cilium-networkpolicy.yaml"
+fi
+
 group "Render NetworkPolicies from chart"
 : > "$NETPOL_YAML"
 for tpl in "${POLICIES[@]}"; do
   helm template "$RELEASE" "$CHART_DIR" \
     -f "$VALUES_BASE" -f "$VALUES_NETPOL" \
     --namespace "$NS" \
+    "${HELM_API_ARGS[@]}" \
     --show-only="templates/$tpl" >> "$NETPOL_YAML"
 done
 cat "$NETPOL_YAML"
@@ -195,13 +207,14 @@ assert_from allow cp-probe "mlflow"               "$MLFLOW_IP"   8080 || failed=
 assert_from allow cp-probe "internet (1.1.1.1)"   "1.1.1.1"      443  || failed=1
 assert_from deny  cp-probe "harmony"              "$HARMONY_IP"  8080 || failed=1
 assert_from deny  cp-probe "unrelated"            "$OTHER_IP"    8080 || failed=1
-# Note: cp → kube-apiserver reachability is intentionally NOT asserted.
-# Plain NetworkPolicy semantics say ipBlock 0.0.0.0/0 + TCP/443 should
-# allow it, but Cilium treats the apiserver as a distinct identity that
-# isn't covered by any ipBlock. The chart exposes
-# `controlPlane.networkPolicy.kubeApiServerCIDR` for customers who need
-# explicit apiserver allow on Cilium, but that's vendor-specific and not
-# portably testable in this CI.
+# cp → kube-apiserver reachability. Plain NetworkPolicy semantics say
+# ipBlock 0.0.0.0/0 + TCP/443 should allow it (Calico, Antrea, AWS VPC
+# CNI honor this). Cilium treats the apiserver as a distinct identity
+# that is NOT covered by any ipBlock, so the chart auto-detects Cilium
+# via .Capabilities.APIVersions and renders a CiliumNetworkPolicy with
+# `toEntities: [kube-apiserver]`. This assertion exercises both code
+# paths and must pass on every CNI in the matrix.
+assert_from allow cp-probe "kubernetes API"       "$KUBE_API_IP" 443  || failed=1
 endgroup
 
 group "harmony egress (self, control-plane, redis, otel, DNS, internet)"

@@ -510,13 +510,28 @@ controlPlane:
       - port: 80
         protocol: TCP
     # CIDR for the cluster's kube-apiserver. When set, the chart renders a
-    # specific TCP/443 allow rule for this CIDR — control-plane can only
-    # reach the apiserver via the listed IPs. When empty (the default), the
-    # chart renders a TCP/443-to-anywhere fallback so the apiserver remains
-    # reachable regardless of where it lives (managed control planes, kind,
-    # on-prem). The fallback is suppressed when restrictiveEgressRules is
-    # non-empty (the user is taking full control of external egress).
+    # specific TCP/443 allow rule for this CIDR — control-plane egress to
+    # the apiserver is scoped to those IPs only. When empty (the default),
+    # the chart renders a TCP/443-to-anywhere fallback that works on CNIs
+    # which enforce NetworkPolicy on the post-DNAT Service IP path
+    # (AWS VPC CNI, Calico, Antrea, Cilium with kube-proxy-replacement).
+    # The fallback is suppressed when restrictiveEgressRules is non-empty.
+    #
+    # Cilium in kube-proxy mode does NOT honor `0.0.0.0/0:443` for the
+    # apiserver because Service DNAT happens before eBPF egress runs. For
+    # those clusters, the chart auto-detects Cilium and renders a
+    # CiliumNetworkPolicy with `toEntities: [kube-apiserver]` — see
+    # `ciliumApiServerAllow.enabled` below.
     kubeApiServerCIDR: ""
+    # When true (the default), and the cluster has the `cilium.io/v2` API
+    # group registered, the chart renders a CiliumNetworkPolicy that
+    # allows control-plane egress to the kube-apiserver identity. This is
+    # the only reliable way to allow apiserver reachability from a netpol-
+    # selected pod on Cilium clusters. On non-Cilium CNIs the file is a
+    # no-op (gated by `.Capabilities.APIVersions.Has`). Set to false if
+    # you ship your own admin-tier CiliumNetworkPolicy for the apiserver.
+    ciliumApiServerAllow:
+      enabled: true
     # When non-empty, replaces the default permissive internet egress with
     # this explicit list — use this to scope control-plane egress down to
     # specific external destinations (e.g. only a specific OIDC IdP CIDR
