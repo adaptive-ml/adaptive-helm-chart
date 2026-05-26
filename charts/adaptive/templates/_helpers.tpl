@@ -922,21 +922,29 @@ We render THREE rules to cover the common cluster shapes:
 {{- end }}
 
 {{/*
-Public-internet egress rule shared by sandkasten and harmony. Renders an
-`ipBlock: 0.0.0.0/0` with the caller's RFC1918 + link-local + CGNAT carve-outs,
-so the rule does NOT silently widen access to in-cluster pods.
+Public-internet egress rules. Emits one `ipBlock: 0.0.0.0/0` rule per port
+in the caller's list. Port-restricted positive allows are used instead of
+`0.0.0.0/0 except: [RFC1918...]` to side-step a cross-rule "except"-bleed in
+EKS Auto Mode's aws-network-policy-agent where putting an `except` on any
+rule in the policy silently subtracts those CIDRs from every other rule's
+allow (most visibly breaking cluster DNS at the cluster Service IP, which
+lives inside `172.16.0.0/12`).
+
+Port restriction also avoids silently widening access to in-cluster pods,
+since cluster Services rarely listen on the same ports as public HTTPS/HTTP.
 
 Usage:
   {{- include "adaptive.networkPolicy.internetEgress"
-        (dict "exceptCidrs" .Values.sandkasten.networkPolicy.internetEgressExcept)
+        (dict "ports" .Values.sandkasten.networkPolicy.internetEgressPorts)
       | nindent 4 }}
 */}}
 {{- define "adaptive.networkPolicy.internetEgress" -}}
+{{- range .ports }}
 - to:
     - ipBlock:
         cidr: 0.0.0.0/0
-        except:
-          {{- range .exceptCidrs }}
-          - {{ . | quote }}
-          {{- end }}
+  ports:
+    - protocol: {{ .protocol | default "TCP" }}
+      port: {{ .port }}
+{{- end }}
 {{- end }}

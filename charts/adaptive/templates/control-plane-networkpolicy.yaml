@@ -118,11 +118,11 @@ spec:
     # apply.
     {{- toYaml $np.restrictiveEgressRules | nindent 4 }}
     {{- else if $np.allowInternetEgress }}
-    # Default permissive external egress. RFC1918 + link-local + CGNAT are
-    # carved out so this rule does not silently widen access to in-cluster
-    # pods that aren't in the explicit allow list above.
+    # External egress on the listed ports (TCP/443 + TCP/80 by default).
+    # Port-restricted to public protocols so this rule does not silently
+    # widen access to in-cluster pods on other ports.
     {{- include "adaptive.networkPolicy.internetEgress"
-          (dict "exceptCidrs" $np.internetEgressExcept)
+          (dict "ports" $np.internetEgressPorts)
         | nindent 4 }}
     {{- end }}
 {{- end }}

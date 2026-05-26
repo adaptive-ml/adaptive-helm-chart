@@ -53,11 +53,13 @@ spec:
     # (Datadog, Grafana Cloud, ...).
     {{- toYaml $np.restrictiveEgressRules | nindent 4 }}
     {{- else if $np.allowInternetEgress }}
-    # Default permissive external egress so the collector can ship telemetry
-    # to a remote observability backend. RFC1918 + link-local + CGNAT are
-    # carved out so this rule doesn't widen in-cluster reachability.
+    # External egress on the listed ports (TCP/443 by default) so the
+    # collector can ship telemetry to a remote observability backend.
+    # Port-restricted so this rule does not widen in-cluster reachability;
+    # if the backend uses a non-HTTPS port (OTLP gRPC :4317, OTLP HTTP
+    # :4318, custom) extend `internetEgressPorts`.
     {{- include "adaptive.networkPolicy.internetEgress"
-          (dict "exceptCidrs" $np.internetEgressExcept)
+          (dict "ports" $np.internetEgressPorts)
         | nindent 4 }}
     {{- end }}
 {{- end }}

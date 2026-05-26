@@ -46,12 +46,14 @@ has_edge() {
   grep -qE "${NS_PREFIX}-${src}\b.* => ${NS_PREFIX}-${dst}\b" "$CONN"
 }
 
-# "Internet" = a non-RFC1918 ipBlock destination. netpolicy decomposes
-# `ipBlock 0.0.0.0/0 except [RFC1918...]` into a contiguous list of
-# allowed CIDRs starting with `0.0.0.0-9.255.255.255` (i.e. < 10.x).
+# "Internet" = any ipBlock destination starting at 0.0.0.0 (a range that
+# includes public IPv4). netpolicy decomposes `0.0.0.0/0` allow rules
+# into adjacent CIDR ranges, slicing at the boundaries of other ipBlock
+# rules in the policy. Whatever the boundary, the lowest range always
+# starts at `0.0.0.0-`, so we anchor on that.
 has_internet() {
   local src="$1"
-  grep -qE "${NS_PREFIX}-${src}\b.* => 0\.0\.0\.0-9\." "$CONN"
+  grep -qE "${NS_PREFIX}-${src}\b.* => 0\.0\.0\.0[-/]" "$CONN"
 }
 
 assert_allow() {

@@ -202,16 +202,20 @@ harmony:
   # restrictiveEgressRules to an explicit allow list to lock egress down.
   networkPolicy:
     enabled: true
-    # When true (the default), render `ipBlock 0.0.0.0/0` minus the
-    # `internetEgressExcept` ranges below so workers can reach external
-    # model registries. Suppressed when restrictiveEgressRules is non-empty.
+    # When true (the default), render one egress rule per port in
+    # `internetEgressPorts` allowing TCP to `0.0.0.0/0` so workers can
+    # reach external model registries. Suppressed when restrictiveEgressRules
+    # is non-empty.
     allowInternetEgress: true
-    internetEgressExcept:
-      - 10.0.0.0/8
-      - 172.16.0.0/12
-      - 192.168.0.0/16
-      - 169.254.0.0/16
-      - 100.64.0.0/10
+    # Ports for the public-internet rule. Port-restricted (rather than
+    # `0.0.0.0/0 except: [RFC1918...]`) to side-step a cross-rule bleed in
+    # EKS Auto Mode's aws-network-policy-agent where `except` on any rule
+    # subtracts those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
     # When non-empty, replaces the default permissive internet egress with
     # this explicit list — e.g. only an internal Huggingface mirror, or an
     # egress proxy CIDR. In-cluster allow rules are not affected.
@@ -479,28 +483,32 @@ controlPlane:
   # without per-environment CIDR config. Requires a CNI that enforces
   # NetworkPolicy.
   #
-  # NOTE on the default posture: the chart intentionally ships a
-  # permissive default (allowInternetEgress=true, TCP/443 to anywhere
-  # for the kube-apiserver fallback) instead of the tightest possible
-  # policy. This is a deliberate tradeoff: cluster operators don't have
-  # to know their pod CIDR, apiserver IP, S3 prefix list, OIDC IdP IPs,
-  # etc. to get a working install. For a stricter posture, set
-  # restrictiveEgressRules (replaces the internet rule with an explicit
-  # allow list) and kubeApiServerCIDR (scopes the apiserver allow to a
-  # specific CIDR).
+  # NOTE on the default posture: the chart ships a deliberately strict
+  # default for the control-plane (`allowInternetEgress=false`) because the
+  # explicit in-cluster allow rules above plus the kube-apiserver TCP/443
+  # fallback are enough for most installs. Set `allowInternetEgress=true`
+  # if the control-plane needs to reach external services (OIDC IdPs,
+  # external object storage, ...) and you don't want to enumerate them in
+  # `restrictiveEgressRules`. Set `restrictiveEgressRules` to scope egress
+  # to a specific list, and `kubeApiServerCIDR` to scope the apiserver
+  # allow to a specific CIDR.
   networkPolicy:
     enabled: true
-    # When true (the default), render `ipBlock 0.0.0.0/0` minus the
-    # `internetEgressExcept` ranges below so the control-plane can reach
-    # public services (OIDC, S3, ...). Suppressed when restrictiveEgressRules
-    # is non-empty.
-    allowInternetEgress: true
-    internetEgressExcept:
-      - 10.0.0.0/8
-      - 172.16.0.0/12
-      - 192.168.0.0/16
-      - 169.254.0.0/16
-      - 100.64.0.0/10
+    # When true, render one egress rule per port in `internetEgressPorts`
+    # allowing the control-plane to reach public services (OIDC, external
+    # S3, ...). Suppressed when restrictiveEgressRules is non-empty.
+    # Defaults to false because the explicit in-cluster allows plus the
+    # kube-apiserver TCP/443 fallback below cover the common case.
+    allowInternetEgress: false
+    # Ports for the public-internet rule. Port-restricted (rather than
+    # `0.0.0.0/0 except: [RFC1918...]`) to side-step a cross-rule bleed in
+    # EKS Auto Mode's aws-network-policy-agent where `except` on any rule
+    # subtracts those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
     # CIDR for the cluster's kube-apiserver. When set, the chart renders a
     # specific TCP/443 allow rule for this CIDR — control-plane can only
     # reach the apiserver via the listed IPs. When empty (the default), the
@@ -595,21 +603,21 @@ sandkasten:
   networkPolicy:
     enabled: true
     # Set to false to drop the public-internet egress rule. When true (the
-    # default), recipes can reach pypi.org, github.com, S3, etc., but the
-    # `internetEgressExcept` CIDRs below are still blocked so the rule does
-    # not silently widen access to in-cluster pods that aren't in the explicit
-    # allow list.
+    # default), recipes can reach pypi.org, github.com, S3, etc. on the
+    # ports listed in `internetEgressPorts`. Port-restriction prevents the
+    # rule from silently widening access to in-cluster pods on other ports.
     allowInternetEgress: true
-    # CIDRs excluded from the public-internet egress rule. Defaults cover the
-    # standard RFC1918 private ranges plus link-local and carrier-grade NAT.
-    # Tune this list if your cluster's pod or service CIDR sits outside these
-    # (e.g. AWS VPC CNI with a non-RFC1918 VPC).
-    internetEgressExcept:
-      - 10.0.0.0/8
-      - 172.16.0.0/12
-      - 192.168.0.0/16
-      - 169.254.0.0/16
-      - 100.64.0.0/10
+    # Ports allowed for public-internet egress. TCP/443 + TCP/80 cover the
+    # common pip / dataset / model-pull case. Add ports here if recipes
+    # need other protocols. Port-restricted (rather than `0.0.0.0/0
+    # except: [RFC1918...]`) to side-step a cross-rule bleed in EKS Auto
+    # Mode's aws-network-policy-agent where `except` on any rule subtracts
+    # those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
     # Additional egress rules appended verbatim to the policy. Use this for
     # environment-specific allow rules (e.g. an external secrets manager, a
     # specific S3 endpoint, an OIDC provider's IP range).
@@ -700,17 +708,20 @@ otelCollector:
   # backend) for a stricter posture.
   networkPolicy:
     enabled: true
-    # When true (the default), render `ipBlock 0.0.0.0/0` minus the
-    # `internetEgressExcept` ranges below so the collector can reach remote
-    # observability backends. Suppressed when restrictiveEgressRules is
-    # non-empty.
+    # When true (the default), render one egress rule per port in
+    # `internetEgressPorts` so the collector can reach remote observability
+    # backends. Suppressed when restrictiveEgressRules is non-empty.
     allowInternetEgress: true
-    internetEgressExcept:
-      - 10.0.0.0/8
-      - 172.16.0.0/12
-      - 192.168.0.0/16
-      - 169.254.0.0/16
-      - 100.64.0.0/10
+    # Ports for the public-internet rule. Defaults to TCP/443 for HTTPS-
+    # based backends (Datadog, Grafana Cloud HTTP, Honeycomb, ...). If your
+    # backend uses OTLP gRPC :4317, OTLP HTTP :4318, or another custom
+    # port, extend this list. Port-restricted (rather than `0.0.0.0/0
+    # except: [RFC1918...]`) to side-step a cross-rule bleed in EKS Auto
+    # Mode's aws-network-policy-agent where `except` on any rule subtracts
+    # those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
     # When non-empty, replaces the default permissive internet egress with
     # this explicit list — e.g. only the IP range of your observability
     # backend. In-cluster allow rules are not affected.

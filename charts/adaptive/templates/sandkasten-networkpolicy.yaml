@@ -60,18 +60,18 @@ spec:
               {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
     {{- end }}
     {{- if .Values.sandkasten.networkPolicy.allowInternetEgress }}
-    # External egress — required so recipes can `pip install` and fetch
-    # remote datasets / model weights. RFC1918 + link-local + CGNAT ranges
-    # are carved out so this rule does NOT silently widen access to other
-    # in-cluster pods; only the explicit allow rules above grant intra-
-    # cluster reachability.
+    # External egress on the listed ports (TCP/443 + TCP/80 by default) —
+    # required so recipes can `pip install` and fetch remote datasets /
+    # model weights. Port-restricted to public protocols so this rule does
+    # NOT silently widen access to in-cluster pods on other ports; only the
+    # explicit allow rules above grant intra-cluster reachability.
     #
-    # IMPORTANT: tune `sandkasten.networkPolicy.internetEgressExcept` to your
-    # cluster's pod and service CIDRs. The defaults cover standard private
-    # ranges; clusters with non-RFC1918 pod CIDRs (e.g. AWS VPC CNI with a
-    # public VPC) need extra entries.
+    # If recipes need additional ports (e.g. a custom protocol), extend
+    # `sandkasten.networkPolicy.internetEgressPorts` rather than reverting
+    # to a broad `0.0.0.0/0` rule — the broad shape with `except` triggers
+    # a cross-rule bleed in EKS Auto Mode's network-policy agent.
     {{- include "adaptive.networkPolicy.internetEgress"
-          (dict "exceptCidrs" .Values.sandkasten.networkPolicy.internetEgressExcept)
+          (dict "ports" .Values.sandkasten.networkPolicy.internetEgressPorts)
         | nindent 4 }}
     {{- end }}
     {{- with .Values.sandkasten.networkPolicy.additionalEgressRules }}
