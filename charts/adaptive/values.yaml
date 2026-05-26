@@ -99,6 +99,17 @@ auth:
 # For ECR: <aws_account_id>.dkr.ecr.<region>.amazonaws.com
 containerRegistry: ""
 
+# Pod annotations applied to all Adaptive workload pods (control-plane, harmony,
+# sandkasten). Per-component podAnnotations (controlPlane.podAnnotations,
+# harmony.podAnnotations, sandkasten.podAnnotations, and per-pool
+# harmony.computePools[].podAnnotations) are merged on top — per-component
+# values win on key conflicts. Use this for cluster-wide annotations such as
+# those required by service meshes or pod-identity systems.
+# Example:
+#   commonPodAnnotations:
+#     iam.amazonaws.com/role: arn:aws:iam::123456789012:role/adaptive
+commonPodAnnotations: {}
+
 harmony:
   # Set to false to disable the harmony statefulset deployment (advanced mode only)
   enabled: true

@@ -17,9 +17,9 @@ spec:
       {{- include "adaptive.controlPlane.selectorLabels" . | nindent 6}}
   template:
     metadata:
-      {{- with .Values.controlPlane.podAnnotations }}
+      {{- with (include "adaptive.podAnnotations" (dict "root" $ "component" .Values.controlPlane.podAnnotations)) }}
       annotations:
-        {{- toYaml . | nindent 8 }}
+        {{- . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "adaptive.labels" . | nindent 8 }}

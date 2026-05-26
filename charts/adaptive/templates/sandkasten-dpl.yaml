@@ -13,9 +13,9 @@ spec:
       {{- include "adaptive.sandkasten.selectorLabels" . | nindent 6}}
   template:
     metadata:
-      {{- with .Values.sandkasten.podAnnotations }}
+      {{- with (include "adaptive.podAnnotations" (dict "root" $ "component" .Values.sandkasten.podAnnotations)) }}
       annotations:
-        {{- toYaml . | nindent 8 }}
+        {{- . | nindent 8 }}
       {{- end }}
       labels:
         {{- include "adaptive.labels" . | nindent 8 }}
