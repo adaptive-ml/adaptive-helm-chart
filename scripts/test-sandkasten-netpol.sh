@@ -207,7 +207,11 @@ assert_from allow cp-probe "postgres"             "$PG_IP"       8080 || failed=
 assert_from allow cp-probe "otel-collector"       "$OTEL_IP"     8080 || failed=1
 assert_from allow cp-probe "mlflow"               "$MLFLOW_IP"   8080 || failed=1
 assert_from allow cp-probe "internet (1.1.1.1)"   "1.1.1.1"      443  || failed=1
-assert_from deny  cp-probe "harmony"              "$HARMONY_IP"  8080 || failed=1
+# Harmony: control-plane must reach the harmony workers to accept their
+# compute-pool registration (it health-checks the worker's service port).
+# Without this the pool registration is rejected with a 500 and the pool
+# never comes up.
+assert_from allow cp-probe "harmony"              "$HARMONY_IP"  8080 || failed=1
 assert_from deny  cp-probe "unrelated"            "$OTHER_IP"    8080 || failed=1
 # cp → kube-apiserver reachability.
 #

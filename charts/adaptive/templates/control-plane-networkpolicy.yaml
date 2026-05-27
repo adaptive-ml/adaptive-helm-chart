@@ -28,6 +28,17 @@ spec:
         - podSelector:
             matchLabels:
               {{- include "adaptive.sandkasten.selectorLabels" . | nindent 14 }}
+    # Harmony (mangrove) — control-plane health-checks and orchestrates the
+    # harmony workers. Each compute pool registers with the control-plane,
+    # which then connects back to the worker's service port (50053 health,
+    # plus the gang/control ports) to accept the registration. Without this
+    # rule the registration is rejected with a 500 ("Cannot reach Mangrove
+    # at …:50053") and the compute pool never comes up. Harmony is a core
+    # component (always deployed), so this is unconditional.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
     {{- if .Values.redis.install.enabled }}
     # Redis — caching / session store. Only emitted when the chart deploys
     # internal Redis. For external Redis (redis.install.enabled=false) the
