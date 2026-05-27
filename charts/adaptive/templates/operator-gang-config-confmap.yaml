@@ -101,14 +101,10 @@ data:
   {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "ADAPTIVE_MODEL_REGISTRY" "secret_name" $harmonySecret "secret_key" "modelRegistryUrl") }}
   {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "HARMONY_SETTING_MODEL_REGISTRY_ROOT" "secret_name" $harmonySecret "secret_key" "modelRegistryUrl") }}
   {{- $sharedSecrets = append $sharedSecrets (dict "env_var" "ADAPTIVE_HARMONY__SHARED_DIRECTORY__URL" "secret_name" $harmonySecret "secret_key" "sharedDirectoryUrl") }}
-  {{- /* Harmony pods: shared + redis + user entries */}}
-  {{- $harmonySecrets := mustDeepCopy $sharedSecrets }}
-  {{- $redisSecret := include "adaptive.redis.secret.fullname" . }}
-  {{- $harmonySecrets = append $harmonySecrets (dict "env_var" "REDIS_URL" "secret_name" $redisSecret "secret_key" "redisUrl") }}
-  {{- $harmonySecrets = append $harmonySecrets (dict "env_var" "ADAPTIVE_REDIS__URL" "secret_name" $redisSecret "secret_key" "redisUrl") }}
-  {{- $harmonySecrets = concat $harmonySecrets .Values.adaptiveOperator.harmonySecretEnvVars }}
+  {{- /* Harmony pods: shared + user entries */}}
+  {{- $harmonySecrets := concat (mustDeepCopy $sharedSecrets) .Values.adaptiveOperator.harmonySecretEnvVars }}
   HARMONY_SECRET_ENV_VARS: {{ $harmonySecrets | toJson | quote }}
-  {{- /* Recipe-runner pods: shared + user entries (no redis) */}}
+  {{- /* Recipe-runner pods: shared + user entries */}}
   {{- $rrSecrets := concat $sharedSecrets .Values.adaptiveOperator.recipeRunnerSecretEnvVars }}
   RECIPE_RUNNER_SECRET_ENV_VARS: {{ $rrSecrets | toJson | quote }}
   # ── Plain env vars (key-value) ─────────────────────────────────────────

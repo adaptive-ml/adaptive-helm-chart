@@ -120,7 +120,6 @@ spec:
           env:
             {{- include "adaptive.otelCollector.envVars" $root | nindent 12 }}
             {{- include "adaptive.harmony.secretEnvVars" $root | nindent 12 }}
-            {{- include "adaptive.redis.secretEnvVars" $root | nindent 12 }}
             {{- $imageTag := $root.Values.harmony.image.tag }}
             {{- if and $pool.image $pool.image.tag }}
             {{- $imageTag = $pool.image.tag }}
