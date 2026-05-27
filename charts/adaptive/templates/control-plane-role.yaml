@@ -12,10 +12,11 @@ rules:
   - apiGroups: ["batch"]
     resources: ["jobs"]
     verbs: ["create", "get", "list", "delete"]
-  # core/v1 Pods — create bare GPU pods, watch gang pods, annotate failed pods, bulk-delete by label
+  # core/v1 Pods — create bare GPU pods, watch gang pods, annotate failed pods,
+  # delete individual Pending pods (gang cleanup path), bulk-delete by label
   - apiGroups: [""]
     resources: ["pods"]
-    verbs: ["create", "get", "list", "watch", "patch", "deletecollection"]
+    verbs: ["create", "get", "list", "watch", "patch", "delete", "deletecollection"]
   # core/v1 Pods/log — fetch container logs
   - apiGroups: [""]
     resources: ["pods/log"]
