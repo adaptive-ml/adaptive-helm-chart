@@ -99,7 +99,10 @@ assert_allow         controlplane    postgresql      || failed=1
 assert_allow         controlplane    otel-collector  || failed=1
 assert_allow         controlplane    mlflow          || failed=1
 assert_internet_allow controlplane                   || failed=1
-assert_deny          controlplane    harmony-default || failed=1
+# control-plane must reach harmony to accept compute-pool registration
+# (health-checks the worker service port). Without it registration is
+# rejected with a 500 and the pool never comes up.
+assert_allow         controlplane    harmony-default || failed=1
 endgroup
 
 group "harmony egress"
