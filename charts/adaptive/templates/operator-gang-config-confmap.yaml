@@ -26,6 +26,9 @@ data:
   HARMONY_IMAGE_REPO: {{ .Values.harmony.image.repository | quote }}
   RECIPE_RUNNER_IMAGE_REPO: {{ .Values.sandkasten.recipeRunner.repository | quote }}
   {{- end }}
+  # Bypass the recipe runner's in-process nsjail sandbox (operator default is
+  # "true" when unset). Set false to run recipes under nsjail.
+  RECIPE_RUNNER_NO_SANDBOX: {{ .Values.adaptiveOperator.recipeRunnerNoSandbox | quote }}
   # Harmony pod resources (CPU/memory requests and limits — applied per GPU,
   # multiplied by per-pod GPU count by the operator)
   CPU_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.cpu | quote }}
