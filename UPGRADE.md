@@ -2,8 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Upgrade Guide](#upgrade-guide)
-  - [0.49.x to 0.50.0](#049x-to-0500)
-    - [New NetworkPolicies for control-plane, harmony, and otel-collector](#new-networkpolicies-for-control-plane-harmony-and-otel-collector)
+  - [0.52.x to 0.52.5](#052x-to-0525)
+    - [NetworkPolicies are now opt-in behind `networkPolicies.enabled`](#networkpolicies-are-now-opt-in-behind-networkpoliciesenabled)
     - [New values added](#new-values-added)
   - [0.48.x to 0.49.0](#048x-to-0490)
     - [Breaking Change: Sandkasten NetworkPolicy Enabled by Default](#breaking-change-sandkasten-networkpolicy-enabled-by-default)
@@ -26,27 +26,26 @@
 
 This document describes breaking changes between Helm chart versions and how to migrate your configuration.
 
-## 0.49.x to 0.50.0
+## 0.52.x to 0.52.5
 
-### New NetworkPolicies for control-plane, harmony, and otel-collector
+### NetworkPolicies are now opt-in behind `networkPolicies.enabled`
 
-In 0.49 only sandkasten had a `NetworkPolicy`. In 0.50 the chart adds three more, one per always-on component:
+The chart ships NetworkPolicies for sandkasten, control-plane, harmony, and otel-collector, plus an auto-detected `CiliumNetworkPolicy` for the control-plane to kube-apiserver path on Cilium clusters. **All of them are now gated behind a single master switch, `networkPolicies.enabled`, which defaults to `false`** — no NetworkPolicy is rendered unless you opt in.
 
-- `controlPlane.networkPolicy`
-- `harmony.networkPolicy`
-- `otelCollector.networkPolicy`
+> **Behavior change:** the sandkasten policy previously rendered by default (since 0.49). It is now off unless you opt in. If you relied on the sandkasten NetworkPolicy, set `networkPolicies.enabled: true` to keep it.
 
-All three default to `enabled: true`. They are **default-deny + explicit allows**, but the default external-egress rule is deliberately permissive (`allowInternetEgress: true`, plus a TCP/443-anywhere fallback for the kube-apiserver) so the chart works on a typical install without per-environment CIDR configuration. The sandkasten policy is also broadened in this release: DNS, Redis, and MLflow are now allowed out of the box, and `sandkasten.networkPolicy.allowInternetEgress` lets recipes `pip install` and pull datasets without manual rules.
+**Enable enforcement:**
 
-**Migration:**
+```yaml
+networkPolicies:
+  enabled: true
+```
 
-For most customers, no values changes are required — defaults preserve current behavior:
+With the master switch on, each component's own `*.networkPolicy.enabled` toggle (all default `true`) lets you turn individual policies off again. Requires a CNI that enforces NetworkPolicy; on CNIs that don't (some managed flavors, kindnet) the policies are silently dropped.
 
-- Egress to the kube-apiserver: covered by a TCP/443-to-anywhere fallback. Cilium users see the caveat below.
-- Egress to OIDC IdPs / S3 / external Postgres: covered by `allowInternetEgress`.
-- DNS via either pod-IP CoreDNS or node-local DNS at link-local 169.254.0.0/16: covered.
+The policies are **default-deny + explicit allows**. The default external-egress rule is deliberately permissive (`allowInternetEgress: true`, plus a TCP/443-anywhere fallback for the kube-apiserver) so the chart works on a typical install without per-environment CIDR configuration. The sandkasten policy also allows DNS, Redis, and MLflow out of the box, and `sandkasten.networkPolicy.allowInternetEgress` lets recipes `pip install` and pull datasets without manual rules.
 
-If your CNI does not enforce `NetworkPolicy` (some managed Kubernetes flavors, kindnet), the policies are silently dropped — no effect. If it does enforce them, walk through these scenarios:
+**Once enabled,** if your CNI enforces `NetworkPolicy`, walk through these scenarios:
 
 1. **External Redis.** The redis allow rule renders only when `redis.install.enabled=true` (internal Redis). For external Redis, list the endpoint CIDR under each component's `restrictiveEgressRules` (or `additionalEgressRules` for sandkasten):
 
@@ -75,7 +74,7 @@ If your CNI does not enforce `NetworkPolicy` (some managed Kubernetes flavors, k
 
 3. **Stricter posture.** Set `restrictiveEgressRules` on cp / harmony / otel to lock external egress down to specific CIDRs (replaces the broad internet rule). Set `allowInternetEgress: false` on sandkasten to drop its internet rule entirely.
 
-4. **Disable a policy entirely.** Each policy has its own toggle if you'd rather not enforce it:
+4. **Disable a policy entirely.** Turn everything off with the master switch (`networkPolicies.enabled: false`), or keep the feature on and disable an individual policy via its own toggle:
 
     ```yaml
     controlPlane: { networkPolicy: { enabled: false } }
@@ -86,10 +85,11 @@ If your CNI does not enforce `NetworkPolicy` (some managed Kubernetes flavors, k
 
 ### New values added
 
-- `controlPlane.networkPolicy.{enabled,allowInternetEgress,internetEgressExcept,kubeApiServerCIDR,restrictiveEgressRules}`
-- `harmony.networkPolicy.{enabled,allowInternetEgress,internetEgressExcept,restrictiveEgressRules}`
-- `otelCollector.networkPolicy.{enabled,allowInternetEgress,internetEgressExcept,restrictiveEgressRules}`
-- `sandkasten.networkPolicy.{allowInternetEgress,internetEgressExcept}` (added to the existing block)
+- `networkPolicies.enabled` (master switch, defaults to `false`)
+- `controlPlane.networkPolicy.{enabled,allowInternetEgress,internetEgressPorts,kubeApiServerCIDR,ciliumApiServerAllow.enabled,restrictiveEgressRules}`
+- `harmony.networkPolicy.{enabled,allowInternetEgress,internetEgressPorts,restrictiveEgressRules}`
+- `otelCollector.networkPolicy.{enabled,allowInternetEgress,internetEgressPorts,restrictiveEgressRules}`
+- `sandkasten.networkPolicy.{allowInternetEgress,internetEgressPorts}` (added to the existing block)
 
 `sandkasten.networkPolicy.additionalEgressRules` is unchanged (still additive).
 

@@ -16,7 +16,8 @@ NetworkPolicy is the only egress policy in effect.
 To opt out on a Cilium cluster (e.g. you ship your own admin-tier
 CiliumNetworkPolicy), set `controlPlane.networkPolicy.ciliumApiServerAllow.enabled: false`.
 */ -}}
-{{- if and .Values.controlPlane.networkPolicy.enabled
+{{- if and .Values.networkPolicies.enabled
+       .Values.controlPlane.networkPolicy.enabled
        (.Values.controlPlane.networkPolicy.ciliumApiServerAllow.enabled)
        (.Capabilities.APIVersions.Has "cilium.io/v2") }}
 apiVersion: cilium.io/v2

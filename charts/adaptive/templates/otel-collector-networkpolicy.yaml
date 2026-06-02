@@ -1,4 +1,4 @@
-{{- if and .Values.otelCollector.enabled .Values.otelCollector.networkPolicy.enabled }}
+{{- if and .Values.networkPolicies.enabled .Values.otelCollector.enabled .Values.otelCollector.networkPolicy.enabled }}
 {{- $np := .Values.otelCollector.networkPolicy }}
 {{- $hasRestrictive := gt (len $np.restrictiveEgressRules) 0 }}
 apiVersion: networking.k8s.io/v1

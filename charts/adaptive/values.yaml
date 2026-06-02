@@ -110,6 +110,16 @@ containerRegistry: ""
 #     iam.amazonaws.com/role: arn:aws:iam::123456789012:role/adaptive
 commonPodAnnotations: {}
 
+# Master switch for all chart-managed NetworkPolicies (control-plane,
+# harmony, sandkasten, otel-collector, and the Cilium apiserver policy).
+# Disabled by default: NetworkPolicy enforcement is opt-in. Set to true to
+# render the policies — the per-component `*.networkPolicy.enabled` toggles
+# below then let you turn individual policies off again. When this is false
+# no NetworkPolicy is rendered regardless of the per-component toggles.
+# Requires a CNI that enforces NetworkPolicy.
+networkPolicies:
+  enabled: false
+
 harmony:
   # Set to false to disable the harmony statefulset deployment (advanced mode only)
   enabled: true
