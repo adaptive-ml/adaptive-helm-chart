@@ -11,6 +11,15 @@
 {{- fail (printf "adaptiveOperator.efasPerNode must be > 0 when interconnect=\"efa\", got %v" .Values.adaptiveOperator.efasPerNode) -}}
 {{- end -}}
 {{- end -}}
+{{- /* ── NUMA-aware CPU alignment validation ───────────────────────────── */ -}}
+{{- if .Values.adaptiveOperator.numaEnabled -}}
+{{- if not (gt (int .Values.adaptiveOperator.numaNodesPerHost) 0) -}}
+{{- fail (printf "adaptiveOperator.numaNodesPerHost must be > 0 when numaEnabled=true, got %v" .Values.adaptiveOperator.numaNodesPerHost) -}}
+{{- end -}}
+{{- if not (gt (int .Values.adaptiveOperator.cpusPerNumaNode) 0) -}}
+{{- fail (printf "adaptiveOperator.cpusPerNumaNode must be > 0 when numaEnabled=true, got %v" .Values.adaptiveOperator.cpusPerNumaNode) -}}
+{{- end -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -38,6 +47,13 @@ data:
   HARMONY_INTERCONNECT: {{ .Values.adaptiveOperator.interconnect | quote }}
   {{- if eq .Values.adaptiveOperator.interconnect "efa" }}
   EFAS_PER_NODE: {{ .Values.adaptiveOperator.efasPerNode | quote }}
+  {{- end }}
+  # NUMA-aware CPU alignment: pin pods to NUMA domains so cores, memory, and
+  # GPUs share a socket. Topology keys emitted only when enabled.
+  NUMA_ENABLED: {{ .Values.adaptiveOperator.numaEnabled | quote }}
+  {{- if .Values.adaptiveOperator.numaEnabled }}
+  NUMA_NODES_PER_HOST: {{ .Values.adaptiveOperator.numaNodesPerHost | quote }}
+  CPUS_PER_NUMA_NODE: {{ .Values.adaptiveOperator.cpusPerNumaNode | quote }}
   {{- end }}
   {{- if .Values.adaptiveOperator.customLabels }}
   CUSTOM_LABELS: {{ .Values.adaptiveOperator.customLabels | toJson | quote }}

@@ -282,6 +282,20 @@ adaptiveOperator:
   # ceil(podGpus * efasPerNode / gpusPerNode) per pod, so full-node pods get
   # the full count and remainder pods get a proportional share.
   efasPerNode: 0
+  # ── NUMA-aware CPU alignment ───────────────────────────────────────────
+  # Pin gang-spawned harmony pods to NUMA domains so CPU cores, memory, and
+  # the GPUs they drive sit on the same socket, avoiding cross-socket QPI/UPI
+  # traffic on multi-socket nodes. Disabled by default; when enabled, both
+  # numaNodesPerHost and cpusPerNumaNode are required.
+  #
+  # The gate. false/absent → NUMA alignment off (current behavior).
+  numaEnabled: false
+  # NUMA domains per node (e.g. 2 for a dual-socket host). Required when
+  # numaEnabled=true.
+  numaNodesPerHost: 0
+  # Allocatable whole cores per NUMA node (e.g. 96). On asymmetric nodes use
+  # the smaller socket's core count. Required when numaEnabled=true.
+  cpusPerNumaNode: 0
   # Extra Kubernetes extended resources to request per GPU on gang-spawned harmony pods
   # Used for device-plugin-managed resources beyond nvidia.com/gpu (which is set automatically).
   # Note: when interconnect is "efa" or "infiniband", the corresponding fabric resource
