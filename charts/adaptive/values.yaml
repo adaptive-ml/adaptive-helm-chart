@@ -311,6 +311,12 @@ adaptiveOperator:
   # Extra environment variables for recipe-runner pods (key-value map)
   # These are merged into RECIPE_RUNNER_ENV_VARS and override built-in values.
   extraRecipeRunnerEnvVars: {}
+  # Bypass the recipe runner's in-process nsjail sandbox. Default "true": the
+  # pod is already cluster-isolated, so the runner just execs python. Set
+  # "false" to run recipes under nsjail — the operator then runs the
+  # recipe-runner pod as root with the sandbox capability set + AppArmor
+  # unconfined so nsjail can create namespaces.
+  recipeRunnerNoSandbox: true
   # Secret env vars injected into harmony pods via valueFrom.secretKeyRef
   # List of {env_var, secret_name, secret_key} objects.
   # Example:
