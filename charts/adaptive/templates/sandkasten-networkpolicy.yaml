@@ -59,6 +59,16 @@ spec:
             matchLabels:
               {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
     {{- end }}
+    {{- if .Values.s3proxy.enabled }}
+    # Internal s3proxy: S3 API in front of external blob storage (Azure Blob,
+    # GCS, ...). When deployed, recipes write artifacts through it instead of
+    # MinIO. Only emitted when the chart deploys it; for direct external S3 use
+    # additionalEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.s3proxy.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.sandkasten.networkPolicy.allowInternetEgress }}
     # External egress on the listed ports (TCP/443 + TCP/80 by default) —
     # required so recipes can `pip install` and fetch remote datasets /

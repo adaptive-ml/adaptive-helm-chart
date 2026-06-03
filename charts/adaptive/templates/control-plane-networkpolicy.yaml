@@ -78,6 +78,16 @@ spec:
             matchLabels:
               {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
     {{- end }}
+    {{- if .Values.s3proxy.enabled }}
+    # Internal s3proxy: S3 API in front of external blob storage (Azure Blob,
+    # GCS, ...). When deployed, the control-plane talks S3 to it instead of
+    # MinIO for the shared dir / file storage / model registry. Only emitted
+    # when the chart deploys it; for direct external S3 use restrictiveEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.s3proxy.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.clickhouse.enabled }}
     - to:
         - podSelector:
