@@ -110,6 +110,16 @@ containerRegistry: ""
 #     iam.amazonaws.com/role: arn:aws:iam::123456789012:role/adaptive
 commonPodAnnotations: {}
 
+# Master switch for all chart-managed NetworkPolicies (control-plane,
+# harmony, sandkasten, otel-collector, and the Cilium apiserver policy).
+# Disabled by default: NetworkPolicy enforcement is opt-in. Set to true to
+# render the policies — the per-component `*.networkPolicy.enabled` toggles
+# below then let you turn individual policies off again. When this is false
+# no NetworkPolicy is rendered regardless of the per-component toggles.
+# Requires a CNI that enforces NetworkPolicy.
+networkPolicies:
+  enabled: false
+
 harmony:
   # Set to false to disable the harmony statefulset deployment (advanced mode only)
   enabled: true
@@ -188,6 +198,38 @@ harmony:
     enabled: false
     # minAvailable: 1    # Minimum number/percentage of pods that must remain available
     # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
+
+  # NetworkPolicy for harmony workers. Always renders allow rules for cluster
+  # DNS, control-plane, otel-collector, and self (peer pods in the same
+  # compute pool). External egress is permissive by default so workers can
+  # pull base models from Huggingface and other external registries.
+  # Requires a CNI that enforces NetworkPolicy.
+  #
+  # NOTE on the default posture: the chart intentionally ships a
+  # permissive default (allowInternetEgress=true) rather than the tightest
+  # possible policy so workers can reach Huggingface / external model
+  # registries without per-environment CIDR config. Set
+  # restrictiveEgressRules to an explicit allow list to lock egress down.
+  networkPolicy:
+    enabled: true
+    # When true (the default), render one egress rule per port in
+    # `internetEgressPorts` allowing TCP to `0.0.0.0/0` so workers can
+    # reach external model registries. Suppressed when restrictiveEgressRules
+    # is non-empty.
+    allowInternetEgress: true
+    # Ports for the public-internet rule. Port-restricted (rather than
+    # `0.0.0.0/0 except: [RFC1918...]`) to side-step a cross-rule bleed in
+    # EKS Auto Mode's aws-network-policy-agent where `except` on any rule
+    # subtracts those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
+    # When non-empty, replaces the default permissive internet egress with
+    # this explicit list — e.g. only an internal Huggingface mirror, or an
+    # egress proxy CIDR. In-cluster allow rules are not affected.
+    restrictiveEgressRules: []
 
   # List of compute pools - each creates a separate StatefulSet and headless Service
   # Pool-specific values override the defaults above
@@ -457,6 +499,70 @@ controlPlane:
 
   extraEnvVars: {}
 
+  # NetworkPolicy that restricts control-plane egress. The chart always
+  # renders allow rules for cluster DNS, sandkasten, redis, otel-collector,
+  # postgres (when installPostgres.enabled), and mlflow / clickhouse / lgtm
+  # (when those are enabled). External egress is permissive by default so
+  # the control-plane can reach OIDC IdPs, S3, and an external Postgres
+  # without per-environment CIDR config. Requires a CNI that enforces
+  # NetworkPolicy.
+  #
+  # NOTE on the default posture: the chart ships a deliberately strict
+  # default for the control-plane (`allowInternetEgress=false`) because the
+  # explicit in-cluster allow rules above plus the kube-apiserver TCP/443
+  # fallback are enough for most installs. Set `allowInternetEgress=true`
+  # if the control-plane needs to reach external services (OIDC IdPs,
+  # external object storage, ...) and you don't want to enumerate them in
+  # `restrictiveEgressRules`. Set `restrictiveEgressRules` to scope egress
+  # to a specific list, and `kubeApiServerCIDR` to scope the apiserver
+  # allow to a specific CIDR.
+  networkPolicy:
+    enabled: true
+    # When true, render one egress rule per port in `internetEgressPorts`
+    # allowing the control-plane to reach public services (OIDC, external
+    # S3, ...). Suppressed when restrictiveEgressRules is non-empty.
+    # Defaults to false because the explicit in-cluster allows plus the
+    # kube-apiserver TCP/443 fallback below cover the common case.
+    allowInternetEgress: false
+    # Ports for the public-internet rule. Port-restricted (rather than
+    # `0.0.0.0/0 except: [RFC1918...]`) to side-step a cross-rule bleed in
+    # EKS Auto Mode's aws-network-policy-agent where `except` on any rule
+    # subtracts those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
+    # CIDR for the cluster's kube-apiserver. When set, the chart renders a
+    # specific TCP/443 allow rule for this CIDR — control-plane egress to
+    # the apiserver is scoped to those IPs only. When empty (the default),
+    # the chart renders a TCP/443-to-anywhere fallback that works on CNIs
+    # which enforce NetworkPolicy on the post-DNAT Service IP path
+    # (AWS VPC CNI, Calico, Antrea, Cilium with kube-proxy-replacement).
+    # The fallback is suppressed when restrictiveEgressRules is non-empty.
+    #
+    # Cilium in kube-proxy mode does NOT honor `0.0.0.0/0:443` for the
+    # apiserver because Service DNAT happens before eBPF egress runs. For
+    # those clusters, the chart auto-detects Cilium and renders a
+    # CiliumNetworkPolicy with `toEntities: [kube-apiserver]` — see
+    # `ciliumApiServerAllow.enabled` below.
+    kubeApiServerCIDR: ""
+    # When true (the default), and the cluster has the `cilium.io/v2` API
+    # group registered, the chart renders a CiliumNetworkPolicy that
+    # allows control-plane egress to the kube-apiserver identity. This is
+    # the only reliable way to allow apiserver reachability from a netpol-
+    # selected pod on Cilium clusters. On non-Cilium CNIs the file is a
+    # no-op (gated by `.Capabilities.APIVersions.Has`). Set to false if
+    # you ship your own admin-tier CiliumNetworkPolicy for the apiserver.
+    ciliumApiServerAllow:
+      enabled: true
+    # When non-empty, replaces the default permissive internet egress with
+    # this explicit list — use this to scope control-plane egress down to
+    # specific external destinations (e.g. only a specific OIDC IdP CIDR
+    # and S3 prefix list). The in-cluster allow rules above and the
+    # kubeApiServerCIDR rule (if set) are NOT affected.
+    restrictiveEgressRules: []
+
   # Resource limits and requests for the control plane
   # Uncomment and adjust based on your workload requirements
   # resources:
@@ -523,34 +629,38 @@ sandkasten:
     # minAvailable: 1    # Minimum number/percentage of pods that must remain available
     # maxUnavailable: 1  # Maximum number/percentage of pods that can be unavailable
 
-  # NetworkPolicy that restricts sandkasten egress to control-plane and harmony
-  # pods only (plus cluster DNS, required to resolve their Service names).
-  # Requires a CNI that enforces NetworkPolicy (Calico, Cilium, etc.).
+  # NetworkPolicy for sandkasten. The chart renders allow rules for cluster
+  # DNS, control-plane, harmony, otel-collector (when enabled), redis, and —
+  # by default — egress to the public internet so recipes can `pip install`
+  # and pull remote datasets. Requires a CNI that enforces NetworkPolicy.
+  #
+  # NOTE on the default posture: the default is deliberately permissive so
+  # recipes can install Python dependencies and fetch datasets without
+  # the operator having to enumerate every external IP/CIDR in
+  # additionalEgressRules. Set allowInternetEgress=false (or replace the
+  # rule via additionalEgressRules) for a stricter sandbox.
   networkPolicy:
     enabled: true
-    # Additional egress rules appended to the NetworkPolicy. The defaults below
-    # allow DNS resolution (required to resolve the control-plane and harmony
-    # Service names) and Redis access (required so sandkasten can pull jobs).
-    # Override this value to add or replace rules (e.g. to allow access to an
-    # external secrets manager, object storage, etc.).
+    # Set to false to drop the public-internet egress rule. When true (the
+    # default), recipes can reach pypi.org, github.com, S3, etc. on the
+    # ports listed in `internetEgressPorts`. Port-restriction prevents the
+    # rule from silently widening access to in-cluster pods on other ports.
+    allowInternetEgress: true
+    # Ports allowed for public-internet egress. TCP/443 + TCP/80 cover the
+    # common pip / dataset / model-pull case. Add ports here if recipes
+    # need other protocols. Port-restricted (rather than `0.0.0.0/0
+    # except: [RFC1918...]`) to side-step a cross-rule bleed in EKS Auto
+    # Mode's aws-network-policy-agent where `except` on any rule subtracts
+    # those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
+    # Additional egress rules appended verbatim to the policy. Use this for
+    # environment-specific allow rules (e.g. an external secrets manager, a
+    # specific S3 endpoint, an OIDC provider's IP range).
     additionalEgressRules: []
-      # DNS is required so sandkasten can resolve the control-plane and harmony Service names.
-      # - to:
-      #     - ipBlock:
-      #         cidr: 169.254.25.10/32
-      #     - ipBlock:
-      #         cidr: 0.0.0.0/0
-      #   ports:
-      #     - protocol: UDP
-      #       port: 53
-      #     - protocol: TCP
-      #       port: 53
-      # # Redis is required so sandkasten can get new jobs.
-      # - to:
-      #     - namespaceSelector: {}
-      #   ports:
-      #     - protocol: TCP
-      #       port: 6379
 
   extraEnvVars: {}
   replicaCount: 2
@@ -622,6 +732,39 @@ otelCollector:
     enabled: true
     minAvailable: 1
     # maxUnavailable: 1
+
+  # NetworkPolicy for the otel-collector. Always renders allow rules for its
+  # Prometheus scrape targets (control-plane :9009, harmony :50053), cluster
+  # DNS, and the in-cluster LGTM stack on :4318 when enabled. External
+  # egress is permissive by default so the collector can ship telemetry to
+  # remote observability backends (Datadog, Grafana Cloud, ...) without
+  # per-environment CIDR config. Requires a CNI that enforces NetworkPolicy.
+  #
+  # NOTE on the default posture: the chart intentionally ships a
+  # permissive default (allowInternetEgress=true) so the collector can
+  # reach a remote backend out of the box. Set restrictiveEgressRules to
+  # an explicit allow list (e.g. only the IP range of your observability
+  # backend) for a stricter posture.
+  networkPolicy:
+    enabled: true
+    # When true (the default), render one egress rule per port in
+    # `internetEgressPorts` so the collector can reach remote observability
+    # backends. Suppressed when restrictiveEgressRules is non-empty.
+    allowInternetEgress: true
+    # Ports for the public-internet rule. Defaults to TCP/443 for HTTPS-
+    # based backends (Datadog, Grafana Cloud HTTP, Honeycomb, ...). If your
+    # backend uses OTLP gRPC :4317, OTLP HTTP :4318, or another custom
+    # port, extend this list. Port-restricted (rather than `0.0.0.0/0
+    # except: [RFC1918...]`) to side-step a cross-rule bleed in EKS Auto
+    # Mode's aws-network-policy-agent where `except` on any rule subtracts
+    # those CIDRs from every other rule's allow.
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+    # When non-empty, replaces the default permissive internet egress with
+    # this explicit list — e.g. only the IP range of your observability
+    # backend. In-cluster allow rules are not affected.
+    restrictiveEgressRules: []
 
   # Prometheus scraping configuration
   # Scrapes metrics from pods with annotation: prometheus.io/scrape: "adaptive"

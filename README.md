@@ -1458,6 +1458,10 @@ egress traffic. When enabled, sandkasten pods are only allowed to reach the
 control-plane, harmony and OTel Collector pods, plus any rules listed under
 `sandkasten.networkPolicy.additionalEgressRules`.
 
+All chart-managed NetworkPolicies are opt-in behind the master switch
+`networkPolicies.enabled` (defaults to `false`). Set `networkPolicies.enabled: true`
+in addition to the per-component toggle below for any policy to render.
+
 The default `additionalEgressRules` allow:
 - **DNS** — required to resolve the control-plane and harmony Service names.
 - **Redis** (TCP/6379) — required so sandkasten can pull new jobs.

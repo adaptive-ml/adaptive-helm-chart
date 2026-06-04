@@ -1,0 +1,80 @@
+{{- if and .Values.networkPolicies.enabled .Values.harmony.networkPolicy.enabled }}
+{{- $np := .Values.harmony.networkPolicy }}
+{{- $hasRestrictive := gt (len $np.restrictiveEgressRules) 0 }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "adaptive.harmony.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.harmony.selectorLabels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "adaptive.harmony.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Cluster DNS.
+    {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
+    # Self: harmony workers within a compute pool talk over the headless service.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
+    # Control plane — workers report status / pull config via CONTROL_PLANE_URL.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.controlPlane.selectorLabels" . | nindent 14 }}
+    {{- if .Values.redis.install.enabled }}
+    # Redis — workers hit it during preflight (mangrove::preflight Redis
+    # check) and at runtime for inter-worker coordination on gang-spawned
+    # jobs. Only emitted when the chart deploys internal Redis. For
+    # external Redis, allow its IP/CIDR via restrictiveEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.otelCollector.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.minio.enabled }}
+    # Internal MinIO — workers pull base models / write checkpoints to the
+    # shared S3 bucket. Only emitted when the chart deploys it. For external
+    # S3, allow the endpoint via restrictiveEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.s3proxy.enabled }}
+    # Internal s3proxy: S3 API in front of external blob storage (Azure Blob,
+    # GCS, ...). When deployed, workers pull base models / write checkpoints
+    # through it instead of MinIO. Only emitted when the chart deploys it; for
+    # direct external S3 use restrictiveEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.s3proxy.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if $hasRestrictive }}
+    # restrictiveEgressRules is set — the user is taking control of harmony's
+    # external egress. The default permissive internet rule is suppressed;
+    # only the rules below (and the in-cluster allows above) apply.
+    {{- toYaml $np.restrictiveEgressRules | nindent 4 }}
+    {{- else if $np.allowInternetEgress }}
+    # External egress on the listed ports (TCP/443 + TCP/80 by default) —
+    # workers pull base models from Huggingface and other external model
+    # registries. Port-restricted to public protocols so this rule does NOT
+    # widen access to in-cluster pods on other ports.
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "ports" $np.internetEgressPorts)
+        | nindent 4 }}
+    {{- end }}
+{{- end }}
