@@ -8,10 +8,6 @@ metadata:
     {{- include "adaptive.labels" . | nindent 4 }}
     {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
 rules:
-  # batch/v1 Jobs — full lifecycle (create, monitor, cleanup)
-  - apiGroups: ["batch"]
-    resources: ["jobs"]
-    verbs: ["create", "get", "list", "delete"]
   # core/v1 Pods — create bare GPU pods, watch gang pods, annotate failed pods,
   # delete individual Pending pods (gang cleanup path), bulk-delete by label
   - apiGroups: [""]
