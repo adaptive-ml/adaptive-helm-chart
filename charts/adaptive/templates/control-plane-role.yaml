@@ -29,10 +29,11 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "list", "watch"]
-  # apps/v1 Deployments — inference partition lifecycle (create, resize, annotate, delete)
+  # apps/v1 Deployments — inference partition lifecycle (create, resize, annotate,
+  # delete) plus watch for the real-time GPU Fleet View "Deploying" status
   - apiGroups: ["apps"]
     resources: ["deployments"]
-    verbs: ["create", "get", "patch", "delete", "list", "deletecollection"]
+    verbs: ["create", "get", "list", "watch", "patch", "delete", "deletecollection"]
   # scheduling.run.ai/v2alpha2 PodGroups — gang job submission, phase watching, cleanup
   - apiGroups: ["scheduling.run.ai"]
     resources: ["podgroups"]
