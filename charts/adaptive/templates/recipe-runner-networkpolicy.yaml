@@ -1,0 +1,81 @@
+{{- if and .Values.networkPolicies.enabled .Values.recipeRunner.networkPolicy.enabled }}
+# Egress NetworkPolicy for the per-job recipe-runner pods spawned by the
+# operator (HAR-162 #1). These carry operator labels (app.kubernetes.io/component:
+# recipe-runner-gang), NOT the chart's name/instance selector labels, so the
+# podSelector is hand-written. Selecting the pod with an Egress policy makes all
+# egress not listed below default-deny — that is the lockdown.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "adaptive.recipeRunner.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sharedSelectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: recipe-runner-gang
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: recipe-runner-gang
+      adaptive.ml/managed-by: control-plane
+  policyTypes:
+    - Egress
+  egress:
+    # Cluster DNS — needed for in-cluster Service names and external hostnames.
+    {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
+    # Harmony gang master — the runner's HARMONY_WS_ENDPOINT (ws://...:50053).
+    # The master pod is operator-created with component=harmony-gang.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: harmony-gang
+      ports:
+        - protocol: TCP
+          port: 50053
+    # Control plane (Concorde) — recipes call it via ADAPTIVE_CONTROL_PLANE_URL.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.controlPlane.selectorLabels" . | nindent 14 }}
+    {{- if .Values.otelCollector.enabled }}
+    # OTel collector — the runner exports traces/metrics when enabled.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.mlflow.enabled }}
+    # MLflow — recipes log experiments / metrics here.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.minio.enabled }}
+    # Internal MinIO — recipes read/write artifacts in the shared S3 bucket.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.s3proxy.enabled }}
+    # s3proxy — in-cluster S3 facade (Azure Blob, etc.) for recipe artifact I/O.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.s3proxy.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.recipeRunner.networkPolicy.allowInternetEgress }}
+    # External egress on the listed ports (off by default; tighter than the
+    # sandkasten policy). Enable so recipes can `pip install` / pull datasets /
+    # weights. Port-restricted to avoid the EKS Auto Mode `except` cross-rule
+    # bleed; do NOT switch to a broad 0.0.0.0/0 + except shape.
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "ports" .Values.recipeRunner.networkPolicy.internetEgressPorts)
+        | nindent 4 }}
+    {{- end }}
+    {{- with .Values.recipeRunner.networkPolicy.additionalEgressRules }}
+    # Environment-specific allow rules (external Redis/S3/MLflow CIDRs, etc.).
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

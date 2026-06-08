@@ -29,3 +29,9 @@ harmony:
 otelCollector:
   networkPolicy:
     enabled: true
+
+# Recipe-runner egress NetworkPolicy (HAR-162 #1).
+recipeRunner:
+  networkPolicy:
+    enabled: true
+    allowInternetEgress: true
