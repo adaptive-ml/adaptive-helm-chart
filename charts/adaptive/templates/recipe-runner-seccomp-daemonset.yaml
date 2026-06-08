@@ -1,0 +1,161 @@
+{{- if .Values.recipeRunner.seccompProfile.enabled }}
+{{- $name := .Values.recipeRunner.seccompProfile.name -}}
+{{- $root := trimSuffix "/" .Values.recipeRunner.seccompProfile.kubeletSeccompRoot -}}
+{{- $dest := printf "%s/%s" $root $name -}}
+{{- $fullname := printf "%s-seccomp" (include "adaptive.recipeRunner.fullname" .) -}}
+# Custom Localhost seccomp profile for recipe-runner pods (HAR-162 pod-only
+# isolation). The profile is a faithful port of libs/code-sandbox/policy.kafel
+# (the policy nsjail enforces today): default ALLOW with the full SIGSYS/KILL
+# syscall list plus the socket() address-family allowlist. It is default-ALLOW
+# by design, layered on the pod's drop-ALL-caps + runAsNonRoot, exactly like
+# kafel runs on top of nsjail's namespace + capability stripping. policy.kafel
+# is the source of truth; keep this JSON in sync when that file changes.
+# The DaemonSet writes it to the kubelet seccomp root on every node so the
+# operator can reference it via securityContext.seccompProfile.localhostProfile.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sharedSelectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: recipe-runner-seccomp
+data:
+  {{ base $name }}: |
+    {
+      "defaultAction": "SCMP_ACT_ALLOW",
+      "architectures": ["SCMP_ARCH_X86_64", "SCMP_ARCH_AARCH64"],
+      "syscalls": [
+        {
+          "action": "SCMP_ACT_KILL_PROCESS",
+          "names": [
+            "reboot", "settimeofday", "adjtimex", "clock_settime", "clock_adjtime",
+            "swapon", "swapoff", "acct", "quotactl",
+            "init_module", "finit_module", "delete_module",
+            "create_module", "query_module", "get_kernel_syms",
+            "kexec_load", "kexec_file_load",
+            "mount", "umount2", "pivot_root", "chroot",
+            "move_mount", "open_tree", "fsopen", "fsconfig", "fsmount", "mount_setattr",
+            "unshare", "setns",
+            "name_to_handle_at", "open_by_handle_at",
+            "ptrace", "process_vm_readv", "process_vm_writev",
+            "pidfd_open", "pidfd_getfd", "pidfd_send_signal",
+            "io_uring_setup", "io_uring_register", "io_uring_enter",
+            "userfaultfd",
+            "perf_event_open", "bpf", "add_key", "request_key", "keyctl",
+            "vmsplice", "modify_ldt", "personality", "uselib",
+            "iopl", "ioperm", "lookup_dcookie", "nfsservctl", "capset"
+          ]
+        },
+        {
+          "comment": "socket() address-family allowlist: allow only AF_UNIX(1), AF_INET(2), AF_INET6(10), AF_NETLINK(16); ERRNO(97 EAFNOSUPPORT) everything else (AF_UNSPEC, AF_PACKET, AF_VSOCK, AF_ALG, ...). Encoded as the complement of the allowed set since OCI seccomp cannot express not-in-set in one rule.",
+          "action": "SCMP_ACT_ERRNO",
+          "errnoRet": 97,
+          "names": ["socket"],
+          "args": [{ "index": 0, "value": 0, "op": "SCMP_CMP_EQ" }]
+        },
+        {
+          "action": "SCMP_ACT_ERRNO",
+          "errnoRet": 97,
+          "names": ["socket"],
+          "args": [
+            { "index": 0, "value": 3, "op": "SCMP_CMP_GE" },
+            { "index": 0, "value": 9, "op": "SCMP_CMP_LE" }
+          ]
+        },
+        {
+          "action": "SCMP_ACT_ERRNO",
+          "errnoRet": 97,
+          "names": ["socket"],
+          "args": [
+            { "index": 0, "value": 11, "op": "SCMP_CMP_GE" },
+            { "index": 0, "value": 15, "op": "SCMP_CMP_LE" }
+          ]
+        },
+        {
+          "action": "SCMP_ACT_ERRNO",
+          "errnoRet": 97,
+          "names": ["socket"],
+          "args": [{ "index": 0, "value": 17, "op": "SCMP_CMP_GE" }]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.sharedSelectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: recipe-runner-seccomp
+spec:
+  selector:
+    matchLabels:
+      {{- include "adaptive.sharedSelectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: recipe-runner-seccomp
+  template:
+    metadata:
+      labels:
+        {{- include "adaptive.labels" . | nindent 8 }}
+        {{- include "adaptive.sharedSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: recipe-runner-seccomp
+    spec:
+      # Installer never calls the API server; drop the SA token.
+      automountServiceAccountToken: false
+      {{- with .Values.recipeRunner.seccompProfile.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Root is needed to write the root-owned kubelet seccomp dir on the host;
+      # everything else is locked down (no privileged, no privesc, drop ALL).
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: installer
+          image: {{ .Values.recipeRunner.seccompProfile.image | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              mkdir -p "$(dirname "$DEST")"
+              cp "/profile/{{ base $name }}" "$DEST"
+              echo "installed recipe-runner seccomp profile at $DEST"
+              exec sleep infinity
+          env:
+            - name: DEST
+              value: {{ $dest | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            {{- toYaml .Values.recipeRunner.seccompProfile.resources | nindent 12 }}
+          volumeMounts:
+            - name: profile
+              mountPath: /profile
+              readOnly: true
+            - name: seccomp-root
+              mountPath: {{ $root | quote }}
+      volumes:
+        - name: profile
+          configMap:
+            name: {{ $fullname }}
+        - name: seccomp-root
+          hostPath:
+            path: {{ $root | quote }}
+            type: DirectoryOrCreate
+{{- end }}

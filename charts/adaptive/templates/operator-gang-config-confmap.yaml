@@ -38,6 +38,13 @@ data:
   # Bypass the recipe runner's in-process nsjail sandbox (operator default is
   # "true" when unset). Set false to run recipes under nsjail.
   RECIPE_RUNNER_NO_SANDBOX: {{ .Values.adaptiveOperator.recipeRunnerNoSandbox | quote }}
+  # Recipe-runner pod-only isolation (HAR-162); off by default.
+  RECIPE_RUNNER_POD_ISOLATION: {{ .Values.recipeRunner.podIsolation.enabled | quote }}
+  {{- if .Values.recipeRunner.seccompProfile.enabled }}
+  # Emitted only when the DaemonSet ships the profile, else the pod would fail
+  # to start referencing a localhostProfile absent from the node.
+  RECIPE_RUNNER_SECCOMP_PROFILE: {{ .Values.recipeRunner.seccompProfile.name | quote }}
+  {{- end }}
   # Harmony pod resources (CPU/memory requests and limits — applied per GPU,
   # multiplied by per-pod GPU count by the operator)
   CPU_REQUESTS: {{ .Values.adaptiveOperator.resources.requests.cpu | quote }}

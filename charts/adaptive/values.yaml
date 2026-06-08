@@ -1288,12 +1288,13 @@ extraObjects: []
 #     data:
 #       password: {{ "secret" | b64enc | quote }}
 
-# ── Recipe-runner egress NetworkPolicy (HAR-162 #1) ────────────────────────
-# Egress policy for the per-job recipe-runner pods the operator spawns (they
-# carry operator labels, not the chart selector labels). Gated behind the
-# top-level networkPolicies.enabled switch AND this flag. Off by default;
-# requires a CNI that enforces NetworkPolicy.
+# ── Recipe-runner pod hardening (HAR-162) ──────────────────────────────────
+# Per-job recipe-runner pods the operator spawns (they carry operator labels,
+# not the chart selector labels). All knobs off by default.
 recipeRunner:
+  # Egress NetworkPolicy (HAR-162 #1). Gated behind the top-level
+  # networkPolicies.enabled switch AND this flag. Requires a CNI that enforces
+  # NetworkPolicy.
   networkPolicy:
     # On by default so the top-level networkPolicies.enabled master switch
     # gates this policy alongside the control-plane / harmony / sandkasten /
@@ -1311,3 +1312,27 @@ recipeRunner:
         protocol: TCP
     # Extra egress rules appended verbatim (e.g. external Redis/S3/MLflow CIDRs).
     additionalEgressRules: []
+  # Pod-only isolation (HAR-162 #2): drop the ServiceAccount token mount and
+  # assert hostNetwork/hostPID/hostIPC=false on recipe-runner pods (enforced by
+  # the operator via the gang ConfigMap).
+  podIsolation:
+    enabled: false
+  # Ship a custom Localhost seccomp profile to nodes via a DaemonSet and tell the
+  # operator to use it instead of RuntimeDefault. The profile here is a minimal
+  # baseline floor; the thorough syscall filter is applied in-process by the
+  # recipe-runner. Node-level change: the DaemonSet writes the profile JSON to
+  # the kubelet seccomp root on every node.
+  seccompProfile:
+    enabled: false
+    name: adaptive/recipe-runner.json
+    kubeletSeccompRoot: /var/lib/kubelet/seccomp
+    image: busybox:1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+    tolerations:
+      - operator: Exists
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 50m
+        memory: 32Mi
