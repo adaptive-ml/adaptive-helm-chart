@@ -181,3 +181,15 @@ spec:
           resources:
             {{- toYaml .Values.controlPlane.resources | nindent 12 }}
           {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ $ports.http.containerPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ $ports.http.containerPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
