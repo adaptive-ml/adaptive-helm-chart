@@ -30,13 +30,6 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["create", "get", "list", "watch", "patch", "delete", "deletecollection"]
-  # batch/v1 Jobs — gang/recipe-runner job lifecycle + compute-pool/GPU-stats
-  # discovery (the concorde resolver lists jobs). Restored here: this rule was
-  # present in the fessenheim chart (135f3b8) but absent on main, so a gang
-  # deployment's control-plane SA gets 403 listing jobs and shows no pools.
-  - apiGroups: ["batch"]
-    resources: ["jobs"]
-    verbs: ["create", "get", "list", "delete"]
   # scheduling.run.ai/v2alpha2 PodGroups — gang job submission, phase watching, cleanup
   - apiGroups: ["scheduling.run.ai"]
     resources: ["podgroups"]
