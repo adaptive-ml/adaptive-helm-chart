@@ -33,6 +33,7 @@ POLICIES=(
   control-plane-networkpolicy.yaml
   harmony-networkpolicy.yaml
   otel-collector-networkpolicy.yaml
+  recipe-runner-networkpolicy.yaml
 )
 
 # Detect Cilium: include the chart's CiliumNetworkPolicy for cp -> apiserver
@@ -134,6 +135,31 @@ EOF
   make_pod redis-target         redis          8080
   make_pod mlflow-target        mlflow         8080
   make_pod other-target         unrelated      8080
+  # Recipe-runner pod-only isolation (HAR-162). One harmony-gang target listens
+  # on the allowed WS port (50053) and another on a non-allowed port (8080) so
+  # the deny assertion proves a policy drop, not a connection-refused. The probe
+  # carries BOTH operator labels the policy podSelector matches.
+  make_pod harmony-gang-target  harmony-gang   50053
+  make_pod harmony-gang-8080    harmony-gang   8080
+  cat <<EOF
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: recipe-runner-probe
+  namespace: $NS
+  labels:
+    app.kubernetes.io/name: adaptive
+    app.kubernetes.io/instance: $RELEASE
+    app.kubernetes.io/component: recipe-runner-gang
+    adaptive.ml/managed-by: control-plane
+spec:
+  restartPolicy: Never
+  containers:
+    - name: main
+      image: $PROBE_IMAGE
+      command: ["sleep", "3600"]
+EOF
 } | kubectl apply -f -
 
 kubectl wait --for=condition=Ready pod --all -n "$NS" --timeout=180s
@@ -151,6 +177,8 @@ PG_IP=$(get_ip postgres-target)
 REDIS_IP=$(get_ip redis-target)
 MLFLOW_IP=$(get_ip mlflow-target)
 OTHER_IP=$(get_ip other-target)
+HGANG_IP=$(get_ip harmony-gang-target)
+HGANG8080_IP=$(get_ip harmony-gang-8080)
 KUBE_API_IP=$(kubectl get svc -n default kubernetes -o jsonpath='{.spec.clusterIP}')
 
 # `nc -zv` returns 0 on connect, non-zero on refused/timeout. We wrap in
@@ -259,6 +287,30 @@ assert_from deny  otel-probe "redis"                "$REDIS_IP"           8080  
 assert_from deny  otel-probe "mlflow"               "$MLFLOW_IP"          8080  || failed=1
 assert_from deny  otel-probe "kubernetes API"       "$KUBE_API_IP"        443   || failed=1
 assert_from deny  otel-probe "unrelated"            "$OTHER_IP"           8080  || failed=1
+endgroup
+
+group "recipe-runner egress (harmony-gang WS, cp/otel/mlflow, DNS, internet)"
+# The runner's WS endpoint is the gang master on :50053.
+assert_from allow recipe-runner-probe "harmony-gang :50053" "$HGANG_IP"  50053 || failed=1
+assert_from allow recipe-runner-probe "control-plane"       "$CP_IP"     8080  || failed=1
+assert_from allow recipe-runner-probe "otel-collector"      "$OTEL_IP"   8080  || failed=1
+assert_from allow recipe-runner-probe "mlflow"              "$MLFLOW_IP" 8080  || failed=1
+assert_from allow recipe-runner-probe "internet (1.1.1.1)"  "1.1.1.1"    443   || failed=1
+printf '  [%-5s] %-28s %s ... ' "allow" "DNS lookup" "kubernetes.default"
+if kubectl exec -n "$NS" recipe-runner-probe -- timeout "$NC_TIMEOUT" \
+    nslookup kubernetes.default.svc.cluster.local >/dev/null 2>&1; then
+  printf 'ok\n'
+else
+  printf 'FAIL\n'; failed=1
+fi
+# Recipe runner has no redis egress (unlike sandkasten) and must not reach
+# the gang master on non-WS ports, postgres, the apiserver, or unrelated pods.
+assert_from deny  recipe-runner-probe "harmony-gang :8080" "$HGANG8080_IP" 8080 || failed=1
+assert_from deny  recipe-runner-probe "redis"              "$REDIS_IP"    8080 || failed=1
+assert_from deny  recipe-runner-probe "sandkasten"         "$SAND_IP"     8080 || failed=1
+assert_from deny  recipe-runner-probe "postgres"           "$PG_IP"       8080 || failed=1
+assert_from deny  recipe-runner-probe "kubernetes API"     "$KUBE_API_IP" 443  || failed=1
+assert_from deny  recipe-runner-probe "unrelated"          "$OTHER_IP"    8080 || failed=1
 endgroup
 
 if [[ $failed -ne 0 ]]; then

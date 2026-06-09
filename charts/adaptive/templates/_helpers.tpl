@@ -948,3 +948,7 @@ Usage:
       port: {{ .port }}
 {{- end }}
 {{- end }}
+
+{{- define "adaptive.recipeRunner.fullname" -}}
+{{- printf "%s-recipe-runner" (include "adaptive.fullname" .) | trunc 40 | trimSuffix "-" }}
+{{- end}}

@@ -1263,3 +1263,23 @@ extraObjects: []
 #       name: extra-secret
 #     data:
 #       password: {{ "secret" | b64enc | quote }}
+
+# ── Recipe-runner egress NetworkPolicy (HAR-162 #1) ────────────────────────
+# Egress policy for the per-job recipe-runner pods the operator spawns (they
+# carry operator labels, not the chart selector labels). Gated behind the
+# top-level networkPolicies.enabled switch AND this flag. Off by default;
+# requires a CNI that enforces NetworkPolicy.
+recipeRunner:
+  networkPolicy:
+    enabled: false
+    # Allow public-internet egress on internetEgressPorts so recipes can
+    # `pip install` / pull datasets / weights. Off by default (tighter than the
+    # sandkasten policy). Turn on or use additionalEgressRules as needed.
+    allowInternetEgress: false
+    internetEgressPorts:
+      - port: 443
+        protocol: TCP
+      - port: 80
+        protocol: TCP
+    # Extra egress rules appended verbatim (e.g. external Redis/S3/MLflow CIDRs).
+    additionalEgressRules: []
