@@ -30,6 +30,12 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["create", "get", "list", "watch", "patch", "delete", "deletecollection"]
+  # batch/v1 Jobs — gang/recipe-runner job lifecycle + compute-pool/GPU-stats
+  # discovery (the concorde resolver and run-submission path list jobs). Without
+  # this, gang deployments' control-plane SA gets 403 listing jobs (no pools).
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "delete"]
   # scheduling.run.ai/v2alpha2 PodGroups — gang job submission, phase watching, cleanup
   - apiGroups: ["scheduling.run.ai"]
     resources: ["podgroups"]
