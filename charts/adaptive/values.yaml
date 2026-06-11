@@ -169,6 +169,17 @@ harmony:
     type: emptyDir
     # hostPath: /opt/adaptive/cloud_cache  # Required when type is "hostPath"
 
+  # Out-of-process minidump crash reporting for harmony. Off by default; opt in
+  # per deployment. When enabled, fatal signals (SIGSEGV, SIGABRT, ...) produce
+  # a minidump that is logged and, if s3Url is set, uploaded.
+  crashReporting:
+    enabled: false
+    # Optional s3://bucket/prefix for dump uploads. Reuses the pod's existing S3
+    # credentials (secrets.s3Creds), so point it at a bucket those creds can
+    # write (e.g. the model-registry bucket). Empty = node-local dumps only.
+    # On HIPAA environments this must be an in-account bucket, never a SaaS one.
+    s3Url: ""
+
   # Size of /dev/shm (shared memory) volume for NCCL and other IPC
   # This should not be modified under normal circumstances
   shmSize: 32Gi
