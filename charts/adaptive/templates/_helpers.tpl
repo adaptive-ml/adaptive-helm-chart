@@ -247,12 +247,16 @@ Service account fullnames for each component
 {{- printf "%s-rolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
+{{- /* Cluster-scoped objects are global, so the name must be unique per install
+   within a cluster. Concurrent installs (e.g. preview envs) share a release
+   name, so key on .Release.Namespace to avoid colliding on one shared
+   ClusterRole/ClusterRoleBinding (HAR-165). */ -}}
 {{- define "adaptive.controlPlane.clusterRole.fullname" -}}
-{{- printf "%s-clusterrole" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s-clusterrole" (include "adaptive.controlPlane.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{- define "adaptive.controlPlane.clusterRoleBinding.fullname" -}}
-{{- printf "%s-clusterrolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s-clusterrolebinding" (include "adaptive.controlPlane.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 # MLFlow selector labels
