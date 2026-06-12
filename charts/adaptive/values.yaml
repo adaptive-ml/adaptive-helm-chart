@@ -765,6 +765,16 @@ otelCollector:
     # this explicit list — e.g. only the IP range of your observability
     # backend. In-cluster allow rules are not affected.
     restrictiveEgressRules: []
+    # When true (the default), and the cluster has the `cilium.io/v2` API
+    # group registered, the chart renders a CiliumNetworkPolicy allowing
+    # otel-collector egress to the kube-apiserver identity. The collector's
+    # prometheus receiver discovers scrape targets via kubernetes_sd, and
+    # on Cilium the apiserver is NOT covered by the TCP/443 internet rule
+    # (same caveat as the control-plane policy). On non-Cilium CNIs this is
+    # a no-op. Set to false if you ship your own admin-tier
+    # CiliumNetworkPolicy for the apiserver.
+    ciliumApiServerAllow:
+      enabled: true
 
   # Prometheus scraping configuration
   # Scrapes metrics from pods with annotation: prometheus.io/scrape: "adaptive"
