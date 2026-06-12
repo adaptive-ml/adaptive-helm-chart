@@ -45,6 +45,14 @@ spec:
         - protocol: TCP
           port: 4318
     {{- end }}
+    # OTLP export. Shipping telemetry is the collector's purpose, so allow
+    # OTLP gRPC :4317 and HTTP :4318 egress unconditionally. The backend may
+    # be an in-cluster collector in another namespace (e.g. otel-collector.otel,
+    # datadog) or a remote SaaS. Port-restricted 0.0.0.0/0 (no `except`, to
+    # avoid the EKS Auto Mode cross-rule bleed).
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "ports" (list (dict "port" 4317 "protocol" "TCP") (dict "port" 4318 "protocol" "TCP")))
+        | nindent 4 }}
     {{- if $hasRestrictive }}
     # restrictiveEgressRules is set — the user is taking control of the
     # otel-collector's external egress. The default permissive internet rule

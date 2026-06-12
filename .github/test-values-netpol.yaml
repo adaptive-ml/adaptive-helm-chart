@@ -30,8 +30,9 @@ otelCollector:
   networkPolicy:
     enabled: true
 
-# Recipe-runner egress NetworkPolicy (HAR-162 #1).
+# Recipe-runner egress NetworkPolicy (HAR-162 #1). enabled is intentionally
+# left unset to exercise the chart default (true since 0.53.4): the master
+# switch alone must render this policy alongside the other four.
 recipeRunner:
   networkPolicy:
-    enabled: true
     allowInternetEgress: true

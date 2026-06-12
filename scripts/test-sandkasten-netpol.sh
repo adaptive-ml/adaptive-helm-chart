@@ -135,6 +135,9 @@ EOF
   make_pod redis-target         redis          8080
   make_pod mlflow-target        mlflow         8080
   make_pod other-target         unrelated      8080
+  # OTLP backend on :4317 to prove the otel-collector's OTLP export egress
+  # (always-on 4317/4318 to any destination) renders and is allowed.
+  make_pod otlp-target          otlp-backend   4317
   # Recipe-runner pod-only isolation (HAR-162). One harmony-gang target listens
   # on the allowed WS port (50053) and another on a non-allowed port (8080) so
   # the deny assertion proves a policy drop, not a connection-refused. The probe
@@ -177,6 +180,7 @@ PG_IP=$(get_ip postgres-target)
 REDIS_IP=$(get_ip redis-target)
 MLFLOW_IP=$(get_ip mlflow-target)
 OTHER_IP=$(get_ip other-target)
+OTLP_IP=$(get_ip otlp-target)
 HGANG_IP=$(get_ip harmony-gang-target)
 HGANG8080_IP=$(get_ip harmony-gang-8080)
 KUBE_API_IP=$(kubectl get svc -n default kubernetes -o jsonpath='{.spec.clusterIP}')
@@ -278,6 +282,9 @@ group "otel-collector egress (scrape ports, DNS, internet)"
 assert_from allow otel-probe "control-plane :9009"  "$CP_METRICS_IP"      9009  || failed=1
 assert_from allow otel-probe "harmony :50053"       "$HARMONY_METRICS_IP" 50053 || failed=1
 assert_from allow otel-probe "internet (1.1.1.1)"   "1.1.1.1"             443   || failed=1
+# OTLP export (gRPC :4317) to an arbitrary peer: the collector ships telemetry
+# to a cross-namespace or remote backend, always allowed on 4317/4318.
+assert_from allow otel-probe "otlp export :4317"    "$OTLP_IP"            4317  || failed=1
 # Same pods, wrong ports — netpol is port-specific for the otel scrape rules.
 assert_from deny  otel-probe "control-plane :8080"  "$CP_IP"              8080  || failed=1
 assert_from deny  otel-probe "harmony :8080"        "$HARMONY_IP"         8080  || failed=1
