@@ -2,6 +2,9 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Upgrade Guide](#upgrade-guide)
+  - [0.53.x to 0.53.4](#053x-to-0534)
+    - [otel-collector NetworkPolicy now allows OTLP export (:4317 / :4318)](#otel-collector-networkpolicy-now-allows-otlp-export-4317--4318)
+    - [recipe-runner NetworkPolicy now on by default under the master switch](#recipe-runner-networkpolicy-now-on-by-default-under-the-master-switch)
   - [0.52.x to 0.52.5](#052x-to-0525)
     - [NetworkPolicies are now opt-in behind `networkPolicies.enabled`](#networkpolicies-are-now-opt-in-behind-networkpoliciesenabled)
     - [New values added](#new-values-added)
@@ -25,6 +28,16 @@
 # Upgrade Guide
 
 This document describes breaking changes between Helm chart versions and how to migrate your configuration.
+
+## 0.53.x to 0.53.4
+
+### otel-collector NetworkPolicy now allows OTLP export (:4317 / :4318)
+
+The otel-collector NetworkPolicy now always permits OTLP egress on TCP 4317 (gRPC) and 4318 (HTTP), so the collector can ship telemetry to an in-cluster collector in another namespace (e.g. `otel-collector.otel`, `datadog`) or a remote backend without extending `internetEgressPorts`. No action required.
+
+### recipe-runner NetworkPolicy now on by default under the master switch
+
+`recipeRunner.networkPolicy.enabled` now defaults to `true`, so a single `networkPolicies.enabled: true` renders the recipe-runner egress policy alongside the control-plane / harmony / sandkasten / otel-collector ones. It still renders only when `networkPolicies.enabled` is true and remains individually disableable. Its public-internet egress stays off by default (`allowInternetEgress: false`); enable it per-environment for recipe workloads that need `pip install` / dataset pulls.
 
 ## 0.52.x to 0.52.5
 

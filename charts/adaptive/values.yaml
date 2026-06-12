@@ -1285,10 +1285,14 @@ extraObjects: []
 # requires a CNI that enforces NetworkPolicy.
 recipeRunner:
   networkPolicy:
-    enabled: false
+    # On by default so the top-level networkPolicies.enabled master switch
+    # gates this policy alongside the control-plane / harmony / sandkasten /
+    # otel-collector ones: one switch renders all chart NetworkPolicies. Still
+    # individually disableable here.
+    enabled: true
     # Allow public-internet egress on internetEgressPorts so recipes can
     # `pip install` / pull datasets / weights. Off by default (tighter than the
-    # sandkasten policy). Turn on or use additionalEgressRules as needed.
+    # sandkasten policy); enable per-env for recipe workloads that need it.
     allowInternetEgress: false
     internetEgressPorts:
       - port: 443
