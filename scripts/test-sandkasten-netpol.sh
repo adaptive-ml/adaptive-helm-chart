@@ -144,6 +144,32 @@ EOF
   # carries BOTH operator labels the policy podSelector matches.
   make_pod harmony-gang-target  harmony-gang   50053
   make_pod harmony-gang-8080    harmony-gang   8080
+  # Operator-spawned inference partition: carries ONLY the adaptive.ml/*
+  # operator labels (no chart name/instance labels), like the real pods the
+  # control-plane creates at runtime. Listens on the mangrove port (50053)
+  # the control-plane must reach for registration (PS-4870).
+  cat <<EOF
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: partition-target
+  namespace: $NS
+  labels:
+    app.kubernetes.io/component: inference-partition
+    adaptive.ml/managed-by: control-plane
+spec:
+  restartPolicy: Never
+  containers:
+    - name: main
+      image: $TARGET_IMAGE
+      command: ["httpd", "-f", "-p", "50053"]
+      ports:
+        - containerPort: 50053
+      readinessProbe:
+        tcpSocket: { port: 50053 }
+        periodSeconds: 2
+EOF
   cat <<EOF
 ---
 apiVersion: v1
@@ -183,6 +209,7 @@ OTHER_IP=$(get_ip other-target)
 OTLP_IP=$(get_ip otlp-target)
 HGANG_IP=$(get_ip harmony-gang-target)
 HGANG8080_IP=$(get_ip harmony-gang-8080)
+PARTITION_IP=$(get_ip partition-target)
 KUBE_API_IP=$(kubectl get svc -n default kubernetes -o jsonpath='{.spec.clusterIP}')
 
 # `nc -zv` returns 0 on connect, non-zero on refused/timeout. We wrap in
@@ -244,6 +271,8 @@ assert_from allow cp-probe "internet (1.1.1.1)"   "1.1.1.1"      443  || failed=
 # Without this the pool registration is rejected with a 500 and the pool
 # never comes up.
 assert_from allow cp-probe "harmony"              "$HARMONY_IP"  8080 || failed=1
+# Operator-spawned partition (adaptive.ml/managed-by label, no chart labels).
+assert_from allow cp-probe "inference partition"  "$PARTITION_IP" 50053 || failed=1
 assert_from deny  cp-probe "unrelated"            "$OTHER_IP"    8080 || failed=1
 # cp → kube-apiserver reachability.
 #

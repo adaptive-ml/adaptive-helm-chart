@@ -31,6 +31,35 @@ helm template "$RELEASE" "$CHART_DIR" \
   --namespace "$NS" \
   > "$WORKDIR/manifests.yaml"
 echo "rendered $(wc -l < "$WORKDIR/manifests.yaml") lines"
+
+# Synthetic operator-spawned workload. Inference partitions / gangs are
+# created at runtime by the control-plane with adaptive.ml/* labels (not the
+# chart's selector labels) and never appear in the rendered manifests, so
+# inject one for the reachability analysis.
+cat > "$WORKDIR/partition.yaml" <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${RELEASE}-inference-partition
+  namespace: $NS
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: inference-partition
+      adaptive.ml/managed-by: control-plane
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: inference-partition
+        adaptive.ml/managed-by: control-plane
+    spec:
+      containers:
+        - name: mangrove
+          image: busybox
+          ports:
+            - containerPort: 50053
+EOF
 endgroup
 
 group "Compute reachability (netpolicy list)"
@@ -103,6 +132,10 @@ assert_internet_allow controlplane                   || failed=1
 # (health-checks the worker service port). Without it registration is
 # rejected with a 500 and the pool never comes up.
 assert_allow         controlplane    harmony-default || failed=1
+# Same registration flow for operator-spawned partitions/gangs, which carry
+# adaptive.ml/managed-by=control-plane instead of the chart harmony labels.
+# Missing this rule broke preprod inference partitions (PS-4870).
+assert_allow         controlplane    inference-partition || failed=1
 endgroup
 
 group "harmony egress"
