@@ -143,8 +143,11 @@ assert_allow         harmony-default controlplane    || failed=1
 assert_allow         harmony-default redis           || failed=1
 assert_allow         harmony-default otel-collector  || failed=1
 assert_internet_allow harmony-default                || failed=1
+# Python training processes inside harmony pods log to MLflow via
+# MLFLOW_TRACKING_URI, which the chart sets on the harmony statefulset
+# when mlflow is enabled — so this must be allow, not deny.
+assert_allow         harmony-default mlflow          || failed=1
 assert_deny          harmony-default sandkasten      || failed=1
-assert_deny          harmony-default mlflow          || failed=1
 assert_deny          harmony-default postgresql      || failed=1
 endgroup
 

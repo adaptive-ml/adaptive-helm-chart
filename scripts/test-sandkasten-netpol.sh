@@ -46,7 +46,8 @@ if kubectl api-resources --api-group=cilium.io 2>/dev/null \
   IS_CILIUM=true
   HELM_API_ARGS+=(--api-versions cilium.io/v2)
   POLICIES+=(control-plane-cilium-networkpolicy.yaml)
-  echo "  Cilium CRDs detected -> also rendering control-plane-cilium-networkpolicy.yaml"
+  POLICIES+=(otel-collector-cilium-networkpolicy.yaml)
+  echo "  Cilium CRDs detected -> also rendering the control-plane and otel-collector Cilium apiserver CNPs"
 fi
 
 group "Render NetworkPolicies from chart"
@@ -326,7 +327,9 @@ assert_from allow harmony-probe "control-plane"      "$CP_IP"       8080 || fail
 assert_from allow harmony-probe "redis"              "$REDIS_IP"    8080 || failed=1
 assert_from allow harmony-probe "otel-collector"     "$OTEL_IP"     8080 || failed=1
 assert_from allow harmony-probe "internet (1.1.1.1)" "1.1.1.1"      443  || failed=1
-assert_from deny  harmony-probe "mlflow"             "$MLFLOW_IP"   8080 || failed=1
+# Training processes inside harmony pods log to MLflow (MLFLOW_TRACKING_URI
+# is set on the harmony statefulset when mlflow is enabled).
+assert_from allow harmony-probe "mlflow"             "$MLFLOW_IP"   8080 || failed=1
 assert_from deny  harmony-probe "sandkasten"         "$SAND_IP"     8080 || failed=1
 assert_from deny  harmony-probe "postgres"           "$PG_IP"       8080 || failed=1
 assert_from deny  harmony-probe "kubernetes API"     "$KUBE_API_IP" 443  || failed=1
@@ -347,8 +350,16 @@ assert_from deny  otel-probe "sandkasten"           "$SAND_IP"            8080  
 assert_from deny  otel-probe "postgres"             "$PG_IP"              8080  || failed=1
 assert_from deny  otel-probe "redis"                "$REDIS_IP"           8080  || failed=1
 assert_from deny  otel-probe "mlflow"               "$MLFLOW_IP"          8080  || failed=1
-assert_from deny  otel-probe "kubernetes API"       "$KUBE_API_IP"        443   || failed=1
 assert_from deny  otel-probe "unrelated"            "$OTHER_IP"           8080  || failed=1
+# otel -> kube-apiserver: required by the prometheus receiver's
+# kubernetes_sd target discovery. Same asymmetry as the cp assertion
+# above: on Cilium the chart's otel CNP (toEntities: [kube-apiserver])
+# allows it identity-based, so assert allow; on Calico / Antrea the kind
+# :6443 remap defeats the chart's 0.0.0.0/0:443 rule, so no assertion
+# (test-env artifact, not a chart gap).
+if [[ "$IS_CILIUM" == "true" ]]; then
+  assert_from allow otel-probe "kubernetes API"     "$KUBE_API_IP"        443   || failed=1
+fi
 endgroup
 
 group "recipe-runner egress (harmony-gang WS, cp/otel/mlflow, DNS, internet)"

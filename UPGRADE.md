@@ -4,6 +4,8 @@
 - [Upgrade Guide](#upgrade-guide)
   - [0.53.4 to 0.53.5](#0534-to-0535)
     - [control-plane NetworkPolicy now allows egress to operator-spawned pods](#control-plane-networkpolicy-now-allows-egress-to-operator-spawned-pods)
+    - [harmony NetworkPolicy now allows egress to MLflow](#harmony-networkpolicy-now-allows-egress-to-mlflow)
+    - [otel-collector now gets a kube-apiserver CiliumNetworkPolicy](#otel-collector-now-gets-a-kube-apiserver-ciliumnetworkpolicy)
     - [otel-collector OTLP export egress now works on Cilium](#otel-collector-otlp-export-egress-now-works-on-cilium)
   - [0.53.x to 0.53.4](#053x-to-0534)
     - [otel-collector NetworkPolicy now allows OTLP export (:4317 / :4318)](#otel-collector-networkpolicy-now-allows-otlp-export-4317--4318)
@@ -37,6 +39,14 @@ This document describes breaking changes between Helm chart versions and how to 
 ### control-plane NetworkPolicy now allows egress to operator-spawned pods
 
 The control-plane egress policy only matched pods carrying the chart's harmony selector labels. Pods the control-plane spawns at runtime (inference partitions, harmony / recipe-runner gangs) are labeled `adaptive.ml/managed-by=control-plane` instead, so the control-plane could not reach their mangrove port (`:50053`) and inference partitions never finished registration. A rule matching `adaptive.ml/managed-by: control-plane` is now always included. No configuration change required.
+
+### harmony NetworkPolicy now allows egress to MLflow
+
+When `mlflow.enabled` is true the chart sets `MLFLOW_TRACKING_URI` on the harmony statefulset, and the Python training processes inside harmony pods log job metrics there. The harmony egress policy previously denied this, so metric logging to in-cluster MLflow was dropped under netpol. A rule matching the mlflow selector labels is now emitted when `mlflow.enabled` is true. No configuration change required.
+
+### otel-collector now gets a kube-apiserver CiliumNetworkPolicy
+
+The collector's prometheus receiver discovers scrape targets through the kube-apiserver (`kubernetes_sd_configs`). On Cilium the apiserver identity is not covered by the policy's TCP/443 internet rule, so target discovery (and therefore all metrics scraping) silently failed there. The chart now renders a `CiliumNetworkPolicy` with `toEntities: [kube-apiserver]` for the otel-collector, mirroring the existing control-plane one: auto-detected via the `cilium.io/v2` API group, a no-op on other CNIs, and opt-out via `otelCollector.networkPolicy.ciliumApiServerAllow.enabled: false`.
 
 ### otel-collector OTLP export egress now works on Cilium
 
