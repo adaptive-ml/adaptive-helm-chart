@@ -162,7 +162,36 @@ spec:
 EOF
 } | kubectl apply -f -
 
+# OTLP backend in a SEPARATE namespace. The otel OTLP-export rule is scoped via
+# namespaceSelector to namespaces other than the release's own, so a cross-
+# namespace target is what proves it (and Cilium needs identity-based matching,
+# not ipBlock). Mirrors otel-collector.otel / datadog in real environments.
+OTLP_NS="${NS}-otlp"
+kubectl create namespace "$OTLP_NS" --dry-run=client -o yaml | kubectl apply -f -
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: otlp-target
+  namespace: $OTLP_NS
+  labels:
+    app.kubernetes.io/component: otlp-backend
+spec:
+  restartPolicy: Never
+  containers:
+    - name: main
+      image: $TARGET_IMAGE
+      command: ["httpd", "-f", "-p", "4317"]
+      ports:
+        - containerPort: 4317
+      readinessProbe:
+        tcpSocket: { port: 4317 }
+        periodSeconds: 2
+EOF
+
 kubectl wait --for=condition=Ready pod --all -n "$NS" --timeout=180s
+kubectl wait --for=condition=Ready pod otlp-target -n "$OTLP_NS" --timeout=180s
 endgroup
 
 get_ip() { kubectl get pod -n "$NS" "$1" -o jsonpath='{.status.podIP}'; }
@@ -177,6 +206,7 @@ PG_IP=$(get_ip postgres-target)
 REDIS_IP=$(get_ip redis-target)
 MLFLOW_IP=$(get_ip mlflow-target)
 OTHER_IP=$(get_ip other-target)
+OTLP_IP=$(kubectl get pod -n "$OTLP_NS" otlp-target -o jsonpath='{.status.podIP}')
 HGANG_IP=$(get_ip harmony-gang-target)
 HGANG8080_IP=$(get_ip harmony-gang-8080)
 KUBE_API_IP=$(kubectl get svc -n default kubernetes -o jsonpath='{.spec.clusterIP}')
@@ -278,6 +308,9 @@ group "otel-collector egress (scrape ports, DNS, internet)"
 assert_from allow otel-probe "control-plane :9009"  "$CP_METRICS_IP"      9009  || failed=1
 assert_from allow otel-probe "harmony :50053"       "$HARMONY_METRICS_IP" 50053 || failed=1
 assert_from allow otel-probe "internet (1.1.1.1)"   "1.1.1.1"             443   || failed=1
+# OTLP export (gRPC :4317) to an arbitrary peer: the collector ships telemetry
+# to a cross-namespace or remote backend, always allowed on 4317/4318.
+assert_from allow otel-probe "otlp export :4317"    "$OTLP_IP"            4317  || failed=1
 # Same pods, wrong ports — netpol is port-specific for the otel scrape rules.
 assert_from deny  otel-probe "control-plane :8080"  "$CP_IP"              8080  || failed=1
 assert_from deny  otel-probe "harmony :8080"        "$HARMONY_IP"         8080  || failed=1
