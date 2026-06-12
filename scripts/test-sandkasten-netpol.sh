@@ -135,9 +135,6 @@ EOF
   make_pod redis-target         redis          8080
   make_pod mlflow-target        mlflow         8080
   make_pod other-target         unrelated      8080
-  # OTLP backend on :4317 to prove the otel-collector's OTLP export egress
-  # (always-on 4317/4318 to any destination) renders and is allowed.
-  make_pod otlp-target          otlp-backend   4317
   # Recipe-runner pod-only isolation (HAR-162). One harmony-gang target listens
   # on the allowed WS port (50053) and another on a non-allowed port (8080) so
   # the deny assertion proves a policy drop, not a connection-refused. The probe
@@ -191,7 +188,36 @@ spec:
 EOF
 } | kubectl apply -f -
 
+# OTLP backend in a SEPARATE namespace. The otel OTLP-export rule is scoped via
+# namespaceSelector to namespaces other than the release's own, so a cross-
+# namespace target is what proves it (and Cilium needs identity-based matching,
+# not ipBlock). Mirrors otel-collector.otel / datadog in real environments.
+OTLP_NS="${NS}-otlp"
+kubectl create namespace "$OTLP_NS" --dry-run=client -o yaml | kubectl apply -f -
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: otlp-target
+  namespace: $OTLP_NS
+  labels:
+    app.kubernetes.io/component: otlp-backend
+spec:
+  restartPolicy: Never
+  containers:
+    - name: main
+      image: $TARGET_IMAGE
+      command: ["httpd", "-f", "-p", "4317"]
+      ports:
+        - containerPort: 4317
+      readinessProbe:
+        tcpSocket: { port: 4317 }
+        periodSeconds: 2
+EOF
+
 kubectl wait --for=condition=Ready pod --all -n "$NS" --timeout=180s
+kubectl wait --for=condition=Ready pod otlp-target -n "$OTLP_NS" --timeout=180s
 endgroup
 
 get_ip() { kubectl get pod -n "$NS" "$1" -o jsonpath='{.status.podIP}'; }
@@ -206,7 +232,7 @@ PG_IP=$(get_ip postgres-target)
 REDIS_IP=$(get_ip redis-target)
 MLFLOW_IP=$(get_ip mlflow-target)
 OTHER_IP=$(get_ip other-target)
-OTLP_IP=$(get_ip otlp-target)
+OTLP_IP=$(kubectl get pod -n "$OTLP_NS" otlp-target -o jsonpath='{.status.podIP}')
 HGANG_IP=$(get_ip harmony-gang-target)
 HGANG8080_IP=$(get_ip harmony-gang-8080)
 PARTITION_IP=$(get_ip partition-target)
