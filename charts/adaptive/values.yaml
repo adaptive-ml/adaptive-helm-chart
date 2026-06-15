@@ -177,7 +177,6 @@ harmony:
     # Optional s3://bucket/prefix for dump uploads. Reuses the pod's existing S3
     # credentials (secrets.s3Creds), so point it at a bucket those creds can
     # write (e.g. the model-registry bucket). Empty = node-local dumps only.
-    # On HIPAA environments this must be an in-account bucket, never a SaaS one.
     s3Url: ""
 
   # Size of /dev/shm (shared memory) volume for NCCL and other IPC
