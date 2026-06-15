@@ -45,6 +45,29 @@ spec:
         - protocol: TCP
           port: 4318
     {{- end }}
+    # OTLP export (gRPC :4317 / HTTP :4318). Shipping telemetry is the
+    # collector's purpose, so allow it unconditionally to:
+    #   - in-cluster collectors in OTHER namespaces (otel-collector.otel,
+    #     datadog, ...) via a namespaceSelector. This is identity-based, which
+    #     Cilium requires: an ipBlock 0.0.0.0/0 rule does NOT cover in-cluster
+    #     pod IPs on Cilium. The release's own namespace is excluded so this
+    #     does not widen lateral reach to sibling components.
+    #   - external / SaaS backends via ipBlock 0.0.0.0/0 (port-restricted, no
+    #     `except`, to avoid the EKS Auto Mode cross-rule bleed).
+    - to:
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: NotIn
+                values:
+                  - {{ .Release.Namespace }}
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
     {{- if $hasRestrictive }}
     # restrictiveEgressRules is set — the user is taking control of the
     # otel-collector's external egress. The default permissive internet rule

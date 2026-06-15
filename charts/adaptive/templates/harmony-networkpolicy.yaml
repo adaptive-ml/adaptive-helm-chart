@@ -44,6 +44,17 @@ spec:
             matchLabels:
               {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
     {{- end }}
+    {{- if .Values.mlflow.enabled }}
+    # MLflow — the Python training processes inside harmony pods log job
+    # metrics via MLFLOW_TRACKING_URI (adaptive_harmony metric_logger),
+    # which the chart wires onto the harmony statefulset when MLflow is
+    # deployed. Harmony is the only pod that gets that env var, so this is
+    # the only place the rule is needed.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
+    {{- end }}
     {{- if .Values.minio.enabled }}
     # Internal MinIO — workers pull base models / write checkpoints to the
     # shared S3 bucket. Only emitted when the chart deploys it. For external
