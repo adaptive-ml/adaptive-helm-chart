@@ -158,6 +158,111 @@ jobs:
           echo "All require_email_verified tests passed!"
           echo "::endgroup::"
 
+  netpol-static-check:
+    # CNI-agnostic reachability check using np-guard/netpol-analyzer.
+    # Runs in seconds (no cluster needed) and catches policy bugs before
+    # the dynamic CNI matrix below spins up kind.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+        with:
+          version: v3.17.0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install np-guard/netpol-analyzer
+        run: |
+          go install github.com/np-guard/netpol-analyzer/cmd/netpolicy@v1.4.4
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Static reachability check
+        run: ./scripts/static-check-netpol.sh
+
+  netpol-test:
+    # Dynamic NetworkPolicy enforcement test across multiple CNIs. Each
+    # matrix entry stands up a fresh kind cluster, installs the CNI,
+    # applies the rendered policies, and runs the assertion script.
+    # AWS VPC CNI and Azure NPM aren't covered here — they require their
+    # respective cloud infrastructure to install — but both honor vanilla
+    # NetworkPolicy semantics per their docs and are validated via
+    # post-merge customer-environment deploys.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cni: [cilium, calico, antrea]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+        with:
+          version: v3.17.0
+
+      - name: Create kind cluster (no default CNI)
+        uses: helm/kind-action@v1.12.0
+        with:
+          config: .github/kind-config-netpol.yaml
+          cluster_name: netpol-test-${{ matrix.cni }}
+
+      - name: Install Cilium
+        if: matrix.cni == 'cilium'
+        run: |
+          helm repo add cilium https://helm.cilium.io
+          helm repo update
+          helm install cilium cilium/cilium --version 1.16.5 \
+            --namespace kube-system \
+            --set image.pullPolicy=IfNotPresent \
+            --set ipam.mode=kubernetes
+          kubectl wait --for=condition=Ready pod \
+            -l k8s-app=cilium -n kube-system --timeout=300s
+
+      - name: Install Calico
+        if: matrix.cni == 'calico'
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/calico.yaml
+          kubectl wait --for=condition=Ready pod \
+            -l k8s-app=calico-node -n kube-system --timeout=300s
+          kubectl wait --for=condition=Ready pod \
+            -l k8s-app=calico-kube-controllers -n kube-system --timeout=300s
+
+      - name: Install Antrea
+        if: matrix.cni == 'antrea'
+        run: |
+          kubectl apply -f https://github.com/antrea-io/antrea/releases/download/v2.0.0/antrea.yml
+          kubectl wait --for=condition=Ready pod \
+            -l app=antrea -n kube-system --timeout=300s
+
+      - name: Wait for nodes ready
+        run: kubectl wait --for=condition=Ready node --all --timeout=300s
+
+      - name: Run NetworkPolicy assertions
+        run: ./scripts/test-sandkasten-netpol.sh
+
+      - name: Dump diagnostics on failure
+        if: failure()
+        run: |
+          kubectl get pods -A -o wide || true
+          kubectl describe networkpolicy -n netpol-test || true
+          kubectl describe pods -n netpol-test || true
+          case "${{ matrix.cni }}" in
+            cilium)
+              kubectl logs -n kube-system -l k8s-app=cilium --tail=200 || true ;;
+            calico)
+              kubectl logs -n kube-system -l k8s-app=calico-node --tail=200 || true
+              kubectl logs -n kube-system -l k8s-app=calico-kube-controllers --tail=200 || true ;;
+            antrea)
+              kubectl logs -n kube-system -l app=antrea --tail=200 || true ;;
+          esac
+
   toc-check:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,38 @@
+# Values used by scripts/test-sandkasten-netpol.sh.
+# NetworkPolicies are opt-in (networkPolicies.enabled defaults to false), so
+# the master switch is flipped on here. All four per-component policies are
+# then on (their defaults), and installPostgres is enabled so the
+# control-plane policy renders its postgres egress rule.
+# controlPlane.allowInternetEgress is explicitly true here because the
+# chart now ships a tightened default (false) for the control-plane —
+# this test asserts the permissive path still renders correctly when
+# operators opt in.
+networkPolicies:
+  enabled: true
+
+installPostgres:
+  enabled: true
+
+sandkasten:
+  networkPolicy:
+    enabled: true
+
+controlPlane:
+  networkPolicy:
+    enabled: true
+    allowInternetEgress: true
+
+harmony:
+  networkPolicy:
+    enabled: true
+
+otelCollector:
+  networkPolicy:
+    enabled: true
+
+# Recipe-runner egress NetworkPolicy (HAR-162 #1). enabled is intentionally
+# left unset to exercise the chart default (true since 0.53.4): the master
+# switch alone must render this policy alongside the other four.
+recipeRunner:
+  networkPolicy:
+    allowInternetEgress: true

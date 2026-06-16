@@ -1,4 +1,4 @@
-{{- if .Values.sandkasten.networkPolicy.enabled }}
+{{- if and .Values.networkPolicies.enabled .Values.sandkasten.networkPolicy.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -14,6 +14,10 @@ spec:
   policyTypes:
     - Egress
   egress:
+    # Cluster DNS — needed both for in-cluster Service names and for resolving
+    # external hostnames (pypi.org, github.com, ...) from inside recipes.
+    {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
+    # In-cluster components sandkasten needs to call.
     - to:
         - podSelector:
             matchLabels:
@@ -22,10 +26,64 @@ spec:
         - podSelector:
             matchLabels:
               {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
+    {{- if .Values.otelCollector.enabled }}
     - to:
         - podSelector:
             matchLabels:
               {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.redis.install.enabled }}
+    # Redis — sandkasten pulls jobs from the queue. Only emitted when the
+    # chart deploys internal Redis. For external Redis, allow its IP/CIDR
+    # via additionalEgressRules.
+    # TODO(fessenheim): drop this rule once sandkasten stops pulling jobs
+    # from redis. Until then sandkasten reads the queue directly.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.mlflow.enabled }}
+    # MLflow — recipes running inside sandkasten log experiments / metrics here.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.minio.enabled }}
+    # Internal MinIO — recipes write artifacts to the shared S3 bucket. Only
+    # emitted when the chart deploys it. For external S3, allow the endpoint
+    # via additionalEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.s3proxy.enabled }}
+    # Internal s3proxy: S3 API in front of external blob storage (Azure Blob,
+    # GCS, ...). When deployed, recipes write artifacts through it instead of
+    # MinIO. Only emitted when the chart deploys it; for direct external S3 use
+    # additionalEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.s3proxy.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.sandkasten.networkPolicy.allowInternetEgress }}
+    # External egress on the listed ports (TCP/443 + TCP/80 by default) —
+    # required so recipes can `pip install` and fetch remote datasets /
+    # model weights. Port-restricted to public protocols so this rule does
+    # NOT silently widen access to in-cluster pods on other ports; only the
+    # explicit allow rules above grant intra-cluster reachability.
+    #
+    # If recipes need additional ports (e.g. a custom protocol), extend
+    # `sandkasten.networkPolicy.internetEgressPorts` rather than reverting
+    # to a broad `0.0.0.0/0` rule — the broad shape with `except` triggers
+    # a cross-rule bleed in EKS Auto Mode's network-policy agent.
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "ports" .Values.sandkasten.networkPolicy.internetEgressPorts)
+        | nindent 4 }}
+    {{- end }}
     {{- with .Values.sandkasten.networkPolicy.additionalEgressRules }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

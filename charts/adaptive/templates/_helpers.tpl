@@ -247,12 +247,16 @@ Service account fullnames for each component
 {{- printf "%s-rolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
+{{- /* Cluster-scoped objects are global, so the name must be unique per install
+   within a cluster. Concurrent installs (e.g. preview envs) share a release
+   name, so key on .Release.Namespace to avoid colliding on one shared
+   ClusterRole/ClusterRoleBinding (HAR-165). */ -}}
 {{- define "adaptive.controlPlane.clusterRole.fullname" -}}
-{{- printf "%s-clusterrole" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s-clusterrole" (include "adaptive.controlPlane.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{- define "adaptive.controlPlane.clusterRoleBinding.fullname" -}}
-{{- printf "%s-clusterrolebinding" (include "adaptive.controlPlane.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s-clusterrolebinding" (include "adaptive.controlPlane.fullname" .) .Release.Namespace | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 # MLFlow selector labels
@@ -772,6 +776,17 @@ MinIO related helpers
 {{- printf "%s-minio" .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/*
+Selector labels for MinIO pods deployed by the Bitnami subchart. The subchart
+uses `app.kubernetes.io/name: minio` (NOT the parent chart's name), so we
+cannot reuse adaptive.sharedSelectorLabels here.
+*/}}
+{{- define "adaptive.minio.selectorLabels" -}}
+app.kubernetes.io/component: minio
+app.kubernetes.io/name: minio
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
 {{- define "adaptive.minio.port" -}}
 {{- .Values.minio.service.ports.api | default 9000 -}}
 {{- end }}
@@ -854,3 +869,90 @@ Returns ADAPTIVE_HARMONY__SHARED_DIRECTORY__ENDPOINT and FORCE_PATH_STYLE (crede
   value: "true"
 {{- end }}
 {{- end }}
+
+{{/*
+DNS egress rules shared by every NetworkPolicy. Without these, no Service
+name in the cluster will resolve from a pod the policy applies to.
+
+We render THREE rules to cover the common cluster shapes:
+  1. Pod-IP CoreDNS: clusters where /etc/resolv.conf points pods directly at
+     the kube-dns Service IP, which round-robins to CoreDNS pods labelled
+     `k8s-app: kube-dns` in kube-system (kubeadm default, kind, EKS, GKE, AKS).
+  2. Node-local DNS cache: clusters running `node-local-dns` as a DaemonSet
+     bound to a link-local IP (typically 169.254.20.10 for kubeadm, .25.10
+     for Kubespray). Pods talk to the cache via the host IP, not a pod IP,
+     so `podSelector` can't reach it — we need an `ipBlock` over the
+     link-local range, restricted to port 53.
+  3. Managed-CNI fallback: clusters where DNS is fully managed and the
+     `k8s-app: kube-dns` pod is not visible to NetworkPolicy selectors
+     (EKS Auto Mode hides the DNS pod; the resolved nameserver lives in
+     the service CIDR, e.g. 172.20.0.10). Selector (1) matches nothing
+     and link-local (2) doesn't apply, so we add a permissive port-53-only
+     `ipBlock 0.0.0.0/0` rule. This widens DNS but not arbitrary egress.
+*/}}
+{{- define "adaptive.networkPolicy.dnsEgress" -}}
+- to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+  ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+- to:
+    - ipBlock:
+        cidr: 169.254.0.0/16
+  ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+# Fallback for managed CNIs (EKS Auto Mode, AKS Azure CNI Powered by Cilium, ...)
+# where the cluster DNS service IP lives in the service CIDR (e.g. 172.20.0.10)
+# and the kube-dns pod is not visible to the cluster (selector matches nothing).
+# Scoped to port 53 so it only widens DNS, not arbitrary egress.
+- to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+  ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+{{- end }}
+
+{{/*
+Public-internet egress rules. Emits one `ipBlock: 0.0.0.0/0` rule per port
+in the caller's list. Port-restricted positive allows are used instead of
+`0.0.0.0/0 except: [RFC1918...]` to side-step a cross-rule "except"-bleed in
+EKS Auto Mode's aws-network-policy-agent where putting an `except` on any
+rule in the policy silently subtracts those CIDRs from every other rule's
+allow (most visibly breaking cluster DNS at the cluster Service IP, which
+lives inside `172.16.0.0/12`).
+
+Port restriction also avoids silently widening access to in-cluster pods,
+since cluster Services rarely listen on the same ports as public HTTPS/HTTP.
+
+Usage:
+  {{- include "adaptive.networkPolicy.internetEgress"
+        (dict "ports" .Values.sandkasten.networkPolicy.internetEgressPorts)
+      | nindent 4 }}
+*/}}
+{{- define "adaptive.networkPolicy.internetEgress" -}}
+{{- range .ports }}
+- to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+  ports:
+    - protocol: {{ .protocol | default "TCP" }}
+      port: {{ .port }}
+{{- end }}
+{{- end }}
+
+{{- define "adaptive.recipeRunner.fullname" -}}
+{{- printf "%s-recipe-runner" (include "adaptive.fullname" .) | trunc 40 | trimSuffix "-" }}
+{{- end}}

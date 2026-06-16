@@ -1,0 +1,88 @@
+{{- if and .Values.networkPolicies.enabled .Values.otelCollector.enabled .Values.otelCollector.networkPolicy.enabled }}
+{{- $np := .Values.otelCollector.networkPolicy }}
+{{- $hasRestrictive := gt (len $np.restrictiveEgressRules) 0 }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "adaptive.otelCollector.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "adaptive.otelCollector.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Cluster DNS.
+    {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
+    # Prometheus scrape — control-plane on its metrics port.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.controlPlane.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 9009
+    # Prometheus scrape — harmony on its metrics port.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 50053
+    {{- if .Values.lgtm.enabled }}
+    # LGTM stack — OTLP export endpoint (4318) when running the all-in-one
+    # in-cluster observability stack.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.lgtm.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 4318
+    {{- end }}
+    # OTLP export (gRPC :4317 / HTTP :4318). Shipping telemetry is the
+    # collector's purpose, so allow it unconditionally to:
+    #   - in-cluster collectors in OTHER namespaces (otel-collector.otel,
+    #     datadog, ...) via a namespaceSelector. This is identity-based, which
+    #     Cilium requires: an ipBlock 0.0.0.0/0 rule does NOT cover in-cluster
+    #     pod IPs on Cilium. The release's own namespace is excluded so this
+    #     does not widen lateral reach to sibling components.
+    #   - external / SaaS backends via ipBlock 0.0.0.0/0 (port-restricted, no
+    #     `except`, to avoid the EKS Auto Mode cross-rule bleed).
+    - to:
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: NotIn
+                values:
+                  - {{ .Release.Namespace }}
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
+    {{- if $hasRestrictive }}
+    # restrictiveEgressRules is set — the user is taking control of the
+    # otel-collector's external egress. The default permissive internet rule
+    # is suppressed; only the rules below (and the in-cluster allows above)
+    # apply. Typical use case: a specific external observability backend
+    # (Datadog, Grafana Cloud, ...).
+    {{- toYaml $np.restrictiveEgressRules | nindent 4 }}
+    {{- else if $np.allowInternetEgress }}
+    # External egress on the listed ports (TCP/443 by default) so the
+    # collector can ship telemetry to a remote observability backend.
+    # Port-restricted so this rule does not widen in-cluster reachability;
+    # if the backend uses a non-HTTPS port (OTLP gRPC :4317, OTLP HTTP
+    # :4318, custom) extend `internetEgressPorts`.
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "ports" $np.internetEgressPorts)
+        | nindent 4 }}
+    {{- end }}
+{{- end }}

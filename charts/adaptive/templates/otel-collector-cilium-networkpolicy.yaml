@@ -1,0 +1,34 @@
+{{- /*
+Cilium-specific CNP that allows otel-collector egress to the kube-apiserver
+identity. The collector's prometheus receiver discovers scrape targets via
+`kubernetes_sd_configs`, which talks to the apiserver. On most CNIs the
+policy's TCP/443 internet rule covers that, but Cilium treats the apiserver
+as a distinct identity NOT covered by `ipBlock 0.0.0.0/0` (same caveat as
+the control-plane policy), so without this CNP target discovery — and
+therefore all metrics scraping — silently fails on Cilium clusters.
+
+Gated on the cluster having the `cilium.io/v2` API group registered, so on
+non-Cilium CNIs this file renders to nothing. To opt out on a Cilium
+cluster, set `otelCollector.networkPolicy.ciliumApiServerAllow.enabled: false`.
+*/ -}}
+{{- if and .Values.networkPolicies.enabled
+       .Values.otelCollector.enabled
+       .Values.otelCollector.networkPolicy.enabled
+       (.Values.otelCollector.networkPolicy.ciliumApiServerAllow.enabled)
+       (.Capabilities.APIVersions.Has "cilium.io/v2") }}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ include "adaptive.otelCollector.fullname" . }}-cilium-apiserver
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.otelCollector.selectorLabels" . | nindent 4 }}
+spec:
+  endpointSelector:
+    matchLabels:
+      {{- include "adaptive.otelCollector.selectorLabels" . | nindent 6 }}
+  egress:
+    - toEntities:
+        - kube-apiserver
+{{- end }}

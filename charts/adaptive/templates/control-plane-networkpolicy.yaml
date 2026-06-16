@@ -1,0 +1,159 @@
+{{- if and .Values.networkPolicies.enabled .Values.controlPlane.networkPolicy.enabled }}
+{{- $np := .Values.controlPlane.networkPolicy }}
+{{- $hasRestrictive := gt (len $np.restrictiveEgressRules) 0 }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "adaptive.controlPlane.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "adaptive.labels" . | nindent 4 }}
+    {{- include "adaptive.controlPlane.selectorLabels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "adaptive.controlPlane.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    # Cluster DNS.
+    {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
+    # Self: control-plane pods talk to one another via ADAPTIVE_SERVER__CLUSTER_ROOT_URL.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.controlPlane.selectorLabels" . | nindent 14 }}
+    # Sandkasten — control-plane POSTs to ADAPTIVE_SANDBOX__URL to run recipes.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.sandkasten.selectorLabels" . | nindent 14 }}
+    # Harmony (mangrove) — control-plane health-checks and orchestrates the
+    # harmony workers. Each compute pool registers with the control-plane,
+    # which then connects back to the worker's service port (50053 health,
+    # plus the gang/control ports) to accept the registration. Without this
+    # rule the registration is rejected with a 500 ("Cannot reach Mangrove
+    # at …:50053") and the compute pool never comes up. Harmony is a core
+    # component (always deployed), so this is unconditional.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
+    # Operator-spawned pods (inference partitions, harmony / recipe-runner
+    # gangs) — created dynamically by the control-plane and labeled
+    # adaptive.ml/managed-by=control-plane rather than with the chart's
+    # selector labels, so the harmony rule above does not match them. The
+    # control-plane connects to their mangrove port (50053) to accept
+    # compute-pool registration, same as for the static harmony workers.
+    - to:
+        - podSelector:
+            matchLabels:
+              adaptive.ml/managed-by: control-plane
+    {{- if .Values.redis.install.enabled }}
+    # Redis — caching / session store. Only emitted when the chart deploys
+    # internal Redis. For external Redis (redis.install.enabled=false) the
+    # operator allow its IP/CIDR via restrictiveEgressRules instead, since
+    # the chart can't know the endpoint at template time.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.redis.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.installPostgres.enabled }}
+    # Internal PostgreSQL — only emitted when the chart deploys it. External
+    # databases must be allowed via restrictiveEgressRules (their IPs/CIDRs).
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.postgresql.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.otelCollector.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.otelCollector.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.mlflow.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.mlflow.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.minio.enabled }}
+    # Internal MinIO — control-plane reads/writes the shared S3 bucket
+    # (file storage, model registry) on startup. Only emitted when the chart
+    # deploys it. For external S3, allow the endpoint via restrictiveEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.minio.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.s3proxy.enabled }}
+    # Internal s3proxy: S3 API in front of external blob storage (Azure Blob,
+    # GCS, ...). When deployed, the control-plane talks S3 to it instead of
+    # MinIO for the shared dir / file storage / model registry. Only emitted
+    # when the chart deploys it; for direct external S3 use restrictiveEgressRules.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.s3proxy.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.clickhouse.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.clickhouse.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if .Values.lgtm.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "adaptive.lgtm.selectorLabels" . | nindent 14 }}
+    {{- end }}
+    {{- if $np.kubeApiServerCIDR }}
+    # Specific kube-apiserver allow — when set, this REPLACES the broad
+    # TCP/443-anywhere fallback below. Use this to scope control-plane
+    # down to just the managed control plane IPs / CIDR for your cluster.
+    # Required on Cilium, which treats the apiserver as a distinct identity
+    # that is NOT covered by ipBlock 0.0.0.0/0 (see fallback note below).
+    # We don't restrict port here because the rendered CIDR may target
+    # either the Service IP (port 443) or the apiserver endpoint IP (port
+    # 6443 on kubeadm / kind, varies on managed control planes) — and
+    # policy enforcement may happen pre- or post-DNAT depending on whether
+    # the CNI replaces kube-proxy. An unrestricted port matches both.
+    - to:
+        - ipBlock:
+            cidr: {{ $np.kubeApiServerCIDR | quote }}
+    {{- else if not $hasRestrictive }}
+    # No specific apiserver CIDR provided — allow TCP/443 to anywhere so
+    # the control-plane can reach the k8s API regardless of which IP/CIDR
+    # it lives at. Matches the pre-NetworkPolicy behavior on CNIs that
+    # honor a 0.0.0.0/0 ipBlock for the apiserver (Calico, Weave, ...).
+    #
+    # IMPORTANT: Cilium treats the kube-apiserver as a distinct identity
+    # that is NOT included in ipBlock 0.0.0.0/0 — Cilium users MUST set
+    # kubeApiServerCIDR to the apiserver IP/CIDR or the control-plane
+    # will be unable to reach the API server. See:
+    # https://docs.cilium.io/en/stable/network/concepts/kube-apiserver/
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+    {{- if $hasRestrictive }}
+    # restrictiveEgressRules is set — the user is taking control of the
+    # control-plane's external egress. The default permissive internet rule
+    # is suppressed; only the rules below (and the in-cluster allows above)
+    # apply.
+    {{- toYaml $np.restrictiveEgressRules | nindent 4 }}
+    {{- else if $np.allowInternetEgress }}
+    # External egress on the listed ports (TCP/443 + TCP/80 by default).
+    # Port-restricted to public protocols so this rule does not silently
+    # widen access to in-cluster pods on other ports.
+    {{- include "adaptive.networkPolicy.internetEgress"
+          (dict "ports" $np.internetEgressPorts)
+        | nindent 4 }}
+    {{- end }}
+{{- end }}
