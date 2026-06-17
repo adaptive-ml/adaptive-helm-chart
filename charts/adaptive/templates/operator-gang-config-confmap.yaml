@@ -51,6 +51,7 @@ data:
   {{- if eq .Values.adaptiveOperator.interconnect "efa" }}
   EFAS_PER_NODE: {{ .Values.adaptiveOperator.efasPerNode | quote }}
   {{- end }}
+  INFERENCE_SCHEDULER_NAME: kai-scheduler
   # NUMA-aware CPU alignment: pin pods to NUMA domains so cores, memory, and
   # GPUs share a socket. Topology keys emitted only when enabled.
   NUMA_ENABLED: {{ .Values.adaptiveOperator.numaEnabled | quote }}
