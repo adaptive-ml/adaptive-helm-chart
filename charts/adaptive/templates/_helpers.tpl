@@ -953,6 +953,114 @@ Usage:
 {{- end }}
 {{- end }}
 
+{{/*
+Harmony egress rules — shared by the chart-managed harmony StatefulSets
+(component=harmony) and the operator-spawned pods that run the same workload
+but carry control-plane labels instead of the chart's name/instance selector
+labels (component=harmony-gang for gang training jobs, component=inference-
+partition for serving). All of them run the mangrove preflight and need the
+identical egress set: cluster DNS, the control plane, internal
+Redis/MLflow/MinIO/s3proxy when the chart deploys them, and public-internet
+(external S3 / Huggingface) on internetEgressPorts.
+
+Keeping this in one place is what stops the operator-pod policy from drifting
+away from the harmony policy — they must allow the same destinations.
+
+Call with a dict:
+  ctx  - root chart context (.)
+  gang - bool; true emits the operator-pod self/peer selector
+         (component in {harmony-gang, inference-partition}), false the
+         chart harmony selector.
+*/}}
+{{- define "adaptive.harmony.egressRules" -}}
+{{- $ctx := .ctx -}}
+{{- $np := $ctx.Values.harmony.networkPolicy -}}
+{{- $hasRestrictive := gt (len $np.restrictiveEgressRules) 0 -}}
+# Cluster DNS.
+{{- include "adaptive.networkPolicy.dnsEgress" $ctx | nindent 0 }}
+# Self: harmony workers within a compute pool talk over the headless service.
+- to:
+    - podSelector:
+        {{- if .gang }}
+        matchExpressions:
+          - key: app.kubernetes.io/component
+            operator: In
+            values:
+              - harmony-gang
+              - inference-partition
+        matchLabels:
+          adaptive.ml/managed-by: control-plane
+        {{- else }}
+        matchLabels:
+          {{- include "adaptive.harmony.selectorLabels" $ctx | nindent 10 }}
+        {{- end }}
+# Control plane — workers report status / pull config via CONTROL_PLANE_URL.
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "adaptive.controlPlane.selectorLabels" $ctx | nindent 10 }}
+{{- if $ctx.Values.redis.install.enabled }}
+# Redis — workers hit it during preflight (mangrove::preflight Redis
+# check) and at runtime for inter-worker coordination on gang-spawned
+# jobs. Only emitted when the chart deploys internal Redis. For
+# external Redis, allow its IP/CIDR via restrictiveEgressRules.
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "adaptive.redis.selectorLabels" $ctx | nindent 10 }}
+{{- end }}
+{{- if $ctx.Values.otelCollector.enabled }}
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "adaptive.otelCollector.selectorLabels" $ctx | nindent 10 }}
+{{- end }}
+{{- if $ctx.Values.mlflow.enabled }}
+# MLflow — the Python training processes inside harmony pods log job
+# metrics via MLFLOW_TRACKING_URI (adaptive_harmony metric_logger),
+# which the chart wires onto the harmony statefulset when MLflow is
+# deployed. Harmony is the only pod that gets that env var, so this is
+# the only place the rule is needed.
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "adaptive.mlflow.selectorLabels" $ctx | nindent 10 }}
+{{- end }}
+{{- if $ctx.Values.minio.enabled }}
+# Internal MinIO — workers pull base models / write checkpoints to the
+# shared S3 bucket. Only emitted when the chart deploys it. For external
+# S3, allow the endpoint via restrictiveEgressRules.
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "adaptive.minio.selectorLabels" $ctx | nindent 10 }}
+{{- end }}
+{{- if $ctx.Values.s3proxy.enabled }}
+# Internal s3proxy: S3 API in front of external blob storage (Azure Blob,
+# GCS, ...). When deployed, workers pull base models / write checkpoints
+# through it instead of MinIO. Only emitted when the chart deploys it; for
+# direct external S3 use restrictiveEgressRules.
+- to:
+    - podSelector:
+        matchLabels:
+          {{- include "adaptive.s3proxy.selectorLabels" $ctx | nindent 10 }}
+{{- end }}
+{{- if $hasRestrictive }}
+# restrictiveEgressRules is set — the user is taking control of harmony's
+# external egress. The default permissive internet rule is suppressed;
+# only the rules below (and the in-cluster allows above) apply.
+{{- toYaml $np.restrictiveEgressRules | nindent 0 }}
+{{- else if $np.allowInternetEgress }}
+# External egress on the listed ports (TCP/443 + TCP/80 by default) —
+# workers pull base models from Huggingface and other external model
+# registries. Port-restricted to public protocols so this rule does NOT
+# widen access to in-cluster pods on other ports.
+{{- include "adaptive.networkPolicy.internetEgress"
+      (dict "ports" $np.internetEgressPorts)
+    | nindent 0 }}
+{{- end }}
+{{- end }}
+
 {{- define "adaptive.recipeRunner.fullname" -}}
 {{- printf "%s-recipe-runner" (include "adaptive.fullname" .) | trunc 40 | trimSuffix "-" }}
 {{- end}}
