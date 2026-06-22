@@ -185,6 +185,13 @@ jobs:
       - name: Static reachability check
         run: ./scripts/static-check-netpol.sh
 
+      - name: Operator-pod egress coverage check
+        # Asserts the chart emits egress for operator-spawned pods
+        # (harmony-gang, inference-partition). Reachability analysis can't
+        # cover them — they have no workload object in the chart — so this is
+        # a separate structural check over the rendered manifests.
+        run: ./scripts/check-operator-pod-egress.sh
+
   netpol-test:
     # Dynamic NetworkPolicy enforcement test across multiple CNIs. Each
     # matrix entry stands up a fresh kind cluster, installs the CNI,
