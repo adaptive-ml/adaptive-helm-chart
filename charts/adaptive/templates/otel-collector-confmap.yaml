@@ -25,10 +25,10 @@ data:
                   namespaces:
                     own_namespace: true
               relabel_configs:
-                # Only scrape pods with prometheus.io/scrape: "adaptive" annotation
+                # Only scrape pods with prometheus.io/scrape: "true" annotation
                 - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
                   action: keep
-                  regex: adaptive
+                  regex: "true"
                 # Use custom path if specified
                 - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
                   action: replace

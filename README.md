@@ -1218,7 +1218,7 @@ The collector configuration includes fixed receivers and processors that cannot 
 
 - **Receivers**:
   - OTLP HTTP on port `4318`
-  - Prometheus scraper for pods with annotation `prometheus.io/scrape: "adaptive"`
+  - Prometheus scraper for pods with annotation `prometheus.io/scrape: "true"`
 - **Processors**: `batch`, `memory_limiter`, and `resource` (for adding resource attributes)
 
 You can adjust the memory limiter and Prometheus scraping settings:
@@ -1238,7 +1238,7 @@ The collector automatically scrapes Prometheus metrics from pods in the same nam
 
 ```yaml
 annotations:
-  prometheus.io/scrape: "adaptive"  # Required - enables scraping
+  prometheus.io/scrape: "true"  # Required - enables scraping
   prometheus.io/path: "/metrics"    # Optional - metrics endpoint path (default: /metrics)
   prometheus.io/port: "9090"        # Optional - metrics port
 ```

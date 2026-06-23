@@ -157,7 +157,7 @@ harmony:
 
 The OTel Collector scrapes Prometheus metrics from Adaptive components via annotations:
 ```yaml
-prometheus.io/scrape: "adaptive"
+prometheus.io/scrape: "true"
 prometheus.io/path: /metrics
 prometheus.io/port: "50053"  # harmony / "9009" for control-plane
 ```

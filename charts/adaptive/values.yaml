@@ -175,7 +175,7 @@ harmony:
 
   podAnnotations:
     ingest-adaptive-logs: "true"
-    prometheus.io/scrape: "adaptive"
+    prometheus.io/scrape: "true"
     prometheus.io/path: /metrics
     prometheus.io/port: "50053"
   podLabels: {}
@@ -445,7 +445,7 @@ controlPlane:
   annotations: {}
   podAnnotations:
     ingest-adaptive-logs: "true"
-    prometheus.io/scrape: "adaptive"
+    prometheus.io/scrape: "true"
     prometheus.io/path: /metrics
     prometheus.io/port: "9009"
   podLabels: {}
@@ -777,7 +777,7 @@ otelCollector:
       enabled: true
 
   # Prometheus scraping configuration
-  # Scrapes metrics from pods with annotation: prometheus.io/scrape: "adaptive"
+  # Scrapes metrics from pods with annotation: prometheus.io/scrape: "true"
   prometheus:
     scrapeInterval: "15s"
 
