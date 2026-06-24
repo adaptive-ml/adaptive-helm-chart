@@ -162,6 +162,14 @@ spec:
               value: "http://{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}:{{ $ports.http.containerPort }}"
             - name: ADAPTIVE_LOGGING_LEVEL
               value: info
+            {{- if $root.Values.harmony.crashReporting.enabled }}
+            - name: CRASH_REPORTING_ENABLED
+              value: "true"
+            {{- with $root.Values.harmony.crashReporting.s3Url }}
+            - name: CRASH_DUMPS_S3_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
             {{- if eq $root.Values.controlPlane.sharedDirType "s3" }}
             - name: HARMONY_SETTING_WORKING_DIR
               value: "/opt/adaptive/working_dir"
