@@ -23,7 +23,7 @@ spec:
   egress:
     # Cluster DNS — needed for in-cluster Service names and external hostnames.
     {{- include "adaptive.networkPolicy.dnsEgress" . | nindent 4 }}
-    # Harmony gang master — the runner's HARMONY_WS_ENDPOINT (ws://...:50053).
+    # Harmony gang master — the runner's HARMONY_WS_ENDPOINT (ws://...:20053).
     # The master pod is operator-created with component=harmony-gang.
     - to:
         - podSelector:
@@ -31,7 +31,7 @@ spec:
               app.kubernetes.io/component: harmony-gang
       ports:
         - protocol: TCP
-          port: 50053
+          port: 20053
     # Control plane (Concorde) — recipes call it via ADAPTIVE_CONTROL_PLANE_URL.
     - to:
         - podSelector:

@@ -58,7 +58,7 @@ spec:
         - name: mangrove
           image: busybox
           ports:
-            - containerPort: 50053
+            - containerPort: 20053
 EOF
 endgroup
 

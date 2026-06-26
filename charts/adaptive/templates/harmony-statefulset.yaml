@@ -139,6 +139,8 @@ spec:
               value: "{{ $gpusPerReplica | default 1 }}"
             - name: MASTER_ADDR
               value: "{{ include "adaptive.harmony.computePool.fullname" (dict "root" $root "pool" $pool) }}-0.{{ include "adaptive.harmony.computePool.headlessService.fullname" (dict "root" $root "pool" $pool) }}"
+            - name: HTTP_PORT
+              value: "{{ $ports.http.containerPort }}"
             - name: MASTER_PORT
               value: "{{ $ports.torch.containerPort }}"
             - name: QUEUE_PORT

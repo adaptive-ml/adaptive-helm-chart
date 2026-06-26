@@ -270,9 +270,9 @@ Harmony ports
 */}}
 {{- define "adaptive.harmony.ports" -}}
 {
-  "http": {"name": "http", "containerPort": 50053, "port": 80},
-  "queue": {"name": "queue", "containerPort": 50052},
-  "tcpstore": {"name": "tcpstore", "containerPort": 50054},
+  "http": {"name": "http", "containerPort": 20053, "port": 80},
+  "queue": {"name": "queue", "containerPort": 20052},
+  "tcpstore": {"name": "tcpstore", "containerPort": 20054},
   "torch": {"name": "torch", "containerPort": 7777}
 }
 {{- end }}
