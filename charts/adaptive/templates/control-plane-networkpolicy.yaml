@@ -30,10 +30,10 @@ spec:
               {{- include "adaptive.sandkasten.selectorLabels" . | nindent 14 }}
     # Harmony (mangrove) — control-plane health-checks and orchestrates the
     # harmony workers. Each compute pool registers with the control-plane,
-    # which then connects back to the worker's service port (50053 health,
+    # which then connects back to the worker's service port (20053 health,
     # plus the gang/control ports) to accept the registration. Without this
     # rule the registration is rejected with a 500 ("Cannot reach Mangrove
-    # at …:50053") and the compute pool never comes up. Harmony is a core
+    # at …:20053") and the compute pool never comes up. Harmony is a core
     # component (always deployed), so this is unconditional.
     - to:
         - podSelector:
@@ -43,7 +43,7 @@ spec:
     # gangs) — created dynamically by the control-plane and labeled
     # adaptive.ml/managed-by=control-plane rather than with the chart's
     # selector labels, so the harmony rule above does not match them. The
-    # control-plane connects to their mangrove port (50053) to accept
+    # control-plane connects to their mangrove port (20053) to accept
     # compute-pool registration, same as for the static harmony workers.
     - to:
         - podSelector:

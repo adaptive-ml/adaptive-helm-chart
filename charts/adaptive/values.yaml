@@ -177,7 +177,7 @@ harmony:
     ingest-adaptive-logs: "true"
     prometheus.io/scrape: "adaptive"
     prometheus.io/path: /metrics
-    prometheus.io/port: "50053"
+    prometheus.io/port: "20053"
   podLabels: {}
   extraEnvVars: {}
   # GPU tolerations - only applied when requireGpu is true (default)
@@ -734,7 +734,7 @@ otelCollector:
     # maxUnavailable: 1
 
   # NetworkPolicy for the otel-collector. Always renders allow rules for its
-  # Prometheus scrape targets (control-plane :9009, harmony :50053), cluster
+  # Prometheus scrape targets (control-plane :9009, harmony :20053), cluster
   # DNS, and the in-cluster LGTM stack on :4318 when enabled. External
   # egress is permissive by default so the collector can ship telemetry to
   # remote observability backends (Datadog, Grafana Cloud, ...) without

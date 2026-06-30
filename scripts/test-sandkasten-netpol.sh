@@ -17,7 +17,7 @@ VALUES_BASE="${VALUES_BASE:-.github/test-values-base.yaml}"
 VALUES_NETPOL="${VALUES_NETPOL:-.github/test-values-netpol.yaml}"
 PROBE_IMAGE="${PROBE_IMAGE:-nicolaka/netshoot:v0.13}"
 # busybox httpd binds to any port we ask for; useful when targets need to
-# listen on the otel scrape ports (9009, 50053) in addition to the default.
+# listen on the otel scrape ports (9009, 20053) in addition to the default.
 TARGET_IMAGE="${TARGET_IMAGE:-busybox:1.36}"
 NC_TIMEOUT="${NC_TIMEOUT:-5}"
 
@@ -129,7 +129,7 @@ EOF
   make_pod cp-target            control-plane  8080
   make_pod cp-metrics-target    control-plane  9009
   make_pod harmony-target       harmony        8080
-  make_pod harmony-metrics-tgt  harmony        50053
+  make_pod harmony-metrics-tgt  harmony        20053
   make_pod otel-target          otel-collector 8080
   make_pod sandkasten-target    sandkasten     8080
   make_pod postgres-target      postgresql     8080
@@ -137,14 +137,14 @@ EOF
   make_pod mlflow-target        mlflow         8080
   make_pod other-target         unrelated      8080
   # Recipe-runner pod-only isolation (HAR-162). One harmony-gang target listens
-  # on the allowed WS port (50053) and another on a non-allowed port (8080) so
+  # on the allowed WS port (20053) and another on a non-allowed port (8080) so
   # the deny assertion proves a policy drop, not a connection-refused. The probe
   # carries BOTH operator labels the policy podSelector matches.
-  make_pod harmony-gang-target  harmony-gang   50053
+  make_pod harmony-gang-target  harmony-gang   20053
   make_pod harmony-gang-8080    harmony-gang   8080
   # Operator-spawned inference partition: carries ONLY the adaptive.ml/*
   # operator labels (no chart name/instance labels), like the real pods the
-  # control-plane creates at runtime. Listens on the mangrove port (50053)
+  # control-plane creates at runtime. Listens on the mangrove port (20053)
   # the control-plane must reach for registration (PS-4870).
   cat <<EOF
 ---
@@ -161,11 +161,11 @@ spec:
   containers:
     - name: main
       image: $TARGET_IMAGE
-      command: ["httpd", "-f", "-p", "50053"]
+      command: ["httpd", "-f", "-p", "20053"]
       ports:
-        - containerPort: 50053
+        - containerPort: 20053
       readinessProbe:
-        tcpSocket: { port: 50053 }
+        tcpSocket: { port: 20053 }
         periodSeconds: 2
 EOF
   cat <<EOF
@@ -299,7 +299,7 @@ assert_from allow cp-probe "internet (1.1.1.1)"   "1.1.1.1"      443  || failed=
 # never comes up.
 assert_from allow cp-probe "harmony"              "$HARMONY_IP"  8080 || failed=1
 # Operator-spawned partition (adaptive.ml/managed-by label, no chart labels).
-assert_from allow cp-probe "inference partition"  "$PARTITION_IP" 50053 || failed=1
+assert_from allow cp-probe "inference partition"  "$PARTITION_IP" 20053 || failed=1
 assert_from deny  cp-probe "unrelated"            "$OTHER_IP"    8080 || failed=1
 # cp → kube-apiserver reachability.
 #
@@ -338,7 +338,7 @@ endgroup
 
 group "otel-collector egress (scrape ports, DNS, internet)"
 assert_from allow otel-probe "control-plane :9009"  "$CP_METRICS_IP"      9009  || failed=1
-assert_from allow otel-probe "harmony :50053"       "$HARMONY_METRICS_IP" 50053 || failed=1
+assert_from allow otel-probe "harmony :20053"       "$HARMONY_METRICS_IP" 20053 || failed=1
 assert_from allow otel-probe "internet (1.1.1.1)"   "1.1.1.1"             443   || failed=1
 # OTLP export (gRPC :4317) to an arbitrary peer: the collector ships telemetry
 # to a cross-namespace or remote backend, always allowed on 4317/4318.
@@ -363,8 +363,8 @@ fi
 endgroup
 
 group "recipe-runner egress (harmony-gang WS, cp/otel/mlflow, DNS, internet)"
-# The runner's WS endpoint is the gang master on :50053.
-assert_from allow recipe-runner-probe "harmony-gang :50053" "$HGANG_IP"  50053 || failed=1
+# The runner's WS endpoint is the gang master on :20053.
+assert_from allow recipe-runner-probe "harmony-gang :20053" "$HGANG_IP"  20053 || failed=1
 assert_from allow recipe-runner-probe "control-plane"       "$CP_IP"     8080  || failed=1
 assert_from allow recipe-runner-probe "otel-collector"      "$OTEL_IP"   8080  || failed=1
 assert_from allow recipe-runner-probe "mlflow"              "$MLFLOW_IP" 8080  || failed=1

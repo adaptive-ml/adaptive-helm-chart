@@ -33,7 +33,7 @@ spec:
               {{- include "adaptive.harmony.selectorLabels" . | nindent 14 }}
       ports:
         - protocol: TCP
-          port: 50053
+          port: 20053
     {{- if .Values.lgtm.enabled }}
     # LGTM stack — OTLP export endpoint (4318) when running the all-in-one
     # in-cluster observability stack.
